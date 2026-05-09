@@ -1,0 +1,86 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:waydir/ui/theme/app_theme.dart';
+import 'package:waydir/features/files/file_icons.dart';
+
+void main() {
+  group('AppColors', () {
+    test('fileIconColor returns correct colors for known extensions', () {
+      expect(fileIconColor('dart'), const Color(0xFF5CA8FF));
+      expect(fileIconColor('py'), const Color(0xFF5CA8FF));
+      expect(fileIconColor('pdf'), const Color(0xFFCF6679));
+      expect(fileIconColor('zip'), const Color(0xFFFAB387));
+      expect(fileIconColor('mp3'), const Color(0xFFCBA6F7));
+      expect(fileIconColor('mp4'), const Color(0xFFF5C2E7));
+      expect(fileIconColor('png'), const Color(0xFFA6E3A1));
+      expect(fileIconColor('md'), const Color(0xFF7CBCFF));
+      expect(fileIconColor('txt'), const Color(0xFF9CA3AF));
+    });
+
+    test('fileIconColor returns default for unknown extension', () {
+      expect(fileIconColor('xyz'), const Color(0xFF6B6B6B));
+      expect(fileIconColor(''), const Color(0xFF6B6B6B));
+    });
+
+    test('fileIconColor handles grouped extensions', () {
+      expect(fileIconColor('js'), fileIconColor('ts'));
+      expect(fileIconColor('jpg'), fileIconColor('png'));
+      expect(fileIconColor('wav'), fileIconColor('mp3'));
+      expect(fileIconColor('avi'), fileIconColor('mp4'));
+      expect(fileIconColor('tar'), fileIconColor('zip'));
+    });
+
+    test('fileIcon returns PhosphorIconsRegular.file for unknown extension', () {
+      expect(fileIcon('xyz'), PhosphorIconsRegular.file);
+      expect(fileIcon(''), PhosphorIconsRegular.file);
+    });
+
+    test('fileIcon returns correct icon for code files', () {
+      expect(fileIcon('dart'), PhosphorIconsRegular.fileCode);
+      expect(fileIcon('py'), PhosphorIconsRegular.fileCode);
+      expect(fileIcon('js'), PhosphorIconsRegular.fileJs);
+      expect(fileIcon('ts'), PhosphorIconsRegular.fileTs);
+      expect(fileIcon('html'), PhosphorIconsRegular.fileHtml);
+      expect(fileIcon('css'), PhosphorIconsRegular.fileCss);
+      expect(fileIcon('json'), PhosphorIconsRegular.fileCode);
+    });
+
+    test('fileIcon returns correct icon for media files', () {
+      expect(fileIcon('png'), PhosphorIconsRegular.fileImage);
+      expect(fileIcon('pdf'), PhosphorIconsRegular.filePdf);
+      expect(fileIcon('mp3'), PhosphorIconsRegular.fileAudio);
+      expect(fileIcon('mp4'), PhosphorIconsRegular.fileVideo);
+      expect(fileIcon('zip'), PhosphorIconsRegular.fileZip);
+      expect(fileIcon('md'), PhosphorIconsRegular.fileMd);
+      expect(fileIcon('txt'), PhosphorIconsRegular.fileTxt);
+    });
+  });
+
+  group('AppTheme', () {
+    test('build returns ThemeData with dark brightness', () {
+      final theme = AppTheme.build();
+      expect(theme.brightness, Brightness.dark);
+    });
+
+    test('build has NoSplash splashFactory', () {
+      final theme = AppTheme.build();
+      expect(theme.splashFactory, NoSplash.splashFactory);
+    });
+
+    test('build uses correct scaffold background', () {
+      final theme = AppTheme.build();
+      expect(theme.scaffoldBackgroundColor, AppColors.bg);
+    });
+
+    test('palette constants are consistent', () {
+      expect(AppColors.accent, const Color(0xFF5CA8FF));
+      expect(AppColors.bg, const Color(0xFF181818));
+      expect(AppColors.bgSurface, const Color(0xFF1E1E1E));
+      expect(AppColors.fg, const Color(0xFFE4E4E4));
+      expect(AppColors.fgMuted, const Color(0xFF9CA3AF));
+      expect(AppColors.bgHover, const Color(0xFF2A2D31));
+      expect(AppColors.bgSelected, const Color(0xFF2A2D31));
+    });
+  });
+}

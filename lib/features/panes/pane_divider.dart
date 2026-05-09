@@ -1,0 +1,49 @@
+import 'package:flutter/material.dart';
+import '../../ui/theme/app_theme.dart';
+import 'shell_store.dart';
+
+class PaneDivider extends StatefulWidget {
+  final ShellStore shell;
+  final double totalWidth;
+
+  const PaneDivider({super.key, required this.shell, required this.totalWidth});
+
+  @override
+  State<PaneDivider> createState() => _PaneDividerState();
+}
+
+class _PaneDividerState extends State<PaneDivider> {
+  bool _hovered = false;
+  double _startX = 0;
+  double _startRatio = 0.5;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeColumn,
+      hitTestBehavior: HitTestBehavior.opaque,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onPanStart: (details) {
+          _startX = details.globalPosition.dx;
+          _startRatio = widget.shell.splitRatio.value;
+        },
+        onPanUpdate: (details) {
+          final dx = details.globalPosition.dx - _startX;
+          final available = widget.totalWidth - 8;
+          widget.shell.setSplitRatio(_startRatio + dx / available);
+        },
+        child: SizedBox(
+          width: 8,
+          child: Center(
+            child: Container(
+              width: _hovered ? 3 : 1,
+              color: _hovered ? AppColors.accent : AppColors.bgDivider,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

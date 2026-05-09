@@ -1,0 +1,84 @@
+import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:signals/signals_flutter.dart';
+import '../../ui/theme/app_theme.dart';
+import 'tab_chip.dart';
+import 'tabs_store.dart';
+
+class TabStrip extends StatelessWidget {
+  final TabsStore tabsStore;
+  final bool isActive;
+
+  const TabStrip({super.key, required this.tabsStore, this.isActive = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch((context) {
+      final tabs = tabsStore.tabs.value;
+      return Container(
+        height: 30,
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.bgSidebar : AppColors.bg,
+          border: const Border(bottom: BorderSide(color: AppColors.bgDivider)),
+        ),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.zero,
+          itemCount: tabs.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(width: 0),
+          itemBuilder: (context, i) {
+            if (i == tabs.length) {
+              return _AddButton(
+                onTap: () {
+                  final activePath = tabsStore.activeTab.value.store.currentPath.value;
+                  tabsStore.addTab(activePath);
+                },
+              );
+            }
+            return TabChip(
+              tab: tabs[i],
+              index: i,
+              tabsStore: tabsStore,
+            );
+          },
+        ),
+      );
+    });
+  }
+}
+
+class _AddButton extends StatefulWidget {
+  final VoidCallback onTap;
+
+  const _AddButton({required this.onTap});
+
+  @override
+  State<_AddButton> createState() => _AddButtonState();
+}
+
+class _AddButtonState extends State<_AddButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          width: 28,
+          height: 30,
+          alignment: Alignment.center,
+          color: _hovered ? AppColors.bgHover : Colors.transparent,
+          child: PhosphorIcon(
+            PhosphorIconsRegular.plus,
+            size: 14,
+            color: _hovered ? AppColors.fg : AppColors.fgMuted,
+          ),
+        ),
+      ),
+    );
+  }
+}

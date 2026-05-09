@@ -1,0 +1,268 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:signals/signals_flutter.dart';
+import '../../i18n/strings.g.dart';
+import '../../ui/theme/app_theme.dart';
+import '../../ui/theme/app_text_styles.dart';
+import 'navigation_store.dart';
+
+class AppSearchBar extends StatefulWidget {
+  final NavigationStore store;
+
+  const AppSearchBar({super.key, required this.store});
+
+  @override
+  State<AppSearchBar> createState() => _AppSearchBarState();
+}
+
+class _AppSearchBarState extends State<AppSearchBar> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+  late FocusNode _wrapperFocusNode;
+  void Function()? _disposeFocusEffect;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.store.searchQuery.value);
+    _focusNode = FocusNode();
+    _wrapperFocusNode = FocusNode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+    _disposeFocusEffect = effect(() {
+      widget.store.searchFocusRequest.value;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _focusNode.requestFocus();
+        _controller.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _controller.text.length,
+        );
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _disposeFocusEffect?.call();
+    _controller.dispose();
+    _focusNode.dispose();
+    _wrapperFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 32,
+      decoration: const BoxDecoration(
+        color: AppColors.bgToolbar,
+        border: Border(bottom: BorderSide(color: AppColors.bgDivider)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+                PhosphorIcon(
+                  PhosphorIconsRegular.magnifyingGlass,
+                  size: 16,
+                  color: AppColors.fgMuted,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: KeyboardListener(
+                    focusNode: _wrapperFocusNode,
+                    onKeyEvent: (event) {
+                      if (event is KeyDownEvent &&
+                          event.logicalKey == LogicalKeyboardKey.escape) {
+                        widget.store.closeSearch();
+                      }
+                    },
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      onChanged: (v) => widget.store.setSearchQuery(v),
+                      onSubmitted: (_) {
+                        widget.store.openSelected();
+                      },
+                      style: context.txt.body,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        border: InputBorder.none,
+                        hintText: t.search.placeholder,
+                        hintStyle: context.txt.body.copyWith(color: AppColors.fgSubtle),
+                      ),
+                      cursorColor: AppColors.accent,
+                      cursorHeight: 14,
+                    ),
+                  ),
+                ),
+                Watch((context) {
+                  final searching = widget.store.isSearching.value;
+                  if (!searching) return const SizedBox.shrink();
+                  return const Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child: SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        color: AppColors.fgMuted,
+                      ),
+                    ),
+                  );
+                }),
+                _RecursiveToggle(store: widget.store),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Watch((context) => _StatusText(store: widget.store)),
+                ),
+          _CloseButton(onTap: widget.store.closeSearch),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusText extends StatelessWidget {
+  final NavigationStore store;
+  const _StatusText({required this.store});
+
+  @override
+  Widget build(BuildContext context) {
+    final recursive = store.searchRecursive.value;
+    final searching = store.isSearching.value;
+    final query = store.searchQuery.value.trim();
+    final count = store.visibleFiles.value.length;
+
+    String text;
+    if (!recursive) {
+      text = t.search.results(count: count);
+    } else if (query.isEmpty) {
+      text = t.search.placeholder;
+    } else if (searching && count == 0 && store.searchScannedDirs.value == 0) {
+      text = t.search.starting;
+    } else if (searching) {
+      text =
+          '${t.search.found(count: count)} · ${t.search.scanning(dirs: store.searchScannedDirs.value)}';
+    } else if (count == 0) {
+      text = t.search.noMatches;
+    } else {
+      text =
+          '${t.search.found(count: count)} · ${t.search.scanning(dirs: store.searchScannedDirs.value)}';
+    }
+    if (store.searchTruncated.value) {
+      text += ' ${t.search.truncated(limit: 5000)}';
+    }
+    return Text(
+      text,
+      style: context.txt.bodyMuted,
+    );
+  }
+}
+
+class _RecursiveToggle extends StatefulWidget {
+  final NavigationStore store;
+
+  const _RecursiveToggle({required this.store});
+
+  @override
+  State<_RecursiveToggle> createState() => _RecursiveToggleState();
+}
+
+class _RecursiveToggleState extends State<_RecursiveToggle> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch((context) {
+      final active = widget.store.searchRecursive.value;
+      return Tooltip(
+        message: '${t.search.subfolders} (Ctrl+Shift+F)',
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: GestureDetector(
+            onTap: widget.store.toggleRecursive,
+            child: Container(
+              height: 24,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              decoration: BoxDecoration(
+                color: active
+                    ? AppColors.accent.withValues(alpha: 0.15)
+                    : (_hovered ? AppColors.bgHover : Colors.transparent),
+                borderRadius: BorderRadius.circular(4),
+                border: active
+                    ? Border.all(color: AppColors.accent.withValues(alpha: 0.4))
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PhosphorIcon(
+                    PhosphorIconsRegular.treeStructure,
+                    size: 14,
+                    color: active ? AppColors.accent : AppColors.fgMuted,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    t.search.subfolders,
+                    style: context.txt.row.copyWith(
+                      color: active ? AppColors.accent : AppColors.fgMuted,
+                      fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _CloseButton extends StatefulWidget {
+  final VoidCallback onTap;
+
+  const _CloseButton({required this.onTap});
+
+  @override
+  State<_CloseButton> createState() => _CloseButtonState();
+}
+
+class _CloseButtonState extends State<_CloseButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: t.search.close,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: _hovered ? AppColors.bgHover : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: PhosphorIcon(
+              PhosphorIconsRegular.x,
+              size: 14,
+              color: AppColors.fgMuted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

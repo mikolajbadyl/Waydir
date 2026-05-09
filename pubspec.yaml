@@ -1,0 +1,44 @@
+name: waydir
+description: "Waydir - A fast, minimal desktop file manager built with Flutter. Custom dark theme, custom title bar, and keyboard-driven workflow."
+publish_to: 'none'
+version: 0.1.0+1
+
+homepage: https://github.com/mikolajbadyl/waydir
+repository: https://github.com/mikolajbadyl/waydir
+issue_tracker: https://github.com/mikolajbadyl/waydir/issues
+
+environment:
+  sdk: ^3.9.2
+
+topics:
+  - file-manager
+  - desktop
+  - flutter
+
+screenshots: []
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  path_provider: ^2.1.5
+  bitsdojo_window: ^0.1.6
+  phosphor_flutter: ^2.1.0
+  signals: ^6.3.0
+  collection: ^1.19.1
+  super_drag_and_drop: ^0.9.1
+  slang: ^4.14.0
+  slang_flutter: ^4.14.0
+  path: ^1.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.9
+  slang_build_runner: ^4.14.0
+
+flutter:
+  uses-material-design: true

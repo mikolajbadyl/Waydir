@@ -1,0 +1,742 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:signals/signals_flutter.dart';
+import '../core/fs/file_system_service.dart';
+import '../core/keyboard/keyboard_shortcuts.dart';
+import '../core/models/file_entry.dart';
+import '../core/models/file_operation.dart';
+import '../features/navigation/navigation_store.dart';
+import '../features/navigation/sidebar.dart';
+import '../features/navigation/status_bar.dart';
+import '../features/operations/operation_store.dart';
+import '../features/panes/pane_view.dart';
+import '../features/panes/pane_divider.dart';
+import '../features/panes/shell_store.dart';
+import '../i18n/strings.g.dart';
+import '../ui/chrome/title_bar.dart';
+import '../ui/dialogs/dialog.dart';
+import '../ui/overlays/context_menu.dart';
+import '../ui/overlays/notification_overlay.dart';
+import '../ui/overlays/notification_store.dart';
+import '../ui/overlays/toast.dart';
+import '../ui/theme/app_theme.dart';
+import '../ui/theme/app_text_styles.dart';
+
+class WaydirPage extends StatefulWidget {
+  const WaydirPage({super.key});
+
+  @override
+  State<WaydirPage> createState() => _WaydirPageState();
+}
+
+class _WaydirPageState extends State<WaydirPage> {
+  final _notificationStore = NotificationStore();
+  late final _operationStore =
+      OperationStore(notificationStore: _notificationStore);
+  late final _shell = ShellStore(
+    operationStore: _operationStore,
+    notificationStore: _notificationStore,
+  );
+  final _focusNode = FocusNode();
+  final _effectDisposers = <void Function()>[];
+  final _renameErrorDisposers = <String, void Function()>{};
+
+  NavigationStore get _active => _shell.activeStore.value;
+
+  @override
+  void initState() {
+    super.initState();
+    _effectDisposers.add(effect(() {
+      final completedId = _operationStore.taskCompleted.value;
+      if (completedId != null) {
+        _operationStore.taskCompleted.value = null;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final tasks = _operationStore.tasks.value;
+          FileTask? task;
+          for (final t in tasks) {
+            if (t.id == completedId) {
+              task = t;
+              break;
+            }
+          }
+          if (task == null) return;
+          for (final store in _shell.allStores) {
+            if (task.destination == store.currentPath.value ||
+                (task.type == TaskType.delete &&
+                    task.sources.any(
+                        (s) => p.dirname(s) == store.currentPath.value))) {
+              store.refresh();
+            }
+          }
+          if (task.errors.isNotEmpty &&
+              (task.status == TaskStatus.completed ||
+                  task.status == TaskStatus.failed)) {
+            final label = TaskLabel.title(task);
+            showToast(
+              context: context,
+              message:
+                  t.toast.taskErrors(label: label, count: task.errors.length),
+              duration: const Duration(seconds: 3),
+            );
+          }
+        });
+      }
+    }));
+    _effectDisposers.add(effect(() {
+      final active = _active.searchActive.value;
+      if (!active) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          if (_isEditableFocused()) return;
+          _focusNode.requestFocus();
+        });
+      }
+    }));
+    _effectDisposers.add(effect(() {
+      _shell.panes.value;
+      _installRenameErrorEffects();
+    }));
+    _installRenameErrorEffects();
+  }
+
+  void _installRenameErrorEffects() {
+    final currentIds = <String>{};
+    for (final pane in _shell.panes.value) {
+      for (final tab in pane.tabs.tabs.value) {
+        currentIds.add(tab.id);
+        if (!_renameErrorDisposers.containsKey(tab.id)) {
+          final store = tab.store;
+          _renameErrorDisposers[tab.id] = effect(() {
+            final error = store.renameError.value;
+            if (error != null) {
+              store.renameError.value = null;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  showToast(
+                    context: context,
+                    message: error,
+                    duration: const Duration(seconds: 3),
+                  );
+                }
+              });
+            }
+          });
+        }
+      }
+    }
+    final existingIds = _renameErrorDisposers.keys.toSet();
+    for (final id in existingIds.difference(currentIds)) {
+      _renameErrorDisposers.remove(id)?.call();
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final d in _effectDisposers) {
+      d();
+    }
+    _effectDisposers.clear();
+    for (final d in _renameErrorDisposers.values) {
+      d();
+    }
+    _renameErrorDisposers.clear();
+    _focusNode.dispose();
+    _notificationStore.dispose();
+    _shell.dispose();
+    _operationStore.dispose();
+    super.dispose();
+  }
+
+  Future<void> _confirmAndDelete() async {
+    final entries = _active.selectedEntries;
+    if (entries.isEmpty) return;
+    final message = entries.length == 1
+        ? t.dialog.confirmDeleteSingle(name: entries.first.name)
+        : t.dialog.confirmDeleteMultiple(count: entries.length);
+    final result = await showCustomDialog<String>(
+      context: context,
+      title: t.dialog.confirmDeleteTitle,
+      icon: PhosphorIconsRegular.trash,
+      iconColor: AppColors.danger,
+      body: Text(
+        message,
+        style: context.txt.body.copyWith(height: 1.4),
+      ),
+      actions: [
+        DialogAction(label: t.dialog.cancel, color: AppColors.fgMuted),
+        DialogAction(label: t.dialog.delete, color: AppColors.danger),
+      ],
+    );
+    if (result == t.dialog.delete) {
+      _active.deleteSelected();
+    }
+  }
+
+  void _handleBackgroundContextMenu(Offset position) {
+    final store = _active;
+    final canPaste = store.canPaste.value;
+    final items = <ContextMenuItem>[
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.clipboard,
+        label: t.menu.paste,
+        action: 'paste',
+      ),
+      ContextMenuItem.divider,
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.terminal,
+        label: t.menu.openInTerminal,
+        action: 'open_in_terminal',
+      ),
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.folderPlus,
+        label: t.toolbar.newFolder,
+        action: 'new_folder',
+      ),
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.arrowClockwise,
+        label: t.toolbar.refresh,
+        action: 'refresh',
+      ),
+      ContextMenuItem.divider,
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.selectionAll,
+        label: t.menu.selectAll,
+        action: 'select_all',
+      ),
+    ];
+    if (!canPaste) items.removeAt(0);
+
+    showContextMenu(
+      context: context,
+      position: position,
+      items: items,
+      onSelect: _handleBackgroundMenuAction,
+    );
+  }
+
+  void _handleBackgroundMenuAction(String action) {
+    final store = _active;
+    switch (action) {
+      case 'paste':
+        store.paste();
+      case 'new_folder':
+        store.startCreate();
+      case 'refresh':
+        store.refresh();
+      case 'select_all':
+        store.selectAll();
+      case 'open_in_terminal':
+        FileSystemService.openInTerminal(store.currentPath.value);
+    }
+  }
+
+  void _handleContextMenu(FileSelectionEvent event, Offset position) {
+    final store = _active;
+    store.onContextMenu(event);
+
+    final entries = store.selectedEntries;
+    final count = entries.length;
+    final isSingleFolder =
+        count == 1 && entries.first.type == FileItemType.folder;
+    final isRecursive =
+        store.searchActive.value && store.searchRecursive.value;
+
+    final items = <ContextMenuItem>[
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.folderOpen,
+        label: count == 1 ? t.menu.open : t.menu.openItems(count: count),
+        action: 'open',
+      ),
+      if (isRecursive && count == 1)
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.arrowSquareOut,
+          label: t.menu.openLocation,
+          action: 'open_location',
+        ),
+      if (isSingleFolder) ...[
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.arrowSquareOut,
+          label: t.menu.openInNewTab,
+          action: 'open_in_new_tab',
+        ),
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.terminal,
+          label: t.menu.openInTerminal,
+          action: 'open_in_terminal',
+        ),
+      ],
+      ContextMenuItem.divider,
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.copy,
+        label: t.menu.copy,
+        action: 'copy',
+      ),
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.scissors,
+        label: t.menu.cut,
+        action: 'cut',
+      ),
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.clipboard,
+        label: t.menu.paste,
+        action: 'paste',
+      ),
+      if (count == 1) ContextMenuItem.divider,
+      if (count == 1)
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.copy,
+          label: t.menu.copyPath,
+          action: 'copy_path',
+        ),
+      ContextMenuItem.divider,
+      if (count == 1)
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.pencilSimple,
+          label: t.menu.rename,
+          action: 'rename',
+          shortcut: 'F2',
+        ),
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.trash,
+        label: count == 1 ? t.menu.delete : t.menu.deleteItems(count: count),
+        action: 'delete',
+        danger: true,
+      ),
+    ];
+
+    showContextMenu(
+      context: context,
+      position: position,
+      items: items,
+      onSelect: _handleMenuAction,
+    );
+  }
+
+  void _handleMenuAction(String action) {
+    final store = _active;
+    switch (action) {
+      case 'open':
+        store.openSelected();
+      case 'copy':
+        store.copySelected();
+        final count = store.selectedPaths.value.length;
+        if (count > 0) {
+          showToast(
+              context: context, message: t.toast.copiedItems(count: count));
+        }
+      case 'cut':
+        store.cutSelected();
+        final count = store.selectedPaths.value.length;
+        if (count > 0) {
+          showToast(context: context, message: t.toast.cutItems(count: count));
+        }
+      case 'paste':
+        store.paste();
+      case 'copy_path':
+        store.copySelectedPaths();
+      case 'rename':
+        store.startRename();
+      case 'delete':
+        _confirmAndDelete();
+      case 'open_in_terminal':
+        final entries = store.selectedEntries;
+        if (entries.length == 1 &&
+            entries.first.type == FileItemType.folder) {
+          FileSystemService.openInTerminal(entries.first.path);
+        }
+      case 'open_location':
+        final entries = store.selectedEntries;
+        if (entries.length == 1) {
+          store.revealInFolder(entries.first.path);
+        }
+      case 'open_in_new_tab':
+        final entries = store.selectedEntries;
+        if (entries.length == 1 &&
+            entries.first.type == FileItemType.folder) {
+          _shell.activePane.value.tabs.addTab(entries.first.path);
+        }
+    }
+  }
+
+  bool _isEditableFocused() {
+    final primaryFocus = WidgetsBinding.instance.focusManager.primaryFocus;
+    if (primaryFocus == null || primaryFocus == _focusNode) return false;
+    final ctx = primaryFocus.context;
+    if (ctx == null) return true;
+    if (ctx.widget is EditableText) return true;
+    bool found = false;
+    ctx.visitAncestorElements((el) {
+      if (el.widget is EditableText) {
+        found = true;
+        return false;
+      }
+      return true;
+    });
+    return found;
+  }
+
+  bool _isModalRouteOnTop() {
+    final navigator = Navigator.maybeOf(context);
+    return navigator != null && navigator.canPop();
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    if (_isEditableFocused() || _isModalRouteOnTop()) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.f9 ||
+        (HardwareKeyboard.instance.isControlPressed &&
+            HardwareKeyboard.instance.isShiftPressed &&
+            event.logicalKey == LogicalKeyboardKey.keyD)) {
+      _shell.toggleDual();
+      return KeyEventResult.handled;
+    }
+
+    if (!HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.tab &&
+        _shell.isDual.value) {
+      final idx = _shell.activePaneIndex.value;
+      _shell.setActivePane(1 - idx);
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyT) {
+      _shell.activePane.value.tabs.addTab(_active.currentPath.value);
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyW) {
+      final tabsStore = _shell.activePane.value.tabs;
+      final tab = tabsStore.activeTab.value;
+      if (tabsStore.tabs.value.length > 1) {
+        tabsStore.closeTab(tab.id);
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.tab) {
+      final tabsStore = _shell.activePane.value.tabs;
+      final idx = tabsStore.activeIndex.value;
+      final next = (idx + 1) % tabsStore.tabs.value.length;
+      tabsStore.selectTab(next);
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        HardwareKeyboard.instance.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.tab) {
+      final tabsStore = _shell.activePane.value.tabs;
+      final idx = tabsStore.activeIndex.value;
+      final prev = (idx - 1 + tabsStore.tabs.value.length) %
+          tabsStore.tabs.value.length;
+      tabsStore.selectTab(prev);
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed) {
+      final digitKeys = [
+        LogicalKeyboardKey.digit1,
+        LogicalKeyboardKey.digit2,
+        LogicalKeyboardKey.digit3,
+        LogicalKeyboardKey.digit4,
+        LogicalKeyboardKey.digit5,
+        LogicalKeyboardKey.digit6,
+        LogicalKeyboardKey.digit7,
+        LogicalKeyboardKey.digit8,
+        LogicalKeyboardKey.digit9,
+      ];
+      final digitIdx = digitKeys.indexOf(event.logicalKey);
+      if (digitIdx >= 0) {
+        _shell.activePane.value.tabs.selectTab(digitIdx);
+        return KeyEventResult.handled;
+      }
+    }
+
+    final store = _active;
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        HardwareKeyboard.instance.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyF) {
+      store.openSearch(recursive: true);
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isShiftPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyF) {
+      store.openSearch();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.escape &&
+        store.searchActive.value) {
+      store.closeSearch();
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyC) {
+      store.copySelected();
+      final count = store.selectedPaths.value.length;
+      if (count > 0) {
+        showToast(
+            context: context, message: t.toast.copiedItems(count: count));
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyX) {
+      store.cutSelected();
+      final count = store.selectedPaths.value.length;
+      if (count > 0) {
+        showToast(context: context, message: t.toast.cutItems(count: count));
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isControlPressed &&
+        event.logicalKey == LogicalKeyboardKey.keyV) {
+      store.paste();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == AppShortcuts.openItem) {
+      store.openSelected();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == AppShortcuts.selectAll &&
+        HardwareKeyboard.instance.isControlPressed) {
+      store.selectAll();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == AppShortcuts.deselectAll) {
+      store.deselectAll();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == AppShortcuts.toggleSelectDown) {
+      store.toggleSelectAndAdvance();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == AppShortcuts.goUp &&
+        !HardwareKeyboard.instance.isAltPressed) {
+      store.goUp();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.f5) {
+      if (_shell.isDual.value) {
+        final activeIdx = _shell.activePaneIndex.value;
+        final otherPane = _shell.panes.value[1 - activeIdx];
+        final otherPath =
+            otherPane.tabs.activeTab.value.store.currentPath.value;
+        final sources = _dualPaneSources(store);
+        if (sources.isNotEmpty) {
+          _operationStore.enqueueCopy(sources, otherPath);
+        }
+      } else {
+        store.refresh();
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.f7) {
+      store.startCreate();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.f6 && _shell.isDual.value) {
+      final activeIdx = _shell.activePaneIndex.value;
+      final otherPane = _shell.panes.value[1 - activeIdx];
+      final otherPath = otherPane.tabs.activeTab.value.store.currentPath.value;
+      final sources = _dualPaneSources(store);
+      if (sources.isNotEmpty) {
+        _operationStore.enqueueMove(sources, otherPath);
+      }
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isAltPressed &&
+        event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      store.goBack();
+      return KeyEventResult.handled;
+    }
+
+    if (HardwareKeyboard.instance.isAltPressed &&
+        event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      store.goForward();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.delete ||
+        event.logicalKey == AppShortcuts.delete) {
+      _confirmAndDelete();
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      store.moveCursor(1);
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      store.moveCursor(-1);
+      return KeyEventResult.handled;
+    }
+
+    if (event.logicalKey == AppShortcuts.rename) {
+      store.startRename();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _openInNewTab(String path) {
+    _shell.activePane.value.tabs.addTab(path);
+  }
+
+  List<String> _dualPaneSources(NavigationStore store) {
+    final selected = store.selectedPaths.value;
+    if (selected.isNotEmpty) return selected.toList();
+    final idx = store.cursorIndex.value;
+    final files = store.visibleFiles.value;
+    if (idx >= 0 && idx < files.length) return [files[idx].path];
+    return const [];
+  }
+
+  void _restoreFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_isEditableFocused()) return;
+      _focusNode.requestFocus();
+    });
+  }
+
+  VoidCallback _activatePane(int index) {
+    return () {
+      _shell.setActivePane(index);
+      _restoreFocus();
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Focus(
+        focusNode: _focusNode,
+        autofocus: true,
+        onKeyEvent: _handleKeyEvent,
+        child: Stack(
+          children: [
+            TitleBar(
+              child: Column(
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 200,
+                      child: Watch((context) => Sidebar(
+                        store: _active,
+                        onOpenInNewTab: _openInNewTab,
+                      )),
+                    ),
+                    Container(width: 1, color: AppColors.bgDivider),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Watch((_) {
+                            final dual = _shell.isDual.value;
+                            final panes = _shell.panes.value;
+                            final activeIdx = _shell.activePaneIndex.value;
+
+                            if (!dual) {
+                              return PaneView(
+                                pane: panes[0],
+                                isActive: true,
+                                onActivate: _restoreFocus,
+                                operationStore: _operationStore,
+                                notificationStore: _notificationStore,
+                                shellStore: _shell,
+                                onBackgroundContextMenu: _handleBackgroundContextMenu,
+                                onContextMenu: _handleContextMenu,
+                                onMenuAction: _handleMenuAction,
+                                onOpenInNewTab: _openInNewTab,
+                              );
+                            }
+
+                            final ratio = _shell.splitRatio.value;
+                            final leftFlex = (ratio * 1000).round();
+                            final rightFlex = ((1 - ratio) * 1000).round();
+
+                            return Row(
+                              children: [
+                                Flexible(
+                                  flex: leftFlex,
+                                  child: PaneView(
+                                    pane: panes[0],
+                                    isActive: activeIdx == 0,
+                                    onActivate: _activatePane(0),
+                                    operationStore: _operationStore,
+                                    notificationStore: _notificationStore,
+                                    shellStore: _shell,
+                                    onBackgroundContextMenu: _handleBackgroundContextMenu,
+                                    onContextMenu: _handleContextMenu,
+                                    onMenuAction: _handleMenuAction,
+                                    onOpenInNewTab: _openInNewTab,
+                                  ),
+                                ),
+                                PaneDivider(shell: _shell, totalWidth: constraints.maxWidth),
+                                Flexible(
+                                  flex: rightFlex,
+                                  child: PaneView(
+                                    pane: panes[1],
+                                    isActive: activeIdx == 1,
+                                    onActivate: _activatePane(1),
+                                    operationStore: _operationStore,
+                                    notificationStore: _notificationStore,
+                                    shellStore: _shell,
+                                    onBackgroundContextMenu: _handleBackgroundContextMenu,
+                                    onContextMenu: _handleContextMenu,
+                                    onMenuAction: _handleMenuAction,
+                                    onOpenInNewTab: _openInNewTab,
+                                  ),
+                                ),
+                              ],
+                            );
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+                Watch((context) => StatusBar(store: _active, operationStore: _operationStore)),
+                 ],
+               ),
+              ),
+              NotificationOverlay(store: _notificationStore),
+            ],
+          ),
+        ),
+    );
+  }
+}

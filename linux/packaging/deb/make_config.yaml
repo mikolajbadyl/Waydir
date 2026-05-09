@@ -1,0 +1,10 @@
+display_name: Waydir
+package_name: waydir
+description: A fast, keyboard-driven desktop file manager built with Flutter.
+priority: optional
+section: utility
+installed_size: 70000
+maintainer:
+  name: mikolajbadyl
+  email: mikolajbadyl0@gmail.com
+homepage: https://github.com/mikolajbadyl/Waydir

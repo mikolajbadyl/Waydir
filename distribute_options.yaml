@@ -1,0 +1,31 @@
+output: dist/
+releases:
+  - name: prod
+    jobs:
+      # Linux
+      - name: prod-linux-deb
+        package:
+          platform: linux
+          target: deb
+      - name: prod-linux-rpm
+        package:
+          platform: linux
+          target: rpm
+      - name: prod-linux-appimage
+        package:
+          platform: linux
+          target: appimage
+      # Windows
+      - name: prod-windows-exe
+        package:
+          platform: windows
+          target: exe
+      - name: prod-windows-zip
+        package:
+          platform: windows
+          target: zip
+      # macOS
+      - name: prod-macos-dmg
+        package:
+          platform: macos
+          target: dmg
