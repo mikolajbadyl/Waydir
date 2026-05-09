@@ -59,7 +59,7 @@ jobs:
           fastforge package --platform linux --targets deb,rpm
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-artifacts
           path: dist/**/*
@@ -95,7 +95,7 @@ jobs:
           fastforge package --platform windows --targets exe,zip
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-artifacts
           path: dist/**/*
@@ -130,7 +130,7 @@ jobs:
           fastforge package --platform macos --targets dmg
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-artifacts
           path: dist/**/*
