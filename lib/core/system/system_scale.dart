@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:scaled_app/scaled_app.dart';
 import 'package:signals/signals.dart';
 
 import '../settings/settings_store.dart';
@@ -14,19 +15,22 @@ class SystemScale {
   static const _events = EventChannel('waydir/system_scale/events');
 
   final systemScale = signal<double>(1.0);
-  late final Computed<double> effectiveScale = computed(() {
+  late final Computed<double> uiScale = computed(() {
     final override = SettingsStore.instance.uiScale.value;
-    final base = systemScale.value;
-    if (override <= 0) return base;
-    return override;
+    return override > 0 ? _clamp(override) : systemScale.value;
   });
 
   StreamSubscription<dynamic>? _sub;
+  EffectCleanup? _effect;
   bool _started = false;
 
   Future<void> start() async {
     if (_started) return;
     _started = true;
+    _effect = effect(() {
+      final s = uiScale.value;
+      ScaledWidgetsFlutterBinding.instance.scaleFactor = (_) => s;
+    });
     if (!_supported) return;
     try {
       final v = await _channel.invokeMethod<double>('getScale');
@@ -49,5 +53,7 @@ class SystemScale {
   void dispose() {
     _sub?.cancel();
     _sub = null;
+    _effect?.call();
+    _effect = null;
   }
 }
