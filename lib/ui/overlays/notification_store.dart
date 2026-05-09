@@ -43,7 +43,8 @@ class NotificationStore {
 
     while (current.length > _softCap) {
       final dropIndex = current.indexWhere(
-          (e) => e.type == NotificationType.autoDismiss);
+        (e) => e.type == NotificationType.autoDismiss,
+      );
       if (dropIndex < 0) break;
       final dropped = current[dropIndex];
       _timers.remove(dropped.id)?.cancel();
@@ -75,7 +76,9 @@ class NotificationStore {
   void dismiss(String id) {
     _timers[id]?.cancel();
     _timers.remove(id);
-    _notifications.value = _notifications.value.where((n) => n.id != id).toList();
+    _notifications.value = _notifications.value
+        .where((n) => n.id != id)
+        .toList();
   }
 
   void clearHistory() {

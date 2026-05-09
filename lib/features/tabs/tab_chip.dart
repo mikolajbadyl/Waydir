@@ -48,7 +48,9 @@ class _TabChipState extends State<TabChip> {
 
       final border = Border(
         right: BorderSide(
-          color: (_hovered && !isActive) ? Colors.transparent : AppColors.bgDivider,
+          color: (_hovered && !isActive)
+              ? Colors.transparent
+              : AppColors.bgDivider,
           width: 1,
         ),
       );
@@ -67,10 +69,7 @@ class _TabChipState extends State<TabChip> {
             child: Container(
               height: 30,
               constraints: const BoxConstraints(minWidth: 140, maxWidth: 220),
-              decoration: BoxDecoration(
-                color: bg,
-                border: border,
-              ),
+              decoration: BoxDecoration(color: bg, border: border),
               padding: const EdgeInsets.only(left: 10, right: 4),
               child: Row(
                 children: [
@@ -88,8 +87,9 @@ class _TabChipState extends State<TabChip> {
                       softWrap: false,
                       style: context.txt.row.copyWith(
                         color: fg,
-                        fontWeight:
-                            isActive ? FontWeight.w500 : FontWeight.normal,
+                        fontWeight: isActive
+                            ? FontWeight.w500
+                            : FontWeight.normal,
                       ),
                     ),
                   ),

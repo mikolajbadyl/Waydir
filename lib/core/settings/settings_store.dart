@@ -70,38 +70,42 @@ class SettingsStore {
       }
       final activeTabs = session['paneActiveTabs'];
       if (activeTabs is List) {
-        sessionPaneActiveTabs.value =
-            activeTabs.whereType<num>().map((e) => e.toInt()).toList();
+        sessionPaneActiveTabs.value = activeTabs
+            .whereType<num>()
+            .map((e) => e.toInt())
+            .toList();
       }
     }
   }
 
   Map<String, dynamic> _toJson() => {
-        'terminal': terminal.value,
-        'terminalCustomCommand': terminalCustomCommand.value,
-        'uiScale': uiScale.value,
-        'session': {
-          'isDual': sessionIsDual.value,
-          'splitRatio': sessionSplitRatio.value,
-          'activePaneIndex': sessionActivePaneIndex.value,
-          'panes': sessionPanes.value,
-          'paneActiveTabs': sessionPaneActiveTabs.value,
-        },
-      };
+    'terminal': terminal.value,
+    'terminalCustomCommand': terminalCustomCommand.value,
+    'uiScale': uiScale.value,
+    'session': {
+      'isDual': sessionIsDual.value,
+      'splitRatio': sessionSplitRatio.value,
+      'activePaneIndex': sessionActivePaneIndex.value,
+      'panes': sessionPanes.value,
+      'paneActiveTabs': sessionPaneActiveTabs.value,
+    },
+  };
 
   void _wireAutoSave() {
-    _disposers.add(effect(() {
-      terminal.value;
-      terminalCustomCommand.value;
-      uiScale.value;
-      sessionIsDual.value;
-      sessionSplitRatio.value;
-      sessionActivePaneIndex.value;
-      sessionPanes.value;
-      sessionPaneActiveTabs.value;
-      if (!_loaded) return;
-      _scheduleSave();
-    }));
+    _disposers.add(
+      effect(() {
+        terminal.value;
+        terminalCustomCommand.value;
+        uiScale.value;
+        sessionIsDual.value;
+        sessionSplitRatio.value;
+        sessionActivePaneIndex.value;
+        sessionPanes.value;
+        sessionPaneActiveTabs.value;
+        if (!_loaded) return;
+        _scheduleSave();
+      }),
+    );
   }
 
   void _scheduleSave() {

@@ -27,13 +27,13 @@ class ContextMenuItem {
   static const divider = ContextMenuItem._divider();
 
   const ContextMenuItem._divider()
-      : icon = const IconData(0),
-        label = '',
-        action = '__divider__',
-        danger = false,
-        isToggle = false,
-        toggleSignal = null,
-        shortcut = null;
+    : icon = const IconData(0),
+      label = '',
+      action = '__divider__',
+      danger = false,
+      isToggle = false,
+      toggleSignal = null,
+      shortcut = null;
 
   bool get isDivider => action == '__divider__';
 }
@@ -78,10 +78,7 @@ class _ContextMenuBody extends StatelessWidget {
   final List<ContextMenuItem> items;
   final void Function(String action) onSelect;
 
-  const _ContextMenuBody({
-    required this.items,
-    required this.onSelect,
-  });
+  const _ContextMenuBody({required this.items, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
@@ -89,40 +86,43 @@ class _ContextMenuBody extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 180, maxWidth: 360),
       child: IntrinsicWidth(
         child: Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.bgSurface,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: AppColors.borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: items.asMap().entries.map((e) {
-            if (e.value.isDivider) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                child: Divider(
-                    height: 1, thickness: 1, color: AppColors.bgDivider),
-              );
-            }
-            return _ContextMenuItemTile(
-              item: e.value,
-              onTap: () => onSelect(e.value.action),
-            );
-          }).toList(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: items.asMap().entries.map((e) {
+                if (e.value.isDivider) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    child: Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.bgDivider,
+                    ),
+                  );
+                }
+                return _ContextMenuItemTile(
+                  item: e.value,
+                  onTap: () => onSelect(e.value.action),
+                );
+              }).toList(),
+            ),
+          ),
         ),
-      ),
-    ),
       ),
     );
   }
@@ -132,10 +132,7 @@ class _ContextMenuItemTile extends StatefulWidget {
   final ContextMenuItem item;
   final VoidCallback onTap;
 
-  const _ContextMenuItemTile({
-    required this.item,
-    required this.onTap,
-  });
+  const _ContextMenuItemTile({required this.item, required this.onTap});
 
   @override
   State<_ContextMenuItemTile> createState() => _ContextMenuItemTileState();
@@ -172,19 +169,24 @@ class _ContextMenuItemTileState extends State<_ContextMenuItemTile> {
             children: [
               PhosphorIcon(item.icon, size: 14, color: fg),
               const SizedBox(width: 8),
-              Text(item.label,
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                  style: context.txt.body.copyWith(color: fg)),
+              Text(
+                item.label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: context.txt.body.copyWith(color: fg),
+              ),
               const Spacer(),
               if (item.shortcut != null) ...[
                 const SizedBox(width: 16),
-                Text(item.shortcut!,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: context.txt.captionSmall.copyWith(
-                        color: fg.withValues(alpha: 0.5))),
+                Text(
+                  item.shortcut!,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: context.txt.captionSmall.copyWith(
+                    color: fg.withValues(alpha: 0.5),
+                  ),
+                ),
               ],
               if (item.isToggle && item.toggleSignal != null) ...[
                 const SizedBox(width: 8),
@@ -217,8 +219,11 @@ class _Checkbox extends StatelessWidget {
         ),
       ),
       child: value
-          ? PhosphorIcon(PhosphorIconsRegular.check,
-              size: 10, color: Colors.white)
+          ? PhosphorIcon(
+              PhosphorIconsRegular.check,
+              size: 10,
+              color: Colors.white,
+            )
           : null,
     );
   }

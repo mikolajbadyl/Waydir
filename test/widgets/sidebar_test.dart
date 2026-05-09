@@ -18,24 +18,27 @@ void main() {
   }
 
   NavigationStore createStore({String path = '/'}) {
-    final store = NavigationStore(operationStore: OperationStore(), initialPath: path);
+    final store = NavigationStore(
+      operationStore: OperationStore(),
+      initialPath: path,
+    );
     return store;
   }
 
   group('Sidebar', () {
     testWidgets('renders both section headers', (tester) async {
-      await tester.pumpWidget(wrapWithTheme(
-        Sidebar(store: createStore(path: home)),
-      ));
+      await tester.pumpWidget(
+        wrapWithTheme(Sidebar(store: createStore(path: home))),
+      );
 
       expect(find.text('FAVORITES'), findsOneWidget);
       expect(find.text('DEVICES'), findsOneWidget);
     });
 
     testWidgets('renders all navigation items', (tester) async {
-      await tester.pumpWidget(wrapWithTheme(
-        Sidebar(store: createStore(path: home)),
-      ));
+      await tester.pumpWidget(
+        wrapWithTheme(Sidebar(store: createStore(path: home))),
+      );
 
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Desktop'), findsOneWidget);
@@ -48,9 +51,9 @@ void main() {
     });
 
     testWidgets('renders correct icons', (tester) async {
-      await tester.pumpWidget(wrapWithTheme(
-        Sidebar(store: createStore(path: '/tmp')),
-      ));
+      await tester.pumpWidget(
+        wrapWithTheme(Sidebar(store: createStore(path: '/tmp'))),
+      );
 
       expect(find.byIcon(PhosphorIconsRegular.house), findsOneWidget);
       expect(find.byIcon(PhosphorIconsRegular.desktop), findsOneWidget);
@@ -64,27 +67,25 @@ void main() {
 
     testWidgets('calls navigateTo when item tapped', (tester) async {
       final store = createStore(path: home);
-      await tester.pumpWidget(wrapWithTheme(
-        Sidebar(store: store),
-      ));
+      await tester.pumpWidget(wrapWithTheme(Sidebar(store: store)));
 
       await tester.tap(find.text('Root'));
       expect(store.currentPath.value, '/');
     });
 
     testWidgets('highlights current path', (tester) async {
-      await tester.pumpWidget(wrapWithTheme(
-        Sidebar(store: createStore(path: home)),
-      ));
+      await tester.pumpWidget(
+        wrapWithTheme(Sidebar(store: createStore(path: home))),
+      );
 
       final homeText = tester.widgetList<Text>(find.text('Home')).first;
       expect(homeText.style?.fontWeight, FontWeight.w500);
     });
 
     testWidgets('does not highlight non-current path', (tester) async {
-      await tester.pumpWidget(wrapWithTheme(
-        Sidebar(store: createStore(path: home)),
-      ));
+      await tester.pumpWidget(
+        wrapWithTheme(Sidebar(store: createStore(path: home))),
+      );
 
       final desktopText = tester.widgetList<Text>(find.text('Desktop')).first;
       expect(desktopText.style?.fontWeight, isNot(equals(FontWeight.w500)));

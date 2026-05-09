@@ -16,7 +16,10 @@ void main() {
   }
 
   NavigationStore createStore({String path = '/home/user/Documents'}) {
-    final store = NavigationStore(operationStore: OperationStore(), initialPath: path);
+    final store = NavigationStore(
+      operationStore: OperationStore(),
+      initialPath: path,
+    );
     return store;
   }
 
@@ -25,7 +28,10 @@ void main() {
     bool canGoBack = true,
     bool canGoForward = true,
   }) {
-    final store = NavigationStore(operationStore: OperationStore(), initialPath: path);
+    final store = NavigationStore(
+      operationStore: OperationStore(),
+      initialPath: path,
+    );
     if (canGoBack && canGoForward) {
       store.history.value = ['/home', '/home/user', path];
       store.historyIndex.value = 1;
@@ -39,7 +45,11 @@ void main() {
     testWidgets('renders navigation icons', (tester) async {
       final store = createStoreWithHistory();
 
-      await tester.pumpWidget(wrapWithTheme(Toolbar(store: store, notificationStore: createNotificationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          Toolbar(store: store, notificationStore: createNotificationStore()),
+        ),
+      );
 
       expect(find.byIcon(PhosphorIconsRegular.arrowLeft), findsOneWidget);
       expect(find.byIcon(PhosphorIconsRegular.arrowRight), findsOneWidget);
@@ -50,7 +60,11 @@ void main() {
     testWidgets('renders breadcrumb path segments', (tester) async {
       final store = createStore();
 
-      await tester.pumpWidget(wrapWithTheme(Toolbar(store: store, notificationStore: createNotificationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          Toolbar(store: store, notificationStore: createNotificationStore()),
+        ),
+      );
 
       expect(find.text('/'), findsOneWidget);
       expect(find.text('home'), findsOneWidget);
@@ -61,7 +75,11 @@ void main() {
     testWidgets('renders view options button', (tester) async {
       final store = createStore(path: '/home');
 
-      await tester.pumpWidget(wrapWithTheme(Toolbar(store: store, notificationStore: createNotificationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          Toolbar(store: store, notificationStore: createNotificationStore()),
+        ),
+      );
 
       expect(find.byIcon(PhosphorIconsRegular.sliders), findsOneWidget);
     });
@@ -70,7 +88,11 @@ void main() {
       final store = createStore(path: '/home');
       expect(store.showHidden.value, false);
 
-      await tester.pumpWidget(wrapWithTheme(Toolbar(store: store, notificationStore: createNotificationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          Toolbar(store: store, notificationStore: createNotificationStore()),
+        ),
+      );
 
       await tester.tap(find.byIcon(PhosphorIconsRegular.sliders));
       await tester.pumpAndSettle();
@@ -86,7 +108,11 @@ void main() {
     testWidgets('renders breadcrumb separators', (tester) async {
       final store = createStore();
 
-      await tester.pumpWidget(wrapWithTheme(Toolbar(store: store, notificationStore: createNotificationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          Toolbar(store: store, notificationStore: createNotificationStore()),
+        ),
+      );
 
       expect(find.byIcon(PhosphorIconsRegular.caretRight), findsNWidgets(3));
     });

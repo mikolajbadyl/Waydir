@@ -20,14 +20,16 @@ class DirectoryWatcherService {
     try {
       final dir = Directory(path);
       if (!dir.existsSync()) return;
-      _subscription = dir.watch(recursive: false).listen(
-        (_) {
-          if (_watchedPath != path) return;
-          _scheduleNotify();
-        },
-        onError: (_) {},
-        cancelOnError: true,
-      );
+      _subscription = dir
+          .watch(recursive: false)
+          .listen(
+            (_) {
+              if (_watchedPath != path) return;
+              _scheduleNotify();
+            },
+            onError: (_) {},
+            cancelOnError: true,
+          );
     } catch (_) {}
   }
 

@@ -51,7 +51,10 @@ class _PopupOverlayState extends State<PopupOverlay>
     duration: const Duration(milliseconds: 120),
     vsync: this,
   );
-  late final _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+  late final _opacity = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOut,
+  );
 
   @override
   void initState() {
@@ -72,34 +75,36 @@ class _PopupOverlayState extends State<PopupOverlay>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, box) {
-      return Stack(
-        children: [
-          if (widget.autoDismiss)
+    return LayoutBuilder(
+      builder: (context, box) {
+        return Stack(
+          children: [
+            if (widget.autoDismiss)
+              Positioned.fill(
+                child: MouseRegion(
+                  child: GestureDetector(
+                    onTap: _dismiss,
+                    behavior: HitTestBehavior.opaque,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ),
             Positioned.fill(
-              child: MouseRegion(
-                child: GestureDetector(
-                  onTap: _dismiss,
-                  behavior: HitTestBehavior.opaque,
-                  child: const SizedBox.expand(),
+              child: CustomSingleChildLayout(
+                delegate: _ClampedPositionDelegate(widget.position),
+                child: FadeTransition(
+                  opacity: _opacity,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: widget.builder(context),
+                  ),
                 ),
               ),
             ),
-          Positioned.fill(
-            child: CustomSingleChildLayout(
-              delegate: _ClampedPositionDelegate(widget.position),
-              child: FadeTransition(
-                opacity: _opacity,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: widget.builder(context),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -119,8 +124,14 @@ class _ClampedPositionDelegate extends SingleChildLayoutDelegate {
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
-    final maxX = (size.width - childSize.width - _margin).clamp(_margin, double.infinity);
-    final maxY = (size.height - childSize.height - _margin).clamp(_margin, double.infinity);
+    final maxX = (size.width - childSize.width - _margin).clamp(
+      _margin,
+      double.infinity,
+    );
+    final maxY = (size.height - childSize.height - _margin).clamp(
+      _margin,
+      double.infinity,
+    );
     final dx = position.dx.clamp(_margin, maxX).toDouble();
     final dy = position.dy.clamp(_margin, maxY).toDouble();
     return Offset(dx, dy);

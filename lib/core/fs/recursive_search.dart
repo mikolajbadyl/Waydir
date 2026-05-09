@@ -58,7 +58,8 @@ class SearchHandle {
   bool get isDone => _done;
 }
 
-typedef SearchProgressCallback = void Function(int scannedDirs, String? currentDir);
+typedef SearchProgressCallback =
+    void Function(int scannedDirs, String? currentDir);
 
 class RecursiveSearch {
   static SearchHandle start({
@@ -98,19 +99,21 @@ class RecursiveSearch {
     });
 
     Isolate.spawn(
-      _searchEntryPoint,
-      receivePort.sendPort,
-      errorsAreFatal: false,
-    ).then((iso) {
-      isolate = iso;
-      if (handle._done) {
-        iso.kill(priority: Isolate.immediate);
-      }
-    }).catchError((e) {
-      sub.cancel();
-      receivePort.close();
-      onError(e);
-    });
+          _searchEntryPoint,
+          receivePort.sendPort,
+          errorsAreFatal: false,
+        )
+        .then((iso) {
+          isolate = iso;
+          if (handle._done) {
+            iso.kill(priority: Isolate.immediate);
+          }
+        })
+        .catchError((e) {
+          sub.cancel();
+          receivePort.close();
+          onError(e);
+        });
 
     return handle;
   }

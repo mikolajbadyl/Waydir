@@ -10,8 +10,12 @@ Color fileIconColor(String ext) {
     'css' => const Color(0xFF1572B6),
     'json' => const Color(0xFF9CA3AF),
     'md' => const Color(0xFF7CBCFF),
-    'png' || 'jpg' || 'jpeg' || 'gif' || 'svg' || 'webp' =>
-      const Color(0xFFA6E3A1),
+    'png' ||
+    'jpg' ||
+    'jpeg' ||
+    'gif' ||
+    'svg' ||
+    'webp' => const Color(0xFFA6E3A1),
     'zip' || 'tar' || 'gz' || 'rar' || '7z' => const Color(0xFFFAB387),
     'pdf' => const Color(0xFFCF6679),
     'mp3' || 'wav' || 'flac' || 'ogg' => const Color(0xFFCBA6F7),
@@ -30,8 +34,12 @@ IconData fileIcon(String ext) {
     'css' => PhosphorIconsRegular.fileCss,
     'json' => PhosphorIconsRegular.fileCode,
     'md' => PhosphorIconsRegular.fileMd,
-    'png' || 'jpg' || 'jpeg' || 'gif' || 'svg' || 'webp' =>
-      PhosphorIconsRegular.fileImage,
+    'png' ||
+    'jpg' ||
+    'jpeg' ||
+    'gif' ||
+    'svg' ||
+    'webp' => PhosphorIconsRegular.fileImage,
     'zip' || 'tar' || 'gz' || 'rar' || '7z' => PhosphorIconsRegular.fileZip,
     'pdf' => PhosphorIconsRegular.filePdf,
     'mp3' || 'wav' || 'flac' || 'ogg' => PhosphorIconsRegular.fileAudio,

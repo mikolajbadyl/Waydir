@@ -18,10 +18,20 @@ void main() {
     testWidgets('displays item count', (tester) async {
       final store = NavigationStore(operationStore: OperationStore());
       store.files.value = [
-        FileEntry(name: 'a', path: '/a', type: FileItemType.file, size: 0, modified: DateTime(2025)),
+        FileEntry(
+          name: 'a',
+          path: '/a',
+          type: FileItemType.file,
+          size: 0,
+          modified: DateTime(2025),
+        ),
       ];
 
-      await tester.pumpWidget(wrapWithTheme(StatusBar(store: store, operationStore: OperationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          StatusBar(store: store, operationStore: OperationStore()),
+        ),
+      );
       await tester.pump();
 
       expect(find.text('1 items'), findsOneWidget);
@@ -30,14 +40,48 @@ void main() {
     testWidgets('displays folder and file counts', (tester) async {
       final store = NavigationStore(operationStore: OperationStore());
       store.files.value = [
-        FileEntry(name: 'dir', path: '/dir', type: FileItemType.folder, size: 0, modified: DateTime(2025)),
-        FileEntry(name: 'dir2', path: '/dir2', type: FileItemType.folder, size: 0, modified: DateTime(2025)),
-        FileEntry(name: 'a.txt', path: '/a.txt', type: FileItemType.file, size: 0, modified: DateTime(2025)),
-        FileEntry(name: 'b.txt', path: '/b.txt', type: FileItemType.file, size: 0, modified: DateTime(2025)),
-        FileEntry(name: 'c.txt', path: '/c.txt', type: FileItemType.file, size: 0, modified: DateTime(2025)),
+        FileEntry(
+          name: 'dir',
+          path: '/dir',
+          type: FileItemType.folder,
+          size: 0,
+          modified: DateTime(2025),
+        ),
+        FileEntry(
+          name: 'dir2',
+          path: '/dir2',
+          type: FileItemType.folder,
+          size: 0,
+          modified: DateTime(2025),
+        ),
+        FileEntry(
+          name: 'a.txt',
+          path: '/a.txt',
+          type: FileItemType.file,
+          size: 0,
+          modified: DateTime(2025),
+        ),
+        FileEntry(
+          name: 'b.txt',
+          path: '/b.txt',
+          type: FileItemType.file,
+          size: 0,
+          modified: DateTime(2025),
+        ),
+        FileEntry(
+          name: 'c.txt',
+          path: '/c.txt',
+          type: FileItemType.file,
+          size: 0,
+          modified: DateTime(2025),
+        ),
       ];
 
-      await tester.pumpWidget(wrapWithTheme(StatusBar(store: store, operationStore: OperationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          StatusBar(store: store, operationStore: OperationStore()),
+        ),
+      );
       await tester.pump();
 
       expect(find.text('2 folders, 3 files'), findsOneWidget);
@@ -46,7 +90,11 @@ void main() {
     testWidgets('hides selected count when none selected', (tester) async {
       final store = NavigationStore(operationStore: OperationStore());
 
-      await tester.pumpWidget(wrapWithTheme(StatusBar(store: store, operationStore: OperationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          StatusBar(store: store, operationStore: OperationStore()),
+        ),
+      );
       await tester.pump();
 
       expect(find.text('0 selected'), findsNothing);
@@ -56,7 +104,11 @@ void main() {
       final store = NavigationStore(operationStore: OperationStore());
       store.selectedPaths.value = {'/a', '/b', '/c'};
 
-      await tester.pumpWidget(wrapWithTheme(StatusBar(store: store, operationStore: OperationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          StatusBar(store: store, operationStore: OperationStore()),
+        ),
+      );
       await tester.pump();
 
       expect(find.text('3 selected'), findsOneWidget);
@@ -65,7 +117,11 @@ void main() {
     testWidgets('displays app name', (tester) async {
       final store = NavigationStore(operationStore: OperationStore());
 
-      await tester.pumpWidget(wrapWithTheme(StatusBar(store: store, operationStore: OperationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          StatusBar(store: store, operationStore: OperationStore()),
+        ),
+      );
       await tester.pump();
 
       expect(find.text('Waydir'), findsOneWidget);
@@ -74,7 +130,11 @@ void main() {
     testWidgets('handles zero items', (tester) async {
       final store = NavigationStore(operationStore: OperationStore());
 
-      await tester.pumpWidget(wrapWithTheme(StatusBar(store: store, operationStore: OperationStore())));
+      await tester.pumpWidget(
+        wrapWithTheme(
+          StatusBar(store: store, operationStore: OperationStore()),
+        ),
+      );
       await tester.pump();
 
       expect(find.text('0 items'), findsOneWidget);

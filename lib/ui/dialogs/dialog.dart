@@ -7,10 +7,7 @@ class DialogAction {
   final String label;
   final Color color;
 
-  const DialogAction({
-    required this.label,
-    required this.color,
-  });
+  const DialogAction({required this.label, required this.color});
 }
 
 Future<T?> showCustomDialog<T>({
@@ -112,7 +109,11 @@ class _DialogTitle extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
 
-  const _DialogTitle({required this.title, required this.icon, required this.iconColor});
+  const _DialogTitle({
+    required this.title,
+    required this.icon,
+    required this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -120,10 +121,7 @@ class _DialogTitle extends StatelessWidget {
       children: [
         PhosphorIcon(icon, size: 18, color: iconColor),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: context.txt.heading,
-        ),
+        Text(title, style: context.txt.heading),
       ],
     );
   }
@@ -158,10 +156,14 @@ class _DialogButtonState extends State<DialogButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: _hovered ? widget.color.withValues(alpha: 0.15) : Colors.transparent,
+            color: _hovered
+                ? widget.color.withValues(alpha: 0.15)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
             border: Border.all(
-              color: _hovered ? widget.color : widget.color.withValues(alpha: 0.4),
+              color: _hovered
+                  ? widget.color
+                  : widget.color.withValues(alpha: 0.4),
             ),
           ),
           child: Text(

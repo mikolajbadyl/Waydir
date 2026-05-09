@@ -33,8 +33,9 @@ class WaydirPage extends StatefulWidget {
 
 class _WaydirPageState extends State<WaydirPage> {
   final _notificationStore = NotificationStore();
-  late final _operationStore =
-      OperationStore(notificationStore: _notificationStore);
+  late final _operationStore = OperationStore(
+    notificationStore: _notificationStore,
+  );
   late final _shell = ShellStore(
     operationStore: _operationStore,
     notificationStore: _notificationStore,
@@ -48,57 +49,66 @@ class _WaydirPageState extends State<WaydirPage> {
   @override
   void initState() {
     super.initState();
-    _effectDisposers.add(effect(() {
-      final completedId = _operationStore.taskCompleted.value;
-      if (completedId != null) {
-        _operationStore.taskCompleted.value = null;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          final tasks = _operationStore.tasks.value;
-          FileTask? task;
-          for (final t in tasks) {
-            if (t.id == completedId) {
-              task = t;
-              break;
+    _effectDisposers.add(
+      effect(() {
+        final completedId = _operationStore.taskCompleted.value;
+        if (completedId != null) {
+          _operationStore.taskCompleted.value = null;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final tasks = _operationStore.tasks.value;
+            FileTask? task;
+            for (final t in tasks) {
+              if (t.id == completedId) {
+                task = t;
+                break;
+              }
             }
-          }
-          if (task == null) return;
-          for (final store in _shell.allStores) {
-            if (task.destination == store.currentPath.value ||
-                (task.type == TaskType.delete &&
-                    task.sources.any(
-                        (s) => p.dirname(s) == store.currentPath.value))) {
-              store.refresh();
+            if (task == null) return;
+            for (final store in _shell.allStores) {
+              if (task.destination == store.currentPath.value ||
+                  (task.type == TaskType.delete &&
+                      task.sources.any(
+                        (s) => p.dirname(s) == store.currentPath.value,
+                      ))) {
+                store.refresh();
+              }
             }
-          }
-          if (task.errors.isNotEmpty &&
-              (task.status == TaskStatus.completed ||
-                  task.status == TaskStatus.failed)) {
-            final label = TaskLabel.title(task);
-            showToast(
-              context: context,
-              message:
-                  t.toast.taskErrors(label: label, count: task.errors.length),
-              duration: const Duration(seconds: 3),
-            );
-          }
-        });
-      }
-    }));
-    _effectDisposers.add(effect(() {
-      final active = _active.searchActive.value;
-      if (!active) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          if (_isEditableFocused()) return;
-          _focusNode.requestFocus();
-        });
-      }
-    }));
-    _effectDisposers.add(effect(() {
-      _shell.panes.value;
-      _installRenameErrorEffects();
-    }));
+            if (task.errors.isNotEmpty &&
+                (task.status == TaskStatus.completed ||
+                    task.status == TaskStatus.failed)) {
+              final label = TaskLabel.title(task);
+              showToast(
+                context: context,
+                message: t.toast.taskErrors(
+                  label: label,
+                  count: task.errors.length,
+                ),
+                duration: const Duration(seconds: 3),
+              );
+            }
+          });
+        }
+      }),
+    );
+    _effectDisposers.add(
+      effect(() {
+        final active = _active.searchActive.value;
+        if (!active) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            if (_isEditableFocused()) return;
+            _focusNode.requestFocus();
+          });
+        }
+      }),
+    );
+    _effectDisposers.add(
+      effect(() {
+        _shell.panes.value;
+        _installRenameErrorEffects();
+      }),
+    );
     _installRenameErrorEffects();
   }
 
@@ -161,10 +171,7 @@ class _WaydirPageState extends State<WaydirPage> {
       title: t.dialog.confirmDeleteTitle,
       icon: PhosphorIconsRegular.trash,
       iconColor: AppColors.danger,
-      body: Text(
-        message,
-        style: context.txt.body.copyWith(height: 1.4),
-      ),
+      body: Text(message, style: context.txt.body.copyWith(height: 1.4)),
       actions: [
         DialogAction(label: t.dialog.cancel, color: AppColors.fgMuted),
         DialogAction(label: t.dialog.delete, color: AppColors.danger),
@@ -241,8 +248,7 @@ class _WaydirPageState extends State<WaydirPage> {
     final count = entries.length;
     final isSingleFolder =
         count == 1 && entries.first.type == FileItemType.folder;
-    final isRecursive =
-        store.searchActive.value && store.searchRecursive.value;
+    final isRecursive = store.searchActive.value && store.searchRecursive.value;
 
     final items = <ContextMenuItem>[
       ContextMenuItem(
@@ -325,13 +331,18 @@ class _WaydirPageState extends State<WaydirPage> {
         final count = store.selectedPaths.value.length;
         if (count > 0) {
           showToast(
-              context: context, message: t.toast.copiedItems(count: count));
+            context: context,
+            message: t.toast.copiedItems(count: count),
+          );
         }
       case 'cut':
         store.cutSelected();
         final count = store.selectedPaths.value.length;
         if (count > 0) {
-          showToast(context: context, message: t.toast.cutItems(count: count));
+          showToast(
+            context: context,
+            message: t.toast.cutItems(count: count),
+          );
         }
       case 'paste':
         store.paste();
@@ -343,8 +354,7 @@ class _WaydirPageState extends State<WaydirPage> {
         _confirmAndDelete();
       case 'open_in_terminal':
         final entries = store.selectedEntries;
-        if (entries.length == 1 &&
-            entries.first.type == FileItemType.folder) {
+        if (entries.length == 1 && entries.first.type == FileItemType.folder) {
           FileSystemService.openInTerminal(entries.first.path);
         }
       case 'open_location':
@@ -354,8 +364,7 @@ class _WaydirPageState extends State<WaydirPage> {
         }
       case 'open_in_new_tab':
         final entries = store.selectedEntries;
-        if (entries.length == 1 &&
-            entries.first.type == FileItemType.folder) {
+        if (entries.length == 1 && entries.first.type == FileItemType.folder) {
           _shell.activePane.value.tabs.addTab(entries.first.path);
         }
     }
@@ -440,8 +449,8 @@ class _WaydirPageState extends State<WaydirPage> {
         event.logicalKey == LogicalKeyboardKey.tab) {
       final tabsStore = _shell.activePane.value.tabs;
       final idx = tabsStore.activeIndex.value;
-      final prev = (idx - 1 + tabsStore.tabs.value.length) %
-          tabsStore.tabs.value.length;
+      final prev =
+          (idx - 1 + tabsStore.tabs.value.length) % tabsStore.tabs.value.length;
       tabsStore.selectTab(prev);
       return KeyEventResult.handled;
     }
@@ -493,7 +502,9 @@ class _WaydirPageState extends State<WaydirPage> {
       final count = store.selectedPaths.value.length;
       if (count > 0) {
         showToast(
-            context: context, message: t.toast.copiedItems(count: count));
+          context: context,
+          message: t.toast.copiedItems(count: count),
+        );
       }
       return KeyEventResult.handled;
     }
@@ -503,7 +514,10 @@ class _WaydirPageState extends State<WaydirPage> {
       store.cutSelected();
       final count = store.selectedPaths.value.length;
       if (count > 0) {
-        showToast(context: context, message: t.toast.cutItems(count: count));
+        showToast(
+          context: context,
+          message: t.toast.cutItems(count: count),
+        );
       }
       return KeyEventResult.handled;
     }
@@ -648,95 +662,108 @@ class _WaydirPageState extends State<WaydirPage> {
           children: [
             TitleBar(
               child: Column(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 200,
-                      child: Watch((context) => Sidebar(
-                        store: _active,
-                        onOpenInNewTab: _openInNewTab,
-                      )),
-                    ),
-                    Container(width: 1, color: AppColors.bgDivider),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return Watch((_) {
-                            final dual = _shell.isDual.value;
-                            final panes = _shell.panes.value;
-                            final activeIdx = _shell.activePaneIndex.value;
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 200,
+                          child: Watch(
+                            (context) => Sidebar(
+                              store: _active,
+                              onOpenInNewTab: _openInNewTab,
+                            ),
+                          ),
+                        ),
+                        Container(width: 1, color: AppColors.bgDivider),
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Watch((_) {
+                                final dual = _shell.isDual.value;
+                                final panes = _shell.panes.value;
+                                final activeIdx = _shell.activePaneIndex.value;
 
-                            if (!dual) {
-                              return PaneView(
-                                pane: panes[0],
-                                isActive: true,
-                                onActivate: _restoreFocus,
-                                operationStore: _operationStore,
-                                notificationStore: _notificationStore,
-                                shellStore: _shell,
-                                onBackgroundContextMenu: _handleBackgroundContextMenu,
-                                onContextMenu: _handleContextMenu,
-                                onMenuAction: _handleMenuAction,
-                                onOpenInNewTab: _openInNewTab,
-                              );
-                            }
-
-                            final ratio = _shell.splitRatio.value;
-                            final leftFlex = (ratio * 1000).round();
-                            final rightFlex = ((1 - ratio) * 1000).round();
-
-                            return Row(
-                              children: [
-                                Flexible(
-                                  flex: leftFlex,
-                                  child: PaneView(
+                                if (!dual) {
+                                  return PaneView(
                                     pane: panes[0],
-                                    isActive: activeIdx == 0,
-                                    onActivate: _activatePane(0),
+                                    isActive: true,
+                                    onActivate: _restoreFocus,
                                     operationStore: _operationStore,
                                     notificationStore: _notificationStore,
                                     shellStore: _shell,
-                                    onBackgroundContextMenu: _handleBackgroundContextMenu,
+                                    onBackgroundContextMenu:
+                                        _handleBackgroundContextMenu,
                                     onContextMenu: _handleContextMenu,
                                     onMenuAction: _handleMenuAction,
                                     onOpenInNewTab: _openInNewTab,
-                                  ),
-                                ),
-                                PaneDivider(shell: _shell, totalWidth: constraints.maxWidth),
-                                Flexible(
-                                  flex: rightFlex,
-                                  child: PaneView(
-                                    pane: panes[1],
-                                    isActive: activeIdx == 1,
-                                    onActivate: _activatePane(1),
-                                    operationStore: _operationStore,
-                                    notificationStore: _notificationStore,
-                                    shellStore: _shell,
-                                    onBackgroundContextMenu: _handleBackgroundContextMenu,
-                                    onContextMenu: _handleContextMenu,
-                                    onMenuAction: _handleMenuAction,
-                                    onOpenInNewTab: _openInNewTab,
-                                  ),
-                                ),
-                              ],
-                            );
-                          });
-                        },
-                      ),
+                                  );
+                                }
+
+                                final ratio = _shell.splitRatio.value;
+                                final leftFlex = (ratio * 1000).round();
+                                final rightFlex = ((1 - ratio) * 1000).round();
+
+                                return Row(
+                                  children: [
+                                    Flexible(
+                                      flex: leftFlex,
+                                      child: PaneView(
+                                        pane: panes[0],
+                                        isActive: activeIdx == 0,
+                                        onActivate: _activatePane(0),
+                                        operationStore: _operationStore,
+                                        notificationStore: _notificationStore,
+                                        shellStore: _shell,
+                                        onBackgroundContextMenu:
+                                            _handleBackgroundContextMenu,
+                                        onContextMenu: _handleContextMenu,
+                                        onMenuAction: _handleMenuAction,
+                                        onOpenInNewTab: _openInNewTab,
+                                      ),
+                                    ),
+                                    PaneDivider(
+                                      shell: _shell,
+                                      totalWidth: constraints.maxWidth,
+                                    ),
+                                    Flexible(
+                                      flex: rightFlex,
+                                      child: PaneView(
+                                        pane: panes[1],
+                                        isActive: activeIdx == 1,
+                                        onActivate: _activatePane(1),
+                                        operationStore: _operationStore,
+                                        notificationStore: _notificationStore,
+                                        shellStore: _shell,
+                                        onBackgroundContextMenu:
+                                            _handleBackgroundContextMenu,
+                                        onContextMenu: _handleContextMenu,
+                                        onMenuAction: _handleMenuAction,
+                                        onOpenInNewTab: _openInNewTab,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  Watch(
+                    (context) => StatusBar(
+                      store: _active,
+                      operationStore: _operationStore,
+                    ),
+                  ),
+                ],
               ),
-                Watch((context) => StatusBar(store: _active, operationStore: _operationStore)),
-                 ],
-               ),
-              ),
-              NotificationOverlay(store: _notificationStore),
-            ],
-          ),
+            ),
+            NotificationOverlay(store: _notificationStore),
+          ],
         ),
+      ),
     );
   }
 }

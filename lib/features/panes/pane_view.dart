@@ -53,33 +53,37 @@ class PaneView extends StatelessWidget {
           Column(
             children: [
               TabStrip(tabsStore: pane.tabs, isActive: isActive),
-            Watch((_) => Toolbar(
+              Watch(
+                (_) => Toolbar(
                   store: pane.tabs.activeTab.value.store,
                   notificationStore: notificationStore,
                   shellStore: shellStore,
-                )),
-            Watch((_) => pane.tabs.activeTab.value.store.searchActive.value
-                ? AppSearchBar(store: pane.tabs.activeTab.value.store)
-                : const SizedBox.shrink()),
-            Expanded(
-              child: Watch((_) {
-                final idx = pane.tabs.activeIndex.value;
-                final tabs = pane.tabs.tabs.value;
-                return IndexedStack(
-                  index: idx,
-                  children: [
-                    for (final tab in tabs)
-                      _TabContent(
-                        store: tab.store,
-                        onBackgroundContextMenu: onBackgroundContextMenu,
-                        onContextMenu: onContextMenu,
-                        onMenuAction: onMenuAction,
-                        onOpenInNewTab: onOpenInNewTab,
-                      ),
-                  ],
-                );
-              }),
-            ),
+                ),
+              ),
+              Watch(
+                (_) => pane.tabs.activeTab.value.store.searchActive.value
+                    ? AppSearchBar(store: pane.tabs.activeTab.value.store)
+                    : const SizedBox.shrink(),
+              ),
+              Expanded(
+                child: Watch((_) {
+                  final idx = pane.tabs.activeIndex.value;
+                  final tabs = pane.tabs.tabs.value;
+                  return IndexedStack(
+                    index: idx,
+                    children: [
+                      for (final tab in tabs)
+                        _TabContent(
+                          store: tab.store,
+                          onBackgroundContextMenu: onBackgroundContextMenu,
+                          onContextMenu: onContextMenu,
+                          onMenuAction: onMenuAction,
+                          onOpenInNewTab: onOpenInNewTab,
+                        ),
+                    ],
+                  );
+                }),
+              ),
             ],
           ),
           if (!isActive)
@@ -118,7 +122,9 @@ class _TabContent extends StatelessWidget {
             width: 20,
             height: 20,
             child: CircularProgressIndicator(
-                strokeWidth: 2, color: AppColors.fgMuted),
+              strokeWidth: 2,
+              color: AppColors.fgMuted,
+            ),
           ),
         );
       }

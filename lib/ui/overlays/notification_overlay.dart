@@ -29,11 +29,13 @@ class NotificationOverlay extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: visible
-                .map((n) => _NotificationCard(
-                      key: ValueKey(n.id),
-                      notification: n,
-                      onDismiss: () => store.dismiss(n.id),
-                    ))
+                .map(
+                  (n) => _NotificationCard(
+                    key: ValueKey(n.id),
+                    notification: n,
+                    onDismiss: () => store.dismiss(n.id),
+                  ),
+                )
                 .toList(),
           ),
         ),
@@ -132,19 +134,17 @@ class _NotificationCardState extends State<_NotificationCard>
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (n.icon != null)
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: PhosphorIcon(
-                          n.icon!,
-                          size: 16,
-                          color: accent,
-                        ),
+                        child: PhosphorIcon(n.icon!, size: 16, color: accent),
                       ),
                     Expanded(
                       child: Column(
@@ -155,7 +155,9 @@ class _NotificationCardState extends State<_NotificationCard>
                               padding: const EdgeInsets.only(bottom: 2),
                               child: Text(
                                 n.title!,
-                                style: context.txt.bodyEmphasis.copyWith(color: accent),
+                                style: context.txt.bodyEmphasis.copyWith(
+                                  color: accent,
+                                ),
                               ),
                             ),
                           Text(
@@ -204,10 +206,7 @@ class _ActionButton extends StatefulWidget {
   final NotificationAction action;
   final VoidCallback onDismiss;
 
-  const _ActionButton({
-    required this.action,
-    required this.onDismiss,
-  });
+  const _ActionButton({required this.action, required this.onDismiss});
 
   @override
   State<_ActionButton> createState() => _ActionButtonState();
@@ -232,9 +231,7 @@ class _ActionButtonState extends State<_ActionButton> {
           decoration: BoxDecoration(
             color: _hovered ? color.withValues(alpha: 0.2) : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: _hovered ? color : AppColors.borderColor,
-            ),
+            border: Border.all(color: _hovered ? color : AppColors.borderColor),
           ),
           child: Text(
             widget.action.label,

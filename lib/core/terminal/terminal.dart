@@ -184,8 +184,11 @@ class TerminalRegistry {
       id: 'powershell',
       displayName: 'PowerShell',
       executable: 'powershell',
-      argsBuilder: (d) =>
-          ['-NoExit', '-Command', 'Set-Location -LiteralPath "$d"'],
+      argsBuilder: (d) => [
+        '-NoExit',
+        '-Command',
+        'Set-Location -LiteralPath "$d"',
+      ],
     ),
     TerminalSpec(
       id: 'cmd',
@@ -284,8 +287,7 @@ class TerminalService {
     }
   }
 
-  static Future<bool> _launchCustom(
-      String command, String directory) async {
+  static Future<bool> _launchCustom(String command, String directory) async {
     try {
       final expanded = command.replaceAll(r'{dir}', directory);
       final parts = _tokenize(expanded);

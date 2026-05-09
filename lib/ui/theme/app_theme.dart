@@ -48,12 +48,44 @@ class AppTheme {
       dividerColor: AppColors.bgDivider,
       iconTheme: const IconThemeData(color: AppColors.fgMuted, size: 20),
       textTheme: Typography.whiteCupertino.copyWith(
-        bodyLarge: TextStyle(fontSize: 15, height: 1.4, color: AppColors.fg, fontFamily: _systemFont),
-        bodyMedium: TextStyle(fontSize: 14, height: 1.35, color: AppColors.fg, fontFamily: _systemFont),
-        bodySmall: TextStyle(fontSize: 13, height: 1.3, color: AppColors.fgMuted, fontFamily: _systemFont),
-        labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.3, color: AppColors.fg, fontFamily: _systemFont),
-        labelSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 0.8, color: AppColors.fgMuted, fontFamily: _systemFont),
-        titleMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.fg, fontFamily: _systemFont),
+        bodyLarge: TextStyle(
+          fontSize: 15,
+          height: 1.4,
+          color: AppColors.fg,
+          fontFamily: _systemFont,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          height: 1.35,
+          color: AppColors.fg,
+          fontFamily: _systemFont,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 13,
+          height: 1.3,
+          color: AppColors.fgMuted,
+          fontFamily: _systemFont,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+          color: AppColors.fg,
+          fontFamily: _systemFont,
+        ),
+        labelSmall: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.8,
+          color: AppColors.fgMuted,
+          fontFamily: _systemFont,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: AppColors.fg,
+          fontFamily: _systemFont,
+        ),
       ),
       scrollbarTheme: ScrollbarThemeData(
         thumbColor: WidgetStateProperty.all(AppColors.fgSubtle),
@@ -68,7 +100,11 @@ class AppTheme {
           border: Border.all(color: AppColors.borderColor),
           borderRadius: BorderRadius.circular(4),
         ),
-        textStyle: TextStyle(fontSize: 13, color: AppColors.fg, fontFamily: _systemFont),
+        textStyle: TextStyle(
+          fontSize: 13,
+          color: AppColors.fg,
+          fontFamily: _systemFont,
+        ),
         waitDuration: const Duration(milliseconds: 600),
       ),
     );
