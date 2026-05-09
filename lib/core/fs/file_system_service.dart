@@ -911,8 +911,9 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync())
+    if (!Directory(dest).existsSync()) {
       Directory(dest).createSync(recursive: true);
+    }
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;
@@ -959,8 +960,9 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync())
+    if (!Directory(dest).existsSync()) {
       Directory(dest).createSync(recursive: true);
+    }
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;

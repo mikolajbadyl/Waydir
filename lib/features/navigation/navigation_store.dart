@@ -696,8 +696,9 @@ class NavigationStore {
       final parent = s.substring(0, s.lastIndexOf(Platform.pathSeparator));
       if (parent == currentPath.value) return false;
       if (currentPath.value == s) return false;
-      if (currentPath.value.startsWith('$s${Platform.pathSeparator}'))
+      if (currentPath.value.startsWith('$s${Platform.pathSeparator}')) {
         return false;
+      }
       return true;
     }).toList();
 
