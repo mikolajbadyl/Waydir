@@ -95,14 +95,17 @@ class TaskLabel {
   static String title(FileTask task) {
     final count = task.sources.length;
     return switch (task.type) {
-      TaskType.copy when count == 1 =>
-        t.tasks.copyingSingle(name: p.basename(task.sources.first)),
+      TaskType.copy when count == 1 => t.tasks.copyingSingle(
+        name: p.basename(task.sources.first),
+      ),
       TaskType.copy => t.tasks.copyingMultiple(count: count),
-      TaskType.move when count == 1 =>
-        t.tasks.movingSingle(name: p.basename(task.sources.first)),
+      TaskType.move when count == 1 => t.tasks.movingSingle(
+        name: p.basename(task.sources.first),
+      ),
       TaskType.move => t.tasks.movingMultiple(count: count),
-      TaskType.delete when count == 1 =>
-        t.tasks.deletingSingle(name: p.basename(task.sources.first)),
+      TaskType.delete when count == 1 => t.tasks.deletingSingle(
+        name: p.basename(task.sources.first),
+      ),
       TaskType.delete => t.tasks.deletingMultiple(count: count),
     };
   }
@@ -111,12 +114,15 @@ class TaskLabel {
     return switch (task.status) {
       TaskStatus.queued => t.tasks.status.waiting,
       TaskStatus.preparing => t.tasks.status.scanning,
-      TaskStatus.waitingConflicts =>
-        t.tasks.status.conflicts(count: task.conflicts.length),
-      TaskStatus.running =>
-        t.tasks.status.running(current: task.currentFile, processed: task.processedFiles, total: task.totalFiles),
-      TaskStatus.paused =>
-        t.tasks.status.conflicts(count: 1),
+      TaskStatus.waitingConflicts => t.tasks.status.conflicts(
+        count: task.conflicts.length,
+      ),
+      TaskStatus.running => t.tasks.status.running(
+        current: task.currentFile,
+        processed: task.processedFiles,
+        total: task.totalFiles,
+      ),
+      TaskStatus.paused => t.tasks.status.conflicts(count: 1),
       TaskStatus.cancelling => t.tasks.status.cancelling,
       TaskStatus.completed when task.errors.isNotEmpty =>
         t.tasks.status.completedWithErrors(count: task.errors.length),
@@ -131,7 +137,14 @@ class TaskLabel {
     if (tb != null) {
       return '${formatBytes(task.processedBytes)} / ${formatBytes(tb)}';
     }
-    return t.tasks.status.running(current: '', processed: task.processedFiles, total: task.totalFiles).replaceFirst(' ()', '').trim();
+    return t.tasks.status
+        .running(
+          current: '',
+          processed: task.processedFiles,
+          total: task.totalFiles,
+        )
+        .replaceFirst(' ()', '')
+        .trim();
   }
 }
 
@@ -190,11 +203,7 @@ class StartCommand extends CommandMessage {
   final List<String> sources;
   final String? destination;
 
-  StartCommand({
-    required this.type,
-    required this.sources,
-    this.destination,
-  });
+  StartCommand({required this.type, required this.sources, this.destination});
 }
 
 class ExecuteCommand extends CommandMessage {

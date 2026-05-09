@@ -64,64 +64,66 @@ class _AppSearchBarState extends State<AppSearchBar> {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
-                PhosphorIcon(
-                  PhosphorIconsRegular.magnifyingGlass,
-                  size: 16,
-                  color: AppColors.fgMuted,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: KeyboardListener(
-                    focusNode: _wrapperFocusNode,
-                    onKeyEvent: (event) {
-                      if (event is KeyDownEvent &&
-                          event.logicalKey == LogicalKeyboardKey.escape) {
-                        widget.store.closeSearch();
-                      }
-                    },
-                    child: TextField(
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      onChanged: (v) => widget.store.setSearchQuery(v),
-                      onSubmitted: (_) {
-                        widget.store.openSelected();
-                      },
-                      style: context.txt.body,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
-                        ),
-                        border: InputBorder.none,
-                        hintText: t.search.placeholder,
-                        hintStyle: context.txt.body.copyWith(color: AppColors.fgSubtle),
-                      ),
-                      cursorColor: AppColors.accent,
-                      cursorHeight: 14,
-                    ),
+          PhosphorIcon(
+            PhosphorIconsRegular.magnifyingGlass,
+            size: 16,
+            color: AppColors.fgMuted,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: KeyboardListener(
+              focusNode: _wrapperFocusNode,
+              onKeyEvent: (event) {
+                if (event is KeyDownEvent &&
+                    event.logicalKey == LogicalKeyboardKey.escape) {
+                  widget.store.closeSearch();
+                }
+              },
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                onChanged: (v) => widget.store.setSearchQuery(v),
+                onSubmitted: (_) {
+                  widget.store.openSelected();
+                },
+                style: context.txt.body,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 4,
+                  ),
+                  border: InputBorder.none,
+                  hintText: t.search.placeholder,
+                  hintStyle: context.txt.body.copyWith(
+                    color: AppColors.fgSubtle,
                   ),
                 ),
-                Watch((context) {
-                  final searching = widget.store.isSearching.value;
-                  if (!searching) return const SizedBox.shrink();
-                  return const Padding(
-                    padding: EdgeInsets.only(right: 6),
-                    child: SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        color: AppColors.fgMuted,
-                      ),
-                    ),
-                  );
-                }),
-                _RecursiveToggle(store: widget.store),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Watch((context) => _StatusText(store: widget.store)),
+                cursorColor: AppColors.accent,
+                cursorHeight: 14,
+              ),
+            ),
+          ),
+          Watch((context) {
+            final searching = widget.store.isSearching.value;
+            if (!searching) return const SizedBox.shrink();
+            return const Padding(
+              padding: EdgeInsets.only(right: 6),
+              child: SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: AppColors.fgMuted,
                 ),
+              ),
+            );
+          }),
+          _RecursiveToggle(store: widget.store),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Watch((context) => _StatusText(store: widget.store)),
+          ),
           _CloseButton(onTap: widget.store.closeSearch),
         ],
       ),
@@ -159,10 +161,7 @@ class _StatusText extends StatelessWidget {
     if (store.searchTruncated.value) {
       text += ' ${t.search.truncated(limit: 5000)}';
     }
-    return Text(
-      text,
-      style: context.txt.bodyMuted,
-    );
+    return Text(text, style: context.txt.bodyMuted);
   }
 }
 

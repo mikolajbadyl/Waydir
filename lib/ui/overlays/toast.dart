@@ -107,7 +107,9 @@ class _ToastEntryState extends State<_ToastEntry>
                 widget.message,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
-                style: context.txt.body.copyWith(decoration: TextDecoration.none),
+                style: context.txt.body.copyWith(
+                  decoration: TextDecoration.none,
+                ),
               ),
             ),
           ),

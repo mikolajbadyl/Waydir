@@ -31,10 +31,13 @@ void main() {
       expect(fileIconColor('tar'), fileIconColor('zip'));
     });
 
-    test('fileIcon returns PhosphorIconsRegular.file for unknown extension', () {
-      expect(fileIcon('xyz'), PhosphorIconsRegular.file);
-      expect(fileIcon(''), PhosphorIconsRegular.file);
-    });
+    test(
+      'fileIcon returns PhosphorIconsRegular.file for unknown extension',
+      () {
+        expect(fileIcon('xyz'), PhosphorIconsRegular.file);
+        expect(fileIcon(''), PhosphorIconsRegular.file);
+      },
+    );
 
     test('fileIcon returns correct icon for code files', () {
       expect(fileIcon('dart'), PhosphorIconsRegular.fileCode);

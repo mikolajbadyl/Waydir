@@ -31,10 +31,7 @@ class TitleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (Platform.isMacOS) {
-      return PlatformMenuBar(
-        menus: _platformMenus(),
-        child: child,
-      );
+      return PlatformMenuBar(menus: _platformMenus(), child: child);
     }
     return Column(
       children: [
@@ -53,8 +50,10 @@ class TitleBar extends StatelessWidget {
             members: [
               PlatformMenuItem(
                 label: t.preferences.menuLabel,
-                shortcut: const SingleActivator(LogicalKeyboardKey.comma,
-                    meta: true),
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.comma,
+                  meta: true,
+                ),
                 onSelected: _openPreferences,
               ),
             ],
@@ -63,8 +62,10 @@ class TitleBar extends StatelessWidget {
             members: [
               PlatformMenuItem(
                 label: t.keybindings.menuLabel,
-                shortcut: const SingleActivator(LogicalKeyboardKey.slash,
-                    meta: true),
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.slash,
+                  meta: true,
+                ),
                 onSelected: _openKeybindingsHelp,
               ),
             ],
@@ -73,8 +74,10 @@ class TitleBar extends StatelessWidget {
             members: [
               PlatformMenuItem(
                 label: t.appMenu.quit,
-                shortcut: const SingleActivator(LogicalKeyboardKey.keyQ,
-                    meta: true),
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.keyQ,
+                  meta: true,
+                ),
                 onSelected: SystemNavigator.pop,
               ),
             ],
@@ -100,8 +103,11 @@ class _TitleBarRow extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: 10),
-            const PhosphorIcon(PhosphorIconsRegular.folders,
-                size: 14, color: AppColors.fgAccent),
+            const PhosphorIcon(
+              PhosphorIconsRegular.folders,
+              size: 14,
+              color: AppColors.fgAccent,
+            ),
             const SizedBox(width: 8),
             const _MenuBar(),
             Expanded(child: MoveWindow()),
@@ -203,10 +209,7 @@ class _MenuButtonState extends State<_MenuButton> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           color: _hovered ? AppColors.bgHover : Colors.transparent,
           alignment: Alignment.center,
-          child: Text(
-            widget.label,
-            style: context.txt.bodyEmphasis,
-          ),
+          child: Text(widget.label, style: context.txt.bodyEmphasis),
         ),
       ),
     );

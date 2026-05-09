@@ -112,8 +112,11 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
           child: Row(
             children: [
               if (selected?.icon != null) ...[
-                PhosphorIcon(selected!.icon!,
-                    size: 13, color: AppColors.fgMuted),
+                PhosphorIcon(
+                  selected!.icon!,
+                  size: 13,
+                  color: AppColors.fgMuted,
+                ),
                 const SizedBox(width: 8),
               ],
               Expanded(
@@ -124,8 +127,11 @@ class _AppDropdownState<T> extends State<AppDropdown<T>> {
                 ),
               ),
               const SizedBox(width: 8),
-              const PhosphorIcon(PhosphorIconsRegular.caretDown,
-                  size: 12, color: AppColors.fgMuted),
+              const PhosphorIcon(
+                PhosphorIconsRegular.caretDown,
+                size: 12,
+                color: AppColors.fgMuted,
+              ),
             ],
           ),
         ),
@@ -223,8 +229,8 @@ class _MenuTileState<T> extends State<_MenuTile<T>> {
             color: _hovered
                 ? const Color(0xFF333639)
                 : (widget.isSelected
-                    ? AppColors.bgSelectedMuted
-                    : Colors.transparent),
+                      ? AppColors.bgSelectedMuted
+                      : Colors.transparent),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -249,13 +255,18 @@ class _MenuTileState<T> extends State<_MenuTile<T>> {
                 const SizedBox(width: 8),
                 Text(
                   widget.item.trailing!,
-                  style: context.txt.captionSmall.copyWith(color: AppColors.fgSubtle),
+                  style: context.txt.captionSmall.copyWith(
+                    color: AppColors.fgSubtle,
+                  ),
                 ),
               ],
               if (widget.isSelected) ...[
                 const SizedBox(width: 8),
-                const PhosphorIcon(PhosphorIconsRegular.check,
-                    size: 12, color: AppColors.accent),
+                const PhosphorIcon(
+                  PhosphorIconsRegular.check,
+                  size: 12,
+                  color: AppColors.accent,
+                ),
               ],
             ],
           ),

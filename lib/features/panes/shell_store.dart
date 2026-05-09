@@ -40,13 +40,15 @@ class ShellStore {
     }
     final restored = <PaneStore>[];
     for (int i = 0; i < saved.length; i++) {
-      restored.add(PaneStore.fromPaths(
-        operationStore: operationStore,
-        paths: saved[i],
-        activeTabIndex: i < s.sessionPaneActiveTabs.value.length
-            ? s.sessionPaneActiveTabs.value[i]
-            : 0,
-      ));
+      restored.add(
+        PaneStore.fromPaths(
+          operationStore: operationStore,
+          paths: saved[i],
+          activeTabIndex: i < s.sessionPaneActiveTabs.value.length
+              ? s.sessionPaneActiveTabs.value[i]
+              : 0,
+        ),
+      );
     }
     panes.value = restored;
     splitRatio.value = s.sessionSplitRatio.value.clamp(0.2, 0.8);
@@ -66,8 +68,7 @@ class ShellStore {
       final tabActiveIdx = <int>[];
       for (final pane in paneList) {
         final tabs = pane.tabs.tabs.value;
-        tabPaths
-            .add(tabs.map((t) => t.store.currentPath.value).toList());
+        tabPaths.add(tabs.map((t) => t.store.currentPath.value).toList());
         tabActiveIdx.add(pane.tabs.activeIndex.value);
       }
       s.sessionPanes.value = tabPaths;

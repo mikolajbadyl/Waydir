@@ -32,6 +32,7 @@ Each feature has its own folder with views and store.
 
 ## Commands
 
+- `dart format .` - format code
 - `flutter analyze` - static analysis
 - `flutter test` - run tests
 - `dart run slang` - regenerate translations after JSON changes

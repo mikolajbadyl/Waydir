@@ -60,23 +60,24 @@ class _OperationsPanelBody extends StatelessWidget {
                   color: AppColors.fgMuted,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  t.operations.title,
-                  style: context.txt.dialogTitle,
-                ),
+                Text(t.operations.title, style: context.txt.dialogTitle),
                 const Spacer(),
                 Watch((context) {
-                  final hasDone = operationStore.tasks.value.any((t) =>
-                      t.status == TaskStatus.completed ||
-                      t.status == TaskStatus.failed ||
-                      t.status == TaskStatus.cancelled);
+                  final hasDone = operationStore.tasks.value.any(
+                    (t) =>
+                        t.status == TaskStatus.completed ||
+                        t.status == TaskStatus.failed ||
+                        t.status == TaskStatus.cancelled,
+                  );
                   if (!hasDone) return const SizedBox.shrink();
                   return MouseRegion(
                     child: GestureDetector(
                       onTap: () => operationStore.clearCompleted(),
                       child: Text(
                         t.operations.clear,
-                        style: context.txt.row.copyWith(color: AppColors.accent),
+                        style: context.txt.row.copyWith(
+                          color: AppColors.accent,
+                        ),
                       ),
                     ),
                   );
@@ -102,15 +103,18 @@ class _OperationsPanelBody extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 itemCount: ops.length,
                 separatorBuilder: (_, __) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 2,
+                  ),
                   child: Divider(
-                      height: 1, thickness: 1, color: AppColors.bgDivider),
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.bgDivider,
+                  ),
                 ),
-                itemBuilder: (_, i) => _TaskTile(
-                  task: ops[i],
-                  operationStore: operationStore,
-                ),
+                itemBuilder: (_, i) =>
+                    _TaskTile(task: ops[i], operationStore: operationStore),
               ),
             );
           }),
@@ -152,12 +156,14 @@ class _TaskTile extends StatelessWidget {
       TaskStatus.cancelled => PhosphorIconsRegular.prohibit,
     };
 
-    final isActive = task.status == TaskStatus.running ||
+    final isActive =
+        task.status == TaskStatus.running ||
         task.status == TaskStatus.preparing ||
         task.status == TaskStatus.waitingConflicts ||
         task.status == TaskStatus.cancelling;
 
-    final showProgress = task.status == TaskStatus.running ||
+    final showProgress =
+        task.status == TaskStatus.running ||
         task.status == TaskStatus.preparing ||
         task.status == TaskStatus.cancelling;
 
@@ -179,8 +185,10 @@ class _TaskTile extends StatelessWidget {
               ),
               if (showProgress)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(3),
@@ -217,15 +225,13 @@ class _TaskTile extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  TaskLabel.progressText(task),
-                  style: context.txt.muted,
-                ),
+                Text(TaskLabel.progressText(task), style: context.txt.muted),
                 if (task.totalFiles > 0)
                   Text(
                     t.operations.filesCount(
-                        processed: task.processedFiles,
-                        count: task.totalFiles),
+                      processed: task.processedFiles,
+                      count: task.totalFiles,
+                    ),
                     style: context.txt.muted,
                   ),
               ],
@@ -244,10 +250,8 @@ class _TaskTile extends StatelessWidget {
             const SizedBox(height: 3),
             MouseRegion(
               child: GestureDetector(
-                onTap: () => showErrorListDialog(
-                  context: context,
-                  errors: task.errors,
-                ),
+                onTap: () =>
+                    showErrorListDialog(context: context, errors: task.errors),
                 child: Text(
                   t.operations.errorsCount(count: task.errors.length),
                   style: context.txt.row.copyWith(color: AppColors.danger),

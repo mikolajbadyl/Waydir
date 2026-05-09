@@ -41,10 +41,7 @@ class TabsStore {
   void addTab(String path, {bool activate = true}) {
     final tab = TabState(
       id: '${_idCounter++}',
-      store: NavigationStore(
-        operationStore: operationStore,
-        initialPath: path,
-      ),
+      store: NavigationStore(operationStore: operationStore, initialPath: path),
     );
     tabs.value = [...tabs.value, tab];
     if (activate) {
@@ -65,7 +62,9 @@ class TabsStore {
 
     final current = activeIndex.value;
     if (idx == current) {
-      activeIndex.value = (idx < tabs.value.length) ? idx : tabs.value.length - 1;
+      activeIndex.value = (idx < tabs.value.length)
+          ? idx
+          : tabs.value.length - 1;
     } else if (idx < current) {
       activeIndex.value = current - 1;
     }

@@ -54,7 +54,10 @@ final _groups = <_ShortcutGroup>[
       _ShortcutEntry(keys: 'Ctrl+T', label: () => t.keybindings.newTab),
       _ShortcutEntry(keys: 'Ctrl+W', label: () => t.keybindings.closeTab),
       _ShortcutEntry(keys: 'Ctrl+Tab', label: () => t.keybindings.nextTab),
-      _ShortcutEntry(keys: 'Ctrl+Shift+Tab', label: () => t.keybindings.prevTab),
+      _ShortcutEntry(
+        keys: 'Ctrl+Shift+Tab',
+        label: () => t.keybindings.prevTab,
+      ),
       _ShortcutEntry(keys: 'Ctrl+1…9', label: () => t.keybindings.switchTab),
     ],
   ),
@@ -62,7 +65,10 @@ final _groups = <_ShortcutGroup>[
     title: () => t.keybindings.categories.panes,
     icon: PhosphorIconsRegular.columns,
     entries: [
-      _ShortcutEntry(keys: 'F9 / Ctrl+Shift+D', label: () => t.keybindings.toggleDual),
+      _ShortcutEntry(
+        keys: 'F9 / Ctrl+Shift+D',
+        label: () => t.keybindings.toggleDual,
+      ),
       _ShortcutEntry(keys: 'Tab', label: () => t.keybindings.switchPane),
     ],
   ),
@@ -76,8 +82,16 @@ final _groups = <_ShortcutGroup>[
       _ShortcutEntry(keys: 'Delete', label: () => t.keybindings.delete),
       _ShortcutEntry(keys: 'F2', label: () => t.keybindings.rename),
       _ShortcutEntry(keys: 'F7', label: () => t.keybindings.newFolder),
-      _ShortcutEntry(keys: 'F5', label: () => t.keybindings.dualCopy, hint: () => 'dual'),
-      _ShortcutEntry(keys: 'F6', label: () => t.keybindings.dualMove, hint: () => 'dual'),
+      _ShortcutEntry(
+        keys: 'F5',
+        label: () => t.keybindings.dualCopy,
+        hint: () => 'dual',
+      ),
+      _ShortcutEntry(
+        keys: 'F6',
+        label: () => t.keybindings.dualMove,
+        hint: () => 'dual',
+      ),
     ],
   ),
   _ShortcutGroup(
@@ -94,7 +108,10 @@ final _groups = <_ShortcutGroup>[
     icon: PhosphorIconsRegular.magnifyingGlass,
     entries: [
       _ShortcutEntry(keys: 'Ctrl+F', label: () => t.keybindings.search),
-      _ShortcutEntry(keys: 'Ctrl+Shift+F', label: () => t.keybindings.recursiveSearch),
+      _ShortcutEntry(
+        keys: 'Ctrl+Shift+F',
+        label: () => t.keybindings.recursiveSearch,
+      ),
       _ShortcutEntry(keys: 'Esc', label: () => t.keybindings.closeSearch),
     ],
   ),
@@ -196,13 +213,13 @@ class _Header extends StatelessWidget {
       decoration: const BoxDecoration(color: AppColors.bgSidebar),
       child: Row(
         children: [
-          const PhosphorIcon(PhosphorIconsRegular.keyboard,
-              size: 16, color: AppColors.fgAccent),
-          const SizedBox(width: 8),
-          Text(
-            t.keybindings.title,
-            style: context.txt.dialogTitle,
+          const PhosphorIcon(
+            PhosphorIconsRegular.keyboard,
+            size: 16,
+            color: AppColors.fgAccent,
           ),
+          const SizedBox(width: 8),
+          Text(t.keybindings.title, style: context.txt.dialogTitle),
           const Spacer(),
           _CloseButton(onTap: onClose),
         ],
@@ -215,10 +232,7 @@ class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
 
-  const _SearchBar({
-    required this.controller,
-    required this.onChanged,
-  });
+  const _SearchBar({required this.controller, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -235,8 +249,11 @@ class _SearchBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const PhosphorIcon(PhosphorIconsRegular.magnifyingGlass,
-                size: 13, color: AppColors.fgSubtle),
+            const PhosphorIcon(
+              PhosphorIconsRegular.magnifyingGlass,
+              size: 13,
+              color: AppColors.fgSubtle,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
@@ -250,15 +267,19 @@ class _SearchBar extends StatelessWidget {
                   isCollapsed: true,
                   border: InputBorder.none,
                   hintText: t.search.placeholder,
-                  hintStyle: context.txt.row.copyWith(color: AppColors.fgSubtle),
+                  hintStyle: context.txt.row.copyWith(
+                    color: AppColors.fgSubtle,
+                  ),
                 ),
               ),
             ),
             if (controller.text.isNotEmpty)
-              _ClearButton(onTap: () {
-                controller.clear();
-                onChanged('');
-              }),
+              _ClearButton(
+                onTap: () {
+                  controller.clear();
+                  onChanged('');
+                },
+              ),
           ],
         ),
       ),
@@ -320,9 +341,11 @@ class _CloseButtonState extends State<_CloseButton> {
             color: _hovered ? AppColors.bgHover : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
           ),
-          child: PhosphorIcon(PhosphorIconsRegular.x,
-              size: 14,
-              color: _hovered ? AppColors.fg : AppColors.fgMuted),
+          child: PhosphorIcon(
+            PhosphorIconsRegular.x,
+            size: 14,
+            color: _hovered ? AppColors.fg : AppColors.fgMuted,
+          ),
         ),
       ),
     );
@@ -337,13 +360,13 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const PhosphorIcon(PhosphorIconsRegular.magnifyingGlass,
-              size: 28, color: AppColors.fgSubtle),
-          const SizedBox(height: 10),
-          Text(
-            t.search.noMatches,
-            style: context.txt.muted,
+          const PhosphorIcon(
+            PhosphorIconsRegular.magnifyingGlass,
+            size: 28,
+            color: AppColors.fgSubtle,
           ),
+          const SizedBox(height: 10),
+          Text(t.search.noMatches, style: context.txt.muted),
         ],
       ),
     );
@@ -364,10 +387,7 @@ class _ShortcutGrid extends StatelessWidget {
         items.add(_ShortcutRow(entry: entry));
       }
     }
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: items,
-    );
+    return ListView(padding: EdgeInsets.zero, children: items);
   }
 }
 
@@ -384,14 +404,9 @@ class _GroupHeader extends StatelessWidget {
         children: [
           PhosphorIcon(group.icon, size: 12, color: AppColors.fgMuted),
           const SizedBox(width: 7),
-          Text(
-            group.title().toUpperCase(),
-            style: context.txt.sectionLabel,
-          ),
+          Text(group.title().toUpperCase(), style: context.txt.sectionLabel),
           const SizedBox(width: 10),
-          Expanded(
-            child: Container(height: 1, color: AppColors.bgDivider),
-          ),
+          Expanded(child: Container(height: 1, color: AppColors.bgDivider)),
         ],
       ),
     );
@@ -435,7 +450,9 @@ class _ShortcutRowState extends State<_ShortcutRow> {
                     const SizedBox(width: 6),
                     Text(
                       widget.entry.hint!(),
-                      style: context.txt.caption.copyWith(fontStyle: FontStyle.italic),
+                      style: context.txt.caption.copyWith(
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ],
                 ],
@@ -464,10 +481,7 @@ class _KeyBadge extends StatelessWidget {
           if (a > 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                'or',
-                style: context.txt.micro,
-              ),
+              child: Text('or', style: context.txt.micro),
             ),
           ..._renderCombo(context, alternates[a]),
         ],
@@ -480,13 +494,12 @@ class _KeyBadge extends StatelessWidget {
     final widgets = <Widget>[];
     for (int i = 0; i < parts.length; i++) {
       if (i > 0) {
-        widgets.add(Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 3),
-          child: Text(
-            '+',
-            style: context.txt.caption.copyWith(height: 1.2),
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Text('+', style: context.txt.caption.copyWith(height: 1.2)),
           ),
-        ));
+        );
       }
       widgets.add(_KeyCap(text: parts[i]));
     }
@@ -515,11 +528,7 @@ class _KeyCap extends StatelessWidget {
           ),
         ],
       ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: context.txt.keyCap,
-      ),
+      child: Text(text, textAlign: TextAlign.center, style: context.txt.keyCap),
     );
   }
 }

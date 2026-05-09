@@ -82,20 +82,16 @@ class FsWorkerPool {
   Future<List<FileEntry>> listDirectory(String path) =>
       _run<List<FileEntry>>(_Op.list, [path]);
 
-  Future<bool> directoryExists(String path) =>
-      _run<bool>(_Op.exists, [path]);
+  Future<bool> directoryExists(String path) => _run<bool>(_Op.exists, [path]);
 
-  Future<bool> isDirectory(String path) =>
-      _run<bool>(_Op.isDir, [path]);
+  Future<bool> isDirectory(String path) => _run<bool>(_Op.isDir, [path]);
 
-  Future<void> createDirectory(String path) =>
-      _run<void>(_Op.mkdir, [path]);
+  Future<void> createDirectory(String path) => _run<void>(_Op.mkdir, [path]);
 
   Future<void> delete(String path, {bool recursive = false}) =>
       _run<void>(_Op.delete, [path, recursive]);
 
-  Future<FileEntry?> stat(String path) =>
-      _run<FileEntry?>(_Op.stat, [path]);
+  Future<FileEntry?> stat(String path) => _run<FileEntry?>(_Op.stat, [path]);
 
   void dispose() {
     _replyPort?.close();
@@ -160,9 +156,7 @@ class FsWorkerPool {
         if (type == FileSystemEntityType.notFound) return null;
         final entity = type == FileSystemEntityType.directory
             ? Directory(path) as FileSystemEntity
-            : (type == FileSystemEntityType.link
-                ? Link(path)
-                : File(path));
+            : (type == FileSystemEntityType.link ? Link(path) : File(path));
         return FileEntry.fromFileSystemEntity(entity);
     }
   }
@@ -180,7 +174,8 @@ class FsWorkerPool {
       } catch (_) {
         stat = FileStat.statSync(e.path);
       }
-      final isDir = e is Directory ||
+      final isDir =
+          e is Directory ||
           (e is Link && stat.type == FileSystemEntityType.directory);
       return FileEntry(
         name: e.path.split(Platform.pathSeparator).last,

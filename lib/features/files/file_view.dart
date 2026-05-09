@@ -17,12 +17,11 @@ typedef FileSelectCallback = void Function(FileSelectionEvent event);
 typedef FileOpenCallback = void Function(FileEntry entry);
 typedef BackgroundTapCallback = void Function();
 typedef BackgroundContextMenuCallback = void Function(Offset position);
-typedef FileContextMenuCallback = void Function(
-    FileSelectionEvent event, Offset position);
+typedef FileContextMenuCallback =
+    void Function(FileSelectionEvent event, Offset position);
 typedef FileMenuActionCallback = void Function(String action);
-typedef FileDropCallback = void Function(
-    List<String> paths, String destination,
-    {bool move});
+typedef FileDropCallback =
+    void Function(List<String> paths, String destination, {bool move});
 typedef RenameSubmitCallback = void Function(String newName);
 typedef RenameCancelCallback = void Function();
 typedef OpenInNewTabCallback = void Function(String path);
@@ -94,11 +93,11 @@ class _FileListState extends State<FileList> {
     final adjustedY = localPosition.dy + _scrollController.offset;
     final index = (adjustedY / _kItemExtent).floor();
     if (index < 0 || index >= widget.files.length) return -1;
-    
+
     // Treat gap as background
     final relativeY = adjustedY % _kItemExtent;
     if (relativeY >= _kRowHeight) return -1;
-    
+
     return index;
   }
 
@@ -178,8 +177,11 @@ class _FileListState extends State<FileList> {
               final move =
                   DragHintController.instance.mode.value == DragMode.move;
               if (paths.isNotEmpty) {
-                widget.onDropFiles
-                    ?.call(paths, target ?? widget.currentPath, move: move);
+                widget.onDropFiles?.call(
+                  paths,
+                  target ?? widget.currentPath,
+                  move: move,
+                );
               }
               _clearDrag();
             },
@@ -191,8 +193,7 @@ class _FileListState extends State<FileList> {
                     final index = _rowAt(d.localPosition);
                     if (index < 0) {
                       widget.onBackgroundTap?.call();
-                      widget.onBackgroundContextMenu
-                          ?.call(d.globalPosition);
+                      widget.onBackgroundContextMenu?.call(d.globalPosition);
                     }
                   },
                   behavior: HitTestBehavior.translucent,
@@ -206,8 +207,9 @@ class _FileListState extends State<FileList> {
                       child: _ListRow(
                         entry: widget.files[i],
                         index: i,
-                        selected:
-                            widget.selectedPaths.contains(widget.files[i].path),
+                        selected: widget.selectedPaths.contains(
+                          widget.files[i].path,
+                        ),
                         selectedPaths: widget.selectedPaths,
                         isCut: widget.cutPaths.contains(widget.files[i].path),
                         isDraggingSelected: widget.selectedPaths.isNotEmpty,
@@ -223,7 +225,10 @@ class _FileListState extends State<FileList> {
                         onMenuAction: widget.onMenuAction,
                         recursive: widget.recursiveResults,
                         location: widget.recursiveResults
-                            ? _relativeParent(widget.files[i].path, widget.currentPath)
+                            ? _relativeParent(
+                                widget.files[i].path,
+                                widget.currentPath,
+                              )
                             : null,
                         onOpenInNewTab: widget.onOpenInNewTab,
                       ),
@@ -236,8 +241,9 @@ class _FileListState extends State<FileList> {
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(
-                              color: AppColors.accent.withValues(alpha: 0.4),
-                              width: 1),
+                            color: AppColors.accent.withValues(alpha: 0.4),
+                            width: 1,
+                          ),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -396,8 +402,10 @@ class _ListRowState extends State<_ListRow> {
       selectionEnd = name.length;
     }
     _renameController = TextEditingController(text: initialText);
-    _renameController!.selection =
-        TextSelection(baseOffset: 0, extentOffset: selectionEnd);
+    _renameController!.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: selectionEnd,
+    );
     _renameFocusNode = FocusNode();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _renameFocusNode != null) {
@@ -461,10 +469,9 @@ class _ListRowState extends State<_ListRow> {
       return;
     }
     _lastTap = now;
-    widget.onSelect(FileSelectionEvent(
-      entry: widget.entry,
-      index: widget.index,
-    ));
+    widget.onSelect(
+      FileSelectionEvent(entry: widget.entry, index: widget.index),
+    );
   }
 
   void _handleSecondaryTap(TapUpDetails details) {
@@ -476,12 +483,12 @@ class _ListRowState extends State<_ListRow> {
 
   Widget _buildDragImage(BuildContext context, Widget child) {
     final dragCount = widget.selected ? widget.selectedPaths.length : 1;
-    
+
     // We recreate the visual row for the drag image to have a consistent fixed width
     // because the original row might be stretched to a very wide window.
     final e = widget.entry;
     final isFolder = e.type == FileItemType.folder;
-    
+
     final visualRow = Container(
       width: 260,
       height: 36,
@@ -503,14 +510,18 @@ class _ListRowState extends State<_ListRow> {
           PhosphorIcon(
             isFolder ? PhosphorIconsFill.folder : fileIcon(e.extension),
             size: 20,
-            color: isFolder ? AppColors.folderColor : fileIconColor(e.extension),
+            color: isFolder
+                ? AppColors.folderColor
+                : fileIconColor(e.extension),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               dragCount > 1 ? t.fileView.movingItems(count: dragCount) : e.name,
               overflow: TextOverflow.ellipsis,
-              style: context.txt.dialogTitle.copyWith(fontWeight: FontWeight.w500),
+              style: context.txt.dialogTitle.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -524,20 +535,17 @@ class _ListRowState extends State<_ListRow> {
     List<String> pathsToDrag;
 
     if (!widget.selected) {
-      widget.onSelect(FileSelectionEvent(
-        entry: widget.entry,
-        index: widget.index,
-      ));
+      widget.onSelect(
+        FileSelectionEvent(entry: widget.entry, index: widget.index),
+      );
       pathsToDrag = [widget.entry.path];
     } else {
       pathsToDrag = widget.selectedPaths.toList();
     }
 
-    final item = DragItem(
-      localData: {'paths': pathsToDrag},
-    );
+    final item = DragItem(localData: {'paths': pathsToDrag});
     item.add(formatLocalFile(pathsToDrag.join('\n')));
-    
+
     // For external drops (might only take the last one due to format overwrite, but we add anyway)
     for (final path in pathsToDrag) {
       item.add(Formats.fileUri(Uri.file(path)));
@@ -576,18 +584,13 @@ class _ListRowState extends State<_ListRow> {
         child: Container(
           height: _kRowHeight,
           padding: const EdgeInsets.only(left: 12, right: 16),
-          decoration: BoxDecoration(
-            color: _bg,
-            border: _border,
-          ),
+          decoration: BoxDecoration(color: _bg, border: _border),
           child: Opacity(
             opacity: opacity,
             child: Row(
               children: [
                 PhosphorIcon(
-                  isFolder
-                      ? PhosphorIconsFill.folder
-                      : fileIcon(e.extension),
+                  isFolder ? PhosphorIconsFill.folder : fileIcon(e.extension),
                   size: 16,
                   color: isFolder
                       ? AppColors.folderColor
@@ -609,23 +612,31 @@ class _ListRowState extends State<_ListRow> {
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 3),
+                          horizontal: 4,
+                          vertical: 3,
+                        ),
                         filled: true,
                         fillColor: AppColors.bgInput,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(3),
-                          borderSide:
-                              BorderSide(color: AppColors.accent, width: 1),
+                          borderSide: BorderSide(
+                            color: AppColors.accent,
+                            width: 1,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(3),
-                          borderSide:
-                              BorderSide(color: AppColors.bgDivider, width: 1),
+                          borderSide: BorderSide(
+                            color: AppColors.bgDivider,
+                            width: 1,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(3),
-                          borderSide:
-                              BorderSide(color: AppColors.accent, width: 1),
+                          borderSide: BorderSide(
+                            color: AppColors.accent,
+                            width: 1,
+                          ),
                         ),
                       ),
                       onSubmitted: (_) => _commitRename(),
@@ -686,8 +697,9 @@ class _ListRowState extends State<_ListRow> {
           padding: const EdgeInsets.only(left: 12, right: 16),
           decoration: BoxDecoration(
             color: _bg,
-            borderRadius:
-                widget.isFolderDragOver ? BorderRadius.circular(4) : null,
+            borderRadius: widget.isFolderDragOver
+                ? BorderRadius.circular(4)
+                : null,
             border: _border,
           ),
           child: Opacity(
@@ -695,9 +707,7 @@ class _ListRowState extends State<_ListRow> {
             child: Row(
               children: [
                 PhosphorIcon(
-                  isFolder
-                      ? PhosphorIconsFill.folder
-                      : fileIcon(e.extension),
+                  isFolder ? PhosphorIconsFill.folder : fileIcon(e.extension),
                   size: 16,
                   color: isFolder
                       ? AppColors.folderColor
@@ -713,8 +723,9 @@ class _ListRowState extends State<_ListRow> {
                       color: widget.selected
                           ? AppColors.fg
                           : AppColors.fg.withValues(alpha: 0.9),
-                      fontWeight:
-                          widget.selected ? FontWeight.w500 : FontWeight.normal,
+                      fontWeight: widget.selected
+                          ? FontWeight.w500
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -779,12 +790,19 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PhosphorIcon(PhosphorIconsRegular.folderOpen,
-                size: 48, color: AppColors.fgSubtle),
+            PhosphorIcon(
+              PhosphorIconsRegular.folderOpen,
+              size: 48,
+              color: AppColors.fgSubtle,
+            ),
             const SizedBox(height: 12),
             if (isSearching) ...[
-              Text(t.search.noMatches,
-                  style: context.txt.dialogTitle.copyWith(color: AppColors.fgMuted)),
+              Text(
+                t.search.noMatches,
+                style: context.txt.dialogTitle.copyWith(
+                  color: AppColors.fgMuted,
+                ),
+              ),
               const SizedBox(height: 8),
               MouseRegion(
                 cursor: SystemMouseCursors.click,
@@ -800,8 +818,12 @@ class _EmptyState extends StatelessWidget {
                 ),
               ),
             ] else
-              Text(t.fileView.empty,
-                  style: context.txt.dialogTitle.copyWith(color: AppColors.fgMuted)),
+              Text(
+                t.fileView.empty,
+                style: context.txt.dialogTitle.copyWith(
+                  color: AppColors.fgMuted,
+                ),
+              ),
           ],
         ),
       ),
@@ -816,5 +838,3 @@ String _formatDate(DateTime d) {
       '${d.hour.toString().padLeft(2, '0')}:'
       '${d.minute.toString().padLeft(2, '0')}';
 }
-
-
