@@ -45,8 +45,6 @@ void showErrorListDialog({
         ),
       ),
     ),
-    actions: [
-      DialogAction(label: t.dialog.close, color: AppColors.fgMuted),
-    ],
+    actions: [DialogAction(label: t.dialog.close, color: AppColors.fgMuted)],
   );
 }

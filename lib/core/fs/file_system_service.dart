@@ -37,7 +37,10 @@ class RenameError extends RenameResult {
 
 class FileSystemService {
   static RenameResult rename(String oldPath, String newName) {
-    if (newName.isEmpty || newName == '.' || newName == '..' || newName.contains('/')) {
+    if (newName.isEmpty ||
+        newName == '.' ||
+        newName == '..' ||
+        newName.contains('/')) {
       return const RenameInvalidName();
     }
 
@@ -85,13 +88,16 @@ class FileSystemService {
 
   static Future<void> openWithDefaultApp(String path) async {
     if (Platform.isLinux) {
-      await Process.start('xdg-open', [path],
-          mode: ProcessStartMode.detached);
+      await Process.start('xdg-open', [path], mode: ProcessStartMode.detached);
     } else if (Platform.isMacOS) {
       await Process.start('open', [path], mode: ProcessStartMode.detached);
     } else if (Platform.isWindows) {
-      await Process.start('cmd', ['/c', 'start', '', path],
-          mode: ProcessStartMode.detached, runInShell: true);
+      await Process.start(
+        'cmd',
+        ['/c', 'start', '', path],
+        mode: ProcessStartMode.detached,
+        runInShell: true,
+      );
     }
   }
 
@@ -135,11 +141,13 @@ class FileSystemService {
       final now = DateTime.now();
       if (now.difference(lastReport).inMilliseconds > 50 ||
           processedFiles % 100 == 0) {
-        mainSendPort.send(ProgressMessage(
-          processedFiles: processedFiles,
-          processedBytes: processedBytes,
-          currentFile: currentFile,
-        ));
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: processedBytes,
+            currentFile: currentFile,
+          ),
+        );
         lastReport = now;
       }
     }
@@ -157,16 +165,21 @@ class FileSystemService {
       if (type == FileSystemEntityType.directory) {
         allPaths.add(src);
         totalFiles++;
-        _scanDirForCopy(Directory(src), targetPath, visitedDirs,
-            (path, bytes, conflict) {
-          allPaths.add(path);
-          totalFiles++;
-          totalBytes += bytes;
-          if (conflict != null) conflicts.add(conflict);
-        }, (errorPath, errorMsg) {
-          errors.add(TaskError(path: errorPath, message: errorMsg));
-          mainSendPort.send(ErrorMessage(path: errorPath, message: errorMsg));
-        });
+        _scanDirForCopy(
+          Directory(src),
+          targetPath,
+          visitedDirs,
+          (path, bytes, conflict) {
+            allPaths.add(path);
+            totalFiles++;
+            totalBytes += bytes;
+            if (conflict != null) conflicts.add(conflict);
+          },
+          (errorPath, errorMsg) {
+            errors.add(TaskError(path: errorPath, message: errorMsg));
+            mainSendPort.send(ErrorMessage(path: errorPath, message: errorMsg));
+          },
+        );
       } else {
         try {
           final size = File(src).lengthSync();
@@ -177,19 +190,23 @@ class FileSystemService {
               FileSystemEntityType.notFound) {
             final targetStat = FileStat.statSync(targetPath);
             final sourceStat = FileStat.statSync(src);
-            conflicts.add(ConflictInfo(
-              sourcePath: src,
-              targetPath: targetPath,
-              name: name,
-              sourceSize: size,
-              targetSize: targetStat.size,
-              sourceModified: sourceStat.modified,
-              targetModified: targetStat.modified,
-            ));
+            conflicts.add(
+              ConflictInfo(
+                sourcePath: src,
+                targetPath: targetPath,
+                name: name,
+                sourceSize: size,
+                targetSize: targetStat.size,
+                sourceModified: sourceStat.modified,
+                targetModified: targetStat.modified,
+              ),
+            );
           }
         } catch (e) {
           errors.add(TaskError(path: src, message: _friendlyError(e)));
-          mainSendPort.send(ErrorMessage(path: src, message: _friendlyError(e)));
+          mainSendPort.send(
+            ErrorMessage(path: src, message: _friendlyError(e)),
+          );
         }
       }
     }
@@ -207,7 +224,8 @@ class FileSystemService {
     }
 
     Future<bool> processCopyItem(String srcPath) async {
-      var resolution = runtimeApplyAll ??
+      var resolution =
+          runtimeApplyAll ??
           runtimeResolutions[srcPath] ??
           resolutions[srcPath];
       if (resolution == ConflictResolution.skip) {
@@ -225,7 +243,8 @@ class FileSystemService {
           errors.add(TaskError(path: srcPath, message: t.errors.notFound));
           return true;
         } else if (type == FileSystemEntityType.file) {
-          final targetExists = FileSystemEntity.typeSync(dstPath) !=
+          final targetExists =
+              FileSystemEntity.typeSync(dstPath) !=
               FileSystemEntityType.notFound;
           if (resolution != ConflictResolution.overwrite && targetExists) {
             final size = File(srcPath).lengthSync();
@@ -245,8 +264,10 @@ class FileSystemService {
             return false;
           }
 
-          final dstDir = dstPath
-              .substring(0, dstPath.lastIndexOf(Platform.pathSeparator));
+          final dstDir = dstPath.substring(
+            0,
+            dstPath.lastIndexOf(Platform.pathSeparator),
+          );
           if (!Directory(dstDir).existsSync()) {
             Directory(dstDir).createSync(recursive: true);
           }
@@ -296,10 +317,12 @@ class FileSystemService {
 
       while (pendingConflicts.isNotEmpty && !cancelled) {
         final resolvable = pendingConflicts.keys
-            .where((s) =>
-                runtimeApplyAll != null ||
-                runtimeResolutions[s] != null ||
-                resolutions[s] != null)
+            .where(
+              (s) =>
+                  runtimeApplyAll != null ||
+                  runtimeResolutions[s] != null ||
+                  resolutions[s] != null,
+            )
             .toList();
         if (resolvable.isEmpty) {
           decisionWaker = Completer<void>();
@@ -332,19 +355,26 @@ class FileSystemService {
             sourceRoots.add(src);
             scanEntity(src, destination!);
           }
-          mainSendPort.send(PreScanResultMessage(
-            totalFiles: totalFiles,
-            totalBytes: totalBytes,
-            allPaths: allPaths,
-            conflicts: conflicts,
-          ));
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: totalBytes,
+              allPaths: allPaths,
+              conflicts: conflicts,
+            ),
+          );
         } else if (msg is ExecuteCommand) {
           resolutions = msg.resolutions;
           executeCopy().catchError((e, st) {
-            mainSendPort.send(TaskDoneMessage(
-              cancelled: cancelled,
-              errors: [...errors, TaskError(path: '', message: e.toString())],
-            ));
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
             workerReceivePort.close();
           });
         } else if (msg is ConflictDecisionCommand) {
@@ -356,10 +386,15 @@ class FileSystemService {
           wakeDecisions();
         }
       } catch (e) {
-        mainSendPort.send(TaskDoneMessage(
-          cancelled: cancelled,
-          errors: [...errors, TaskError(path: '', message: e.toString())],
-        ));
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
         workerReceivePort.close();
       }
     });
@@ -403,11 +438,13 @@ class FileSystemService {
       final now = DateTime.now();
       if (now.difference(lastReport).inMilliseconds > 50 ||
           processedFiles % 100 == 0) {
-        mainSendPort.send(ProgressMessage(
-          processedFiles: processedFiles,
-          processedBytes: 0,
-          currentFile: currentFile,
-        ));
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
         lastReport = now;
       }
     }
@@ -425,14 +462,20 @@ class FileSystemService {
       if (type == FileSystemEntityType.directory) {
         allPaths.add(src);
         totalFiles++;
-        _scanDirForMove(Directory(src), targetPath, visitedDirs, (path, conflict) {
-          allPaths.add(path);
-          totalFiles++;
-          if (conflict != null) conflicts.add(conflict);
-        }, (errorPath, errorMsg) {
-          errors.add(TaskError(path: errorPath, message: errorMsg));
-          mainSendPort.send(ErrorMessage(path: errorPath, message: errorMsg));
-        });
+        _scanDirForMove(
+          Directory(src),
+          targetPath,
+          visitedDirs,
+          (path, conflict) {
+            allPaths.add(path);
+            totalFiles++;
+            if (conflict != null) conflicts.add(conflict);
+          },
+          (errorPath, errorMsg) {
+            errors.add(TaskError(path: errorPath, message: errorMsg));
+            mainSendPort.send(ErrorMessage(path: errorPath, message: errorMsg));
+          },
+        );
       } else {
         try {
           allPaths.add(src);
@@ -441,19 +484,23 @@ class FileSystemService {
               FileSystemEntityType.notFound) {
             final targetStat = FileStat.statSync(targetPath);
             final sourceStat = FileStat.statSync(src);
-            conflicts.add(ConflictInfo(
-              sourcePath: src,
-              targetPath: targetPath,
-              name: name,
-              sourceSize: sourceStat.size,
-              targetSize: targetStat.size,
-              sourceModified: sourceStat.modified,
-              targetModified: targetStat.modified,
-            ));
+            conflicts.add(
+              ConflictInfo(
+                sourcePath: src,
+                targetPath: targetPath,
+                name: name,
+                sourceSize: sourceStat.size,
+                targetSize: targetStat.size,
+                sourceModified: sourceStat.modified,
+                targetModified: targetStat.modified,
+              ),
+            );
           }
         } catch (e) {
           errors.add(TaskError(path: src, message: _friendlyError(e)));
-          mainSendPort.send(ErrorMessage(path: src, message: _friendlyError(e)));
+          mainSendPort.send(
+            ErrorMessage(path: src, message: _friendlyError(e)),
+          );
         }
       }
     }
@@ -485,7 +532,8 @@ class FileSystemService {
     }
 
     Future<bool> processMoveItem(String srcPath) async {
-      var resolution = runtimeApplyAll ??
+      var resolution =
+          runtimeApplyAll ??
           runtimeResolutions[srcPath] ??
           resolutions[srcPath];
       if (resolution == ConflictResolution.skip) {
@@ -521,21 +569,20 @@ class FileSystemService {
         }
       }
 
-      final canFastPath = sourceRoots.length == 1 &&
-          allPaths.length > 1 &&
-          conflicts.isEmpty;
+      final canFastPath =
+          sourceRoots.length == 1 && allPaths.length > 1 && conflicts.isEmpty;
 
       if (canFastPath) {
         final src = sourceRoots.first;
         final name = src.split(Platform.pathSeparator).last;
         var dstPath = '$destination${Platform.pathSeparator}$name';
-        var resolution = runtimeApplyAll ??
-            runtimeResolutions[src] ??
-            resolutions[src];
+        var resolution =
+            runtimeApplyAll ?? runtimeResolutions[src] ?? resolutions[src];
 
         if (resolution == ConflictResolution.skip) {
-          mainSendPort
-              .send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+          mainSendPort.send(
+            TaskDoneMessage(cancelled: cancelled, errors: errors),
+          );
           workerReceivePort.close();
           return;
         }
@@ -558,7 +605,8 @@ class FileSystemService {
               }
               if (cancelled) {
                 mainSendPort.send(
-                    TaskDoneMessage(cancelled: cancelled, errors: errors));
+                  TaskDoneMessage(cancelled: cancelled, errors: errors),
+                );
                 workerReceivePort.close();
                 return;
               }
@@ -566,7 +614,8 @@ class FileSystemService {
               pendingConflicts.remove(src);
               if (resolution == ConflictResolution.skip) {
                 mainSendPort.send(
-                    TaskDoneMessage(cancelled: cancelled, errors: errors));
+                  TaskDoneMessage(cancelled: cancelled, errors: errors),
+                );
                 workerReceivePort.close();
                 return;
               }
@@ -607,10 +656,12 @@ class FileSystemService {
 
         while (pendingConflicts.isNotEmpty && !cancelled) {
           final resolvable = pendingConflicts.keys
-              .where((s) =>
-                  runtimeApplyAll != null ||
-                  runtimeResolutions[s] != null ||
-                  resolutions[s] != null)
+              .where(
+                (s) =>
+                    runtimeApplyAll != null ||
+                    runtimeResolutions[s] != null ||
+                    resolutions[s] != null,
+              )
               .toList();
           if (resolvable.isEmpty) {
             decisionWaker = Completer<void>();
@@ -644,19 +695,26 @@ class FileSystemService {
             sourceRoots.add(src);
             scanEntity(src, destination!);
           }
-          mainSendPort.send(PreScanResultMessage(
-            totalFiles: totalFiles,
-            totalBytes: null,
-            allPaths: allPaths,
-            conflicts: conflicts,
-          ));
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: allPaths,
+              conflicts: conflicts,
+            ),
+          );
         } else if (msg is ExecuteCommand) {
           resolutions = msg.resolutions;
           executeMove().catchError((e, st) {
-            mainSendPort.send(TaskDoneMessage(
-              cancelled: cancelled,
-              errors: [...errors, TaskError(path: '', message: e.toString())],
-            ));
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
             workerReceivePort.close();
           });
         } else if (msg is ConflictDecisionCommand) {
@@ -668,10 +726,15 @@ class FileSystemService {
           wakeDecisions();
         }
       } catch (e) {
-        mainSendPort.send(TaskDoneMessage(
-          cancelled: cancelled,
-          errors: [...errors, TaskError(path: '', message: e.toString())],
-        ));
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
         workerReceivePort.close();
       }
     });
@@ -693,11 +756,13 @@ class FileSystemService {
       final now = DateTime.now();
       if (now.difference(lastReport).inMilliseconds > 50 ||
           processedFiles % 100 == 0) {
-        mainSendPort.send(ProgressMessage(
-          processedFiles: processedFiles,
-          processedBytes: 0,
-          currentFile: currentFile,
-        ));
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
         lastReport = now;
       }
     }
@@ -708,9 +773,13 @@ class FileSystemService {
         final resolved = _resolveCanonical(dirPath);
         if (!visited.add(resolved)) return;
         try {
-          for (final entity in Directory(dirPath).listSync(followLinks: false)) {
-            final entType = FileSystemEntity.typeSync(entity.path,
-                followLinks: false);
+          for (final entity in Directory(
+            dirPath,
+          ).listSync(followLinks: false)) {
+            final entType = FileSystemEntity.typeSync(
+              entity.path,
+              followLinks: false,
+            );
             if (entType == FileSystemEntityType.directory) {
               walk(entity.path);
             }
@@ -719,8 +788,9 @@ class FileSystemService {
           }
         } catch (e) {
           errors.add(TaskError(path: dirPath, message: _friendlyError(e)));
-          mainSendPort
-              .send(ErrorMessage(path: dirPath, message: _friendlyError(e)));
+          mainSendPort.send(
+            ErrorMessage(path: dirPath, message: _friendlyError(e)),
+          );
         }
       }
 
@@ -728,7 +798,9 @@ class FileSystemService {
         final type = FileSystemEntity.typeSync(src, followLinks: false);
         if (type == FileSystemEntityType.notFound) {
           errors.add(TaskError(path: src, message: t.errors.notFound));
-          mainSendPort.send(ErrorMessage(path: src, message: t.errors.notFound));
+          mainSendPort.send(
+            ErrorMessage(path: src, message: t.errors.notFound),
+          );
         } else if (type == FileSystemEntityType.directory) {
           walk(src);
           allPaths.add(src);
@@ -775,28 +847,40 @@ class FileSystemService {
       try {
         if (msg is StartCommand) {
           scanForDelete(msg.sources);
-          mainSendPort.send(PreScanResultMessage(
-            totalFiles: totalFiles,
-            totalBytes: null,
-            allPaths: allPaths,
-            conflicts: [],
-          ));
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: allPaths,
+              conflicts: [],
+            ),
+          );
         } else if (msg is ExecuteCommand) {
           executeDelete().catchError((e, st) {
-            mainSendPort.send(TaskDoneMessage(
-              cancelled: cancelled,
-              errors: [...errors, TaskError(path: '', message: e.toString())],
-            ));
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
             workerReceivePort.close();
           });
         } else if (msg is CancelCommand) {
           cancelled = true;
         }
       } catch (e) {
-        mainSendPort.send(TaskDoneMessage(
-          cancelled: cancelled,
-          errors: [...errors, TaskError(path: '', message: e.toString())],
-        ));
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
         workerReceivePort.close();
       }
     });
@@ -827,7 +911,8 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync()) Directory(dest).createSync(recursive: true);
+    if (!Directory(dest).existsSync())
+      Directory(dest).createSync(recursive: true);
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;
@@ -874,7 +959,8 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync()) Directory(dest).createSync(recursive: true);
+    if (!Directory(dest).existsSync())
+      Directory(dest).createSync(recursive: true);
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;
@@ -947,8 +1033,12 @@ class FileSystemService {
       try {
         Directory(src).renameSync(dst);
       } on FileSystemException {
-        await _copyDirectory(Directory(src), Directory(dst), isCancelled,
-            onProgress);
+        await _copyDirectory(
+          Directory(src),
+          Directory(dst),
+          isCancelled,
+          onProgress,
+        );
         if (isCancelled()) return;
         Directory(src).deleteSync(recursive: true);
       }
@@ -982,8 +1072,12 @@ class FileSystemService {
           Link(newPath).createSync(entity.targetSync());
         } catch (_) {}
       } else if (entity is Directory) {
-        await _copyDirectory(entity, Directory(newPath), isCancelled,
-            onProgress);
+        await _copyDirectory(
+          entity,
+          Directory(newPath),
+          isCancelled,
+          onProgress,
+        );
       } else if (entity is File) {
         _copyFileSync(entity, newPath);
         onProgress?.call(name);
@@ -1004,10 +1098,8 @@ class FileSystemService {
 
   static String _uniqueName(String path) {
     if (!File(path).existsSync() && !Directory(path).existsSync()) return path;
-    final dir =
-        path.substring(0, path.lastIndexOf(Platform.pathSeparator));
-    final name =
-        path.substring(path.lastIndexOf(Platform.pathSeparator) + 1);
+    final dir = path.substring(0, path.lastIndexOf(Platform.pathSeparator));
+    final name = path.substring(path.lastIndexOf(Platform.pathSeparator) + 1);
     final dotIndex = name.lastIndexOf('.');
     for (int counter = 1; counter <= 10000; counter++) {
       final newName = dotIndex > 0

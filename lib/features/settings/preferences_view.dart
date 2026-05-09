@@ -34,31 +34,56 @@ class _CategoryMeta {
   final String Function() label;
   final bool comingSoon;
 
-  const _CategoryMeta(this.id, this.icon, this.label,
-      {this.comingSoon = false});
+  const _CategoryMeta(
+    this.id,
+    this.icon,
+    this.label, {
+    this.comingSoon = false,
+  });
 }
 
 final _categories = <_CategoryMeta>[
-  _CategoryMeta(_Category.general, PhosphorIconsRegular.slidersHorizontal,
-      () => t.preferences.categories.general,
-      comingSoon: true),
-  _CategoryMeta(_Category.appearance, PhosphorIconsRegular.palette,
-      () => t.preferences.categories.appearance,
-      comingSoon: true),
   _CategoryMeta(
-      _Category.terminal, PhosphorIconsRegular.terminal, () => t.preferences.categories.terminal),
-  _CategoryMeta(_Category.shortcuts, PhosphorIconsRegular.keyboard,
-      () => t.preferences.categories.shortcuts,
-      comingSoon: true),
-  _CategoryMeta(_Category.fileAssociations, PhosphorIconsRegular.fileArrowUp,
-      () => t.preferences.categories.fileAssociations,
-      comingSoon: true),
-  _CategoryMeta(_Category.bookmarks, PhosphorIconsRegular.bookmarkSimple,
-      () => t.preferences.categories.bookmarks,
-      comingSoon: true),
-  _CategoryMeta(_Category.about, PhosphorIconsRegular.info,
-      () => t.preferences.categories.about,
-      comingSoon: true),
+    _Category.general,
+    PhosphorIconsRegular.slidersHorizontal,
+    () => t.preferences.categories.general,
+    comingSoon: true,
+  ),
+  _CategoryMeta(
+    _Category.appearance,
+    PhosphorIconsRegular.palette,
+    () => t.preferences.categories.appearance,
+    comingSoon: true,
+  ),
+  _CategoryMeta(
+    _Category.terminal,
+    PhosphorIconsRegular.terminal,
+    () => t.preferences.categories.terminal,
+  ),
+  _CategoryMeta(
+    _Category.shortcuts,
+    PhosphorIconsRegular.keyboard,
+    () => t.preferences.categories.shortcuts,
+    comingSoon: true,
+  ),
+  _CategoryMeta(
+    _Category.fileAssociations,
+    PhosphorIconsRegular.fileArrowUp,
+    () => t.preferences.categories.fileAssociations,
+    comingSoon: true,
+  ),
+  _CategoryMeta(
+    _Category.bookmarks,
+    PhosphorIconsRegular.bookmarkSimple,
+    () => t.preferences.categories.bookmarks,
+    comingSoon: true,
+  ),
+  _CategoryMeta(
+    _Category.about,
+    PhosphorIconsRegular.info,
+    () => t.preferences.categories.about,
+    comingSoon: true,
+  ),
 ];
 
 class _PreferencesDialog extends StatefulWidget {
@@ -106,9 +131,7 @@ class _PreferencesDialogState extends State<_PreferencesDialog> {
                         onSelect: (c) => setState(() => _selected = c),
                       ),
                       Container(width: 1, color: AppColors.bgDivider),
-                      Expanded(
-                        child: _ContentPane(category: _selected),
-                      ),
+                      Expanded(child: _ContentPane(category: _selected)),
                     ],
                   ),
                 ),
@@ -133,13 +156,13 @@ class _Header extends StatelessWidget {
       decoration: const BoxDecoration(color: AppColors.bgSidebar),
       child: Row(
         children: [
-          PhosphorIcon(PhosphorIconsRegular.gearSix,
-              size: 16, color: AppColors.fgAccent),
-          const SizedBox(width: 8),
-          Text(
-            t.preferences.title,
-            style: context.txt.dialogTitle,
+          PhosphorIcon(
+            PhosphorIconsRegular.gearSix,
+            size: 16,
+            color: AppColors.fgAccent,
           ),
+          const SizedBox(width: 8),
+          Text(t.preferences.title, style: context.txt.dialogTitle),
           const Spacer(),
           _CloseButton(onTap: onClose),
         ],
@@ -175,9 +198,11 @@ class _CloseButtonState extends State<_CloseButton> {
             color: _hovered ? AppColors.bgHover : Colors.transparent,
             borderRadius: BorderRadius.circular(4),
           ),
-          child: PhosphorIcon(PhosphorIconsRegular.x,
-              size: 14,
-              color: _hovered ? AppColors.fg : AppColors.fgMuted),
+          child: PhosphorIcon(
+            PhosphorIconsRegular.x,
+            size: 14,
+            color: _hovered ? AppColors.fg : AppColors.fgMuted,
+          ),
         ),
       ),
     );
@@ -249,7 +274,8 @@ class _CategoryItemState extends State<_CategoryItem> {
             borderRadius: BorderRadius.circular(4),
             border: widget.selected
                 ? const Border(
-                    left: BorderSide(color: AppColors.accent, width: 2))
+                    left: BorderSide(color: AppColors.accent, width: 2),
+                  )
                 : null,
           ),
           child: Row(
@@ -270,14 +296,21 @@ class _CategoryItemState extends State<_CategoryItem> {
               ),
               if (widget.meta.comingSoon)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.bgInput,
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(
                     'soon',
-                    style: context.txt.caption.copyWith(color: AppColors.fgSubtle, fontWeight: FontWeight.w500, letterSpacing: 0.4),
+                    style: context.txt.caption.copyWith(
+                      color: AppColors.fgSubtle,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.4,
+                    ),
                   ),
                 ),
             ],
@@ -319,7 +352,10 @@ class _ComingSoonPane extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             meta.label(),
-            style: context.txt.dialogTitle.copyWith(color: AppColors.fgMuted, fontWeight: FontWeight.w500),
+            style: context.txt.dialogTitle.copyWith(
+              color: AppColors.fgMuted,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -348,7 +384,8 @@ class _TerminalPaneState extends State<_TerminalPane> {
     super.initState();
     _detected = TerminalService.detectAvailable();
     _customController = TextEditingController(
-        text: SettingsStore.instance.terminalCustomCommand.value);
+      text: SettingsStore.instance.terminalCustomCommand.value,
+    );
     _customController.addListener(() {
       SettingsStore.instance.terminalCustomCommand.value =
           _customController.text;
@@ -368,20 +405,11 @@ class _TerminalPaneState extends State<_TerminalPane> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            t.preferences.terminal.title,
-            style: context.txt.pageTitle,
-          ),
+          Text(t.preferences.terminal.title, style: context.txt.pageTitle),
           const SizedBox(height: 4),
-          Text(
-            t.preferences.terminal.subtitle,
-            style: context.txt.muted,
-          ),
+          Text(t.preferences.terminal.subtitle, style: context.txt.muted),
           const SizedBox(height: 20),
-          Text(
-            t.preferences.terminal.label,
-            style: context.txt.fieldLabel,
-          ),
+          Text(t.preferences.terminal.label, style: context.txt.fieldLabel),
           const SizedBox(height: 8),
           FutureBuilder<List<TerminalSpec>>(
             future: _detected,
@@ -392,8 +420,7 @@ class _TerminalPaneState extends State<_TerminalPane> {
                 return _TerminalDropdown(
                   current: current,
                   detected: detected,
-                  onChanged: (id) =>
-                      SettingsStore.instance.terminal.value = id,
+                  onChanged: (id) => SettingsStore.instance.terminal.value = id,
                 );
               });
             },
@@ -467,18 +494,17 @@ class _CustomCommandField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          t.preferences.terminal.customLabel,
-          style: context.txt.fieldLabel,
-        ),
+        Text(t.preferences.terminal.customLabel, style: context.txt.fieldLabel),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           style: context.txt.body,
           decoration: InputDecoration(
             isDense: true,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 8,
+            ),
             hintText: t.preferences.terminal.customHint,
             hintStyle: context.txt.body.copyWith(color: AppColors.fgSubtle),
             filled: true,

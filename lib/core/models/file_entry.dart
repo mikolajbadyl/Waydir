@@ -6,10 +6,7 @@ class FileSelectionEvent {
   final FileEntry entry;
   final int index;
 
-  const FileSelectionEvent({
-    required this.entry,
-    required this.index,
-  });
+  const FileSelectionEvent({required this.entry, required this.index});
 }
 
 class FileEntry {

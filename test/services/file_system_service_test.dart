@@ -8,7 +8,9 @@ void main() {
     late Directory tmpDir;
 
     setUp(() {
-      tmpDir = Directory('${Directory.systemTemp.path}/fm_test_${DateTime.now().millisecondsSinceEpoch}');
+      tmpDir = Directory(
+        '${Directory.systemTemp.path}/fm_test_${DateTime.now().millisecondsSinceEpoch}',
+      );
       tmpDir.createSync(recursive: true);
     });
 
@@ -31,8 +33,18 @@ void main() {
         final entries = await FileSystemService.listDirectory(tmpDir.path);
 
         expect(entries.length, 2);
-        expect(entries.any((e) => e.name == 'file.txt' && e.type == FileItemType.file), isTrue);
-        expect(entries.any((e) => e.name == 'subdir' && e.type == FileItemType.folder), isTrue);
+        expect(
+          entries.any(
+            (e) => e.name == 'file.txt' && e.type == FileItemType.file,
+          ),
+          isTrue,
+        );
+        expect(
+          entries.any(
+            (e) => e.name == 'subdir' && e.type == FileItemType.folder,
+          ),
+          isTrue,
+        );
       });
 
       test('folders come first in sort order', () async {
@@ -92,7 +104,10 @@ void main() {
       });
 
       test('returns false for non-existent directory', () async {
-        expect(await FileSystemService.directoryExists('/tmp/nope_xyz_123'), isFalse);
+        expect(
+          await FileSystemService.directoryExists('/tmp/nope_xyz_123'),
+          isFalse,
+        );
       });
 
       test('returns false for a file path', () async {

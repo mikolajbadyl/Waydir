@@ -40,13 +40,17 @@ class StatusBar extends StatelessWidget {
               children: [
                 _statusText(context, t.statusBar.items(count: total)),
                 _sep(context),
-                _statusText(context,
-                    '${t.statusBar.folders(count: folders)}, ${t.statusBar.files(count: files)}'),
+                _statusText(
+                  context,
+                  '${t.statusBar.folders(count: folders)}, ${t.statusBar.files(count: files)}',
+                ),
                 if (selected > 0) ...[
                   _sep(context),
                   Text(
                     t.statusBar.selected(count: selected),
-                    style: context.txt.rowEmphasis.copyWith(color: AppColors.fgAccent),
+                    style: context.txt.rowEmphasis.copyWith(
+                      color: AppColors.fgAccent,
+                    ),
                   ),
                 ],
               ],
@@ -55,13 +59,18 @@ class StatusBar extends StatelessWidget {
           const Spacer(),
           Watch((context) {
             final tasks = operationStore.tasks.value;
-            final active = tasks.where((t) =>
-                t.status == TaskStatus.running ||
-                t.status == TaskStatus.preparing ||
-                t.status == TaskStatus.cancelling);
+            final active = tasks.where(
+              (t) =>
+                  t.status == TaskStatus.running ||
+                  t.status == TaskStatus.preparing ||
+                  t.status == TaskStatus.cancelling,
+            );
 
             if (active.isEmpty) {
-              return _statusText(context, '${AppInfo.name} ${AppInfo.versionLabel}');
+              return _statusText(
+                context,
+                '${AppInfo.name} ${AppInfo.versionLabel}',
+              );
             }
 
             return Row(
@@ -105,15 +114,15 @@ class StatusBar extends StatelessWidget {
         ),
         if (pct != null) ...[
           const SizedBox(width: 4),
-          Text(
-            pct,
-            style: context.txt.muted,
-          ),
+          Text(pct, style: context.txt.muted),
         ],
         if (task.conflicts.isNotEmpty) ...[
           const SizedBox(width: 6),
-          PhosphorIcon(PhosphorIconsRegular.warning,
-              size: 11, color: const Color(0xFFF9E2AF)),
+          PhosphorIcon(
+            PhosphorIconsRegular.warning,
+            size: 11,
+            color: const Color(0xFFF9E2AF),
+          ),
           const SizedBox(width: 3),
           Text(
             '${task.conflicts.length}',
@@ -125,15 +134,16 @@ class StatusBar extends StatelessWidget {
   }
 
   static Widget _statusText(BuildContext context, String text) {
-    return Text(text,
-        style: context.txt.muted);
+    return Text(text, style: context.txt.muted);
   }
 
   static Widget _sep(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Text('|',
-          style: context.txt.row.copyWith(color: AppColors.fgSubtle)),
+      child: Text(
+        '|',
+        style: context.txt.row.copyWith(color: AppColors.fgSubtle),
+      ),
     );
   }
 }

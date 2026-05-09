@@ -30,16 +30,13 @@ class TabStrip extends StatelessWidget {
             if (i == tabs.length) {
               return _AddButton(
                 onTap: () {
-                  final activePath = tabsStore.activeTab.value.store.currentPath.value;
+                  final activePath =
+                      tabsStore.activeTab.value.store.currentPath.value;
                   tabsStore.addTab(activePath);
                 },
               );
             }
-            return TabChip(
-              tab: tabs[i],
-              index: i,
-              tabsStore: tabsStore,
-            );
+            return TabChip(tab: tabs[i], index: i, tabsStore: tabsStore);
           },
         ),
       );

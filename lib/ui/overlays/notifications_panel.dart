@@ -59,10 +59,7 @@ class _NotificationsPanelBody extends StatelessWidget {
                   color: AppColors.fgMuted,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  t.notifications.title,
-                  style: context.txt.dialogTitle,
-                ),
+                Text(t.notifications.title, style: context.txt.dialogTitle),
                 const Spacer(),
                 Watch((context) {
                   final has = store.history.value.isNotEmpty;
@@ -93,7 +90,10 @@ class _NotificationsPanelBody extends StatelessWidget {
                 separatorBuilder: (_, _) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Divider(
-                      height: 1, thickness: 1, color: AppColors.bgDivider),
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.bgDivider,
+                  ),
                 ),
                 itemBuilder: (_, i) => _NotificationTile(
                   notification: reversed[i],
@@ -142,10 +142,7 @@ class _NotificationTile extends StatefulWidget {
   final AppNotification notification;
   final VoidCallback onRemove;
 
-  const _NotificationTile({
-    required this.notification,
-    required this.onRemove,
-  });
+  const _NotificationTile({required this.notification, required this.onRemove});
 
   @override
   State<_NotificationTile> createState() => _NotificationTileState();
@@ -193,7 +190,9 @@ class _NotificationTileState extends State<_NotificationTile> {
                   const SizedBox(height: 3),
                   Text(
                     formatTimeAgo(n.timestamp),
-                    style: context.txt.caption.copyWith(color: AppColors.fgSubtle),
+                    style: context.txt.caption.copyWith(
+                      color: AppColors.fgSubtle,
+                    ),
                   ),
                 ],
               ),

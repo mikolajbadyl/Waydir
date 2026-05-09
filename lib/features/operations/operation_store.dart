@@ -51,17 +51,22 @@ class OperationStore {
 
   final taskCompleted = Signal<String?>(null, debugLabel: 'taskCompleted');
 
-  late final activeTask = computed(() => tasks.value.firstWhereOrNull(
-        (t) => t.status == TaskStatus.running,
-      ));
+  late final activeTask = computed(
+    () => tasks.value.firstWhereOrNull((t) => t.status == TaskStatus.running),
+  );
 
-  late final activeCount = computed(() => tasks.value.where((t) =>
-          t.status == TaskStatus.running ||
-          t.status == TaskStatus.queued ||
-          t.status == TaskStatus.preparing ||
-          t.status == TaskStatus.waitingConflicts ||
-          t.status == TaskStatus.cancelling)
-      .length);
+  late final activeCount = computed(
+    () => tasks.value
+        .where(
+          (t) =>
+              t.status == TaskStatus.running ||
+              t.status == TaskStatus.queued ||
+              t.status == TaskStatus.preparing ||
+              t.status == TaskStatus.waitingConflicts ||
+              t.status == TaskStatus.cancelling,
+        )
+        .length,
+  );
 
   final _queue = <FileTask>[];
   bool _processing = false;
@@ -167,31 +172,37 @@ class OperationStore {
     }
     _updateTask(task);
 
-    _currentWorker!.sendPort.send(ConflictDecisionCommand(
-      sourcePath: head.sourcePath,
-      resolution: resolution,
-      applyToAll: applyToAll,
-    ));
+    _currentWorker!.sendPort.send(
+      ConflictDecisionCommand(
+        sourcePath: head.sourcePath,
+        resolution: resolution,
+        applyToAll: applyToAll,
+      ),
+    );
 
     _renderConflictNotification(task);
   }
 
   void clearCompleted() {
     final toRemove = tasks.value
-        .where((t) =>
-            t.status == TaskStatus.completed ||
-            t.status == TaskStatus.failed ||
-            t.status == TaskStatus.cancelled)
+        .where(
+          (t) =>
+              t.status == TaskStatus.completed ||
+              t.status == TaskStatus.failed ||
+              t.status == TaskStatus.cancelled,
+        )
         .toList();
     for (final t in toRemove) {
       _cleanupTimers[t.id]?.cancel();
       _cleanupTimers.remove(t.id);
     }
     tasks.value = tasks.value
-        .where((t) =>
-            t.status != TaskStatus.completed &&
-            t.status != TaskStatus.failed &&
-            t.status != TaskStatus.cancelled)
+        .where(
+          (t) =>
+              t.status != TaskStatus.completed &&
+              t.status != TaskStatus.failed &&
+              t.status != TaskStatus.cancelled,
+        )
         .toList();
   }
 
@@ -245,11 +256,13 @@ class OperationStore {
       final handle = await _spawnWorker(entryPoint);
       _currentWorker = handle;
 
-      handle.sendPort.send(StartCommand(
-        type: task.type,
-        sources: task.sources,
-        destination: task.destination,
-      ));
+      handle.sendPort.send(
+        StartCommand(
+          type: task.type,
+          sources: task.sources,
+          destination: task.destination,
+        ),
+      );
 
       final completer = Completer<void>();
 
@@ -277,21 +290,25 @@ class OperationStore {
           }
           _updateTask(task);
         } else if (msg is ErrorMessage) {
-          task.errors = [...task.errors, TaskError(path: msg.path, message: msg.message)];
+          task.errors = [
+            ...task.errors,
+            TaskError(path: msg.path, message: msg.message),
+          ];
           _updateTask(task);
         } else if (msg is TaskDoneMessage) {
           final allErrors = [...task.errors, ...msg.errors];
           if (msg.cancelled) {
             task.status = TaskStatus.cancelled;
-          } else if (allErrors.isNotEmpty &&
-              task.processedFiles == 0) {
+          } else if (allErrors.isNotEmpty && task.processedFiles == 0) {
             task.status = TaskStatus.failed;
           } else {
             task.status = TaskStatus.completed;
           }
           task.errors = allErrors;
           task.endTime = DateTime.now();
-          task.progress = task.status == TaskStatus.completed ? 1.0 : task.progress;
+          task.progress = task.status == TaskStatus.completed
+              ? 1.0
+              : task.progress;
           _updateTask(task);
 
           _dismissTaskConflictNotification(task.id);
@@ -353,15 +370,17 @@ class OperationStore {
   }
 
   void _showStartNotification(FileTask task) {
-    notificationStore?.add(AppNotification(
-      id: 'task_start_${task.id}',
-      title: TaskLabel.title(task),
-      message: t.tasks.status.scanning,
-      type: NotificationType.autoDismiss,
-      autoDismissDuration: const Duration(seconds: 2),
-      icon: _iconForType(task.type),
-      accentColor: AppColors.accent,
-    ));
+    notificationStore?.add(
+      AppNotification(
+        id: 'task_start_${task.id}',
+        title: TaskLabel.title(task),
+        message: t.tasks.status.scanning,
+        type: NotificationType.autoDismiss,
+        autoDismissDuration: const Duration(seconds: 2),
+        icon: _iconForType(task.type),
+        accentColor: AppColors.accent,
+      ),
+    );
   }
 
   void _showFinishNotification(FileTask task) {
@@ -376,8 +395,7 @@ class OperationStore {
 
     switch (task.status) {
       case TaskStatus.completed when task.errors.isNotEmpty:
-        message = t.tasks.status
-            .completedWithErrors(count: task.errors.length);
+        message = t.tasks.status.completedWithErrors(count: task.errors.length);
         color = AppColors.danger;
         icon = PhosphorIconsRegular.warning;
         type = NotificationType.persistent;
@@ -398,15 +416,17 @@ class OperationStore {
         return;
     }
 
-    ns.add(AppNotification(
-      id: 'task_done_${task.id}',
-      title: title,
-      message: message,
-      type: type,
-      autoDismissDuration: const Duration(seconds: 4),
-      icon: icon,
-      accentColor: color,
-    ));
+    ns.add(
+      AppNotification(
+        id: 'task_done_${task.id}',
+        title: title,
+        message: message,
+        type: type,
+        autoDismissDuration: const Duration(seconds: 4),
+        icon: icon,
+        accentColor: color,
+      ),
+    );
   }
 
   void _enqueueConflict(FileTask task, ConflictInfo conflict) {
@@ -437,37 +457,39 @@ class OperationStore {
         ? '${p.basename(head.sourcePath)}\n+$remaining more'
         : p.basename(head.sourcePath);
 
-    ns.add(AppNotification(
-      id: notifId,
-      title: title,
-      message: message,
-      type: NotificationType.persistent,
-      icon: PhosphorIconsRegular.warning,
-      accentColor: const Color(0xFFF9E2AF),
-      actions: [
-        NotificationAction(
-          label: t.operations.replace,
-          color: AppColors.accent,
-          dismissOnTap: false,
-          onTap: () => resolveCurrentConflict(
-              task.id, ConflictResolution.overwrite),
-        ),
-        NotificationAction(
-          label: t.operations.keepBoth,
-          color: const Color(0xFFA6E3A1),
-          dismissOnTap: false,
-          onTap: () => resolveCurrentConflict(
-              task.id, ConflictResolution.rename),
-        ),
-        NotificationAction(
-          label: t.operations.skip,
-          color: AppColors.fgMuted,
-          dismissOnTap: false,
-          onTap: () => resolveCurrentConflict(
-              task.id, ConflictResolution.skip),
-        ),
-      ],
-    ));
+    ns.add(
+      AppNotification(
+        id: notifId,
+        title: title,
+        message: message,
+        type: NotificationType.persistent,
+        icon: PhosphorIconsRegular.warning,
+        accentColor: const Color(0xFFF9E2AF),
+        actions: [
+          NotificationAction(
+            label: t.operations.replace,
+            color: AppColors.accent,
+            dismissOnTap: false,
+            onTap: () =>
+                resolveCurrentConflict(task.id, ConflictResolution.overwrite),
+          ),
+          NotificationAction(
+            label: t.operations.keepBoth,
+            color: const Color(0xFFA6E3A1),
+            dismissOnTap: false,
+            onTap: () =>
+                resolveCurrentConflict(task.id, ConflictResolution.rename),
+          ),
+          NotificationAction(
+            label: t.operations.skip,
+            color: AppColors.fgMuted,
+            dismissOnTap: false,
+            onTap: () =>
+                resolveCurrentConflict(task.id, ConflictResolution.skip),
+          ),
+        ],
+      ),
+    );
     _conflictNotifIds[task.id] = notifId;
   }
 
@@ -513,7 +535,13 @@ class OperationStore {
 
     final workerPort = await completer.future;
     return _WorkerHandle(
-        isolate, workerPort, mainToWorker, errorPort, exitPort, sub);
+      isolate,
+      workerPort,
+      mainToWorker,
+      errorPort,
+      exitPort,
+      sub,
+    );
   }
 
   void _scheduleCleanup(FileTask task) {

@@ -40,24 +40,41 @@ class _SidebarState extends State<Sidebar> {
         items: [
           _SidebarItem(t.sidebar.home, PhosphorIconsRegular.house, h),
           _SidebarItem(
-              t.sidebar.desktop, PhosphorIconsRegular.desktop, '$h/Desktop'),
+            t.sidebar.desktop,
+            PhosphorIconsRegular.desktop,
+            '$h/Desktop',
+          ),
           _SidebarItem(
-              t.sidebar.documents, PhosphorIconsRegular.notebook, '$h/Documents'),
+            t.sidebar.documents,
+            PhosphorIconsRegular.notebook,
+            '$h/Documents',
+          ),
           _SidebarItem(
-              t.sidebar.downloads, PhosphorIconsRegular.downloadSimple, '$h/Downloads'),
+            t.sidebar.downloads,
+            PhosphorIconsRegular.downloadSimple,
+            '$h/Downloads',
+          ),
           _SidebarItem(
-              t.sidebar.pictures, PhosphorIconsRegular.image, '$h/Pictures'),
+            t.sidebar.pictures,
+            PhosphorIconsRegular.image,
+            '$h/Pictures',
+          ),
           _SidebarItem(
-              t.sidebar.music, PhosphorIconsRegular.musicNote, '$h/Music'),
+            t.sidebar.music,
+            PhosphorIconsRegular.musicNote,
+            '$h/Music',
+          ),
           _SidebarItem(
-              t.sidebar.videos, PhosphorIconsRegular.videoCamera, '$h/Videos'),
+            t.sidebar.videos,
+            PhosphorIconsRegular.videoCamera,
+            '$h/Videos',
+          ),
         ],
       ),
       (
         title: t.sidebar.devices,
         items: [
-          _SidebarItem(
-              t.sidebar.root, PhosphorIconsRegular.hardDrives, '/'),
+          _SidebarItem(t.sidebar.root, PhosphorIconsRegular.hardDrives, '/'),
         ],
       ),
     ];
@@ -70,25 +87,27 @@ class _SidebarState extends State<Sidebar> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: _sections
-            .expand((section) => [
-                  _SectionHeader(title: section.title),
-                  ...section.items.map((item) => Watch((context) {
-                        final currentPath =
-                            widget.store.currentPath.value;
-                          return _ItemRow(
-                          item: item,
-                          isSelected: currentPath == item.path,
-                          onTap: widget.store.navigateTo,
-                          onMiddleTap: widget.onOpenInNewTab != null
-                              ? () => widget.onOpenInNewTab!(item.path)
-                              : null,
-                          onDropFiles: (paths, {bool move = false}) =>
-                              widget.store.dropFiles(paths, item.path,
-                                  move: move),
-                        );
-                      })),
-                  const SizedBox(height: 8),
-                ])
+            .expand(
+              (section) => [
+                _SectionHeader(title: section.title),
+                ...section.items.map(
+                  (item) => Watch((context) {
+                    final currentPath = widget.store.currentPath.value;
+                    return _ItemRow(
+                      item: item,
+                      isSelected: currentPath == item.path,
+                      onTap: widget.store.navigateTo,
+                      onMiddleTap: widget.onOpenInNewTab != null
+                          ? () => widget.onOpenInNewTab!(item.path)
+                          : null,
+                      onDropFiles: (paths, {bool move = false}) =>
+                          widget.store.dropFiles(paths, item.path, move: move),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 8),
+              ],
+            )
             .toList(),
       ),
     );
@@ -164,8 +183,7 @@ class _ItemRowState extends State<_ItemRow> {
       },
       onPerformDrop: (event) async {
         final paths = await pathsFromSession(event.session);
-        final move =
-            DragHintController.instance.mode.value == DragMode.move;
+        final move = DragHintController.instance.mode.value == DragMode.move;
         if (paths.isNotEmpty) widget.onDropFiles(paths, move: move);
         if (_dragOver) setState(() => _dragOver = false);
       },
@@ -191,8 +209,7 @@ class _ItemRowState extends State<_ItemRow> {
               color: bg,
               borderRadius: BorderRadius.circular(4),
               border: _dragOver
-                  ? Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.4))
+                  ? Border.all(color: AppColors.accent.withValues(alpha: 0.4))
                   : null,
             ),
             child: Row(

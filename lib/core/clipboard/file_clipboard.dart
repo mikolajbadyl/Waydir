@@ -2,20 +2,31 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 class FileClipboard {
-  static bool get _isWayland => Platform.environment.containsKey('WAYLAND_DISPLAY');
+  static bool get _isWayland =>
+      Platform.environment.containsKey('WAYLAND_DISPLAY');
 
-  static Future<void> writeFiles(List<String> paths, {required bool isCut}) async {
+  static Future<void> writeFiles(
+    List<String> paths, {
+    required bool isCut,
+  }) async {
     try {
       if (Platform.isWindows) {
         await _writeWindows(paths);
       } else if (Platform.isMacOS) {
         await _writeMacOS(paths);
       } else if (_isWayland) {
-        await _runWrite('wl-copy', ['-f', '-t', 'text/uri-list'],
-          paths.map((p) => Uri.file(p).toString()).join('\n'));
+        await _runWrite('wl-copy', [
+          '-f',
+          '-t',
+          'text/uri-list',
+        ], paths.map((p) => Uri.file(p).toString()).join('\n'));
       } else {
-        await _runWrite('xclip', ['-selection', 'clipboard', '-t', 'text/uri-list'],
-          paths.map((p) => Uri.file(p).toString()).join('\n'));
+        await _runWrite('xclip', [
+          '-selection',
+          'clipboard',
+          '-t',
+          'text/uri-list',
+        ], paths.map((p) => Uri.file(p).toString()).join('\n'));
       }
     } catch (_) {}
 
@@ -49,7 +60,11 @@ class FileClipboard {
 
       if (!Platform.isWindows && !Platform.isMacOS && !_isWayland) {
         final output = await _runRead('xclip', [
-          '-selection', 'clipboard', '-t', 'x-special/gnome-copied-files', '-o',
+          '-selection',
+          'clipboard',
+          '-t',
+          'x-special/gnome-copied-files',
+          '-o',
         ]);
         if (output != null && output.trim().startsWith('cut')) return true;
       }
@@ -64,16 +79,25 @@ class FileClipboard {
   static Future<void> _writeWindows(List<String> paths) async {
     final escaped = paths.map((p) => '"${p.replaceAll('"', '""')}"').join(',');
     final process = await Process.start('powershell', [
-      '-NoProfile', '-Command', 'Set-Clipboard -Path $escaped',
+      '-NoProfile',
+      '-Command',
+      'Set-Clipboard -Path $escaped',
     ]);
     await process.exitCode;
   }
 
   static Future<List<String>> _readWindows() async {
-    final output = await _runRead('powershell', ['-NoProfile', '-Command',
-      '(Get-Clipboard -Format FileDropList).FullName']);
+    final output = await _runRead('powershell', [
+      '-NoProfile',
+      '-Command',
+      '(Get-Clipboard -Format FileDropList).FullName',
+    ]);
     if (output == null || output.trim().isEmpty) return [];
-    return output.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty).toList();
+    return output
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
   }
 
   // ── macOS (pbcopy/pbpaste) ────────────────────────────
@@ -93,7 +117,11 @@ class FileClipboard {
 
   static Future<List<String>> _readX11() async {
     var output = await _runRead('xclip', [
-      '-selection', 'clipboard', '-t', 'text/uri-list', '-o',
+      '-selection',
+      'clipboard',
+      '-t',
+      'text/uri-list',
+      '-o',
     ]);
     if (output != null) {
       final paths = _parseUris(output);
@@ -101,7 +129,11 @@ class FileClipboard {
     }
 
     output = await _runRead('xclip', [
-      '-selection', 'clipboard', '-t', 'x-special/gnome-copied-files', '-o',
+      '-selection',
+      'clipboard',
+      '-t',
+      'x-special/gnome-copied-files',
+      '-o',
     ]);
     if (output != null) {
       final lines = output.split('\n');
@@ -114,35 +146,51 @@ class FileClipboard {
   // ── Linux Wayland ─────────────────────────────────────
 
   static Future<List<String>> _readWayland() async {
-    final types = await _runRead('wl-paste', ['-l'],
-      timeout: const Duration(seconds: 1));
+    final types = await _runRead('wl-paste', [
+      '-l',
+    ], timeout: const Duration(seconds: 1));
     if (types == null || !types.contains('text/uri-list')) return [];
 
-    final output = await _runRead('wl-paste', ['-t', 'text/uri-list'],
-      timeout: const Duration(seconds: 1));
+    final output = await _runRead('wl-paste', [
+      '-t',
+      'text/uri-list',
+    ], timeout: const Duration(seconds: 1));
     if (output != null) return _parseUris(output);
     return [];
   }
 
   // ── Helpers ───────────────────────────────────────────
 
-  static Future<void> _runWrite(String cmd, List<String> args, String input) async {
+  static Future<void> _runWrite(
+    String cmd,
+    List<String> args,
+    String input,
+  ) async {
     final process = await Process.start(cmd, args);
     process.stdin.write(input);
     await process.stdin.close();
     await process.exitCode;
   }
 
-  static Future<String?> _runRead(String cmd, List<String> args, {Duration? timeout}) async {
+  static Future<String?> _runRead(
+    String cmd,
+    List<String> args, {
+    Duration? timeout,
+  }) async {
     final process = await Process.start(cmd, args);
-    final stdoutFuture = process.stdout.transform(const SystemEncoding().decoder).join();
+    final stdoutFuture = process.stdout
+        .transform(const SystemEncoding().decoder)
+        .join();
 
     int exitCode;
     if (timeout != null) {
-      exitCode = await process.exitCode.timeout(timeout, onTimeout: () {
-        process.kill();
-        return -1;
-      });
+      exitCode = await process.exitCode.timeout(
+        timeout,
+        onTimeout: () {
+          process.kill();
+          return -1;
+        },
+      );
     } else {
       exitCode = await process.exitCode;
     }
