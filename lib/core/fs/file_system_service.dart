@@ -911,8 +911,9 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync())
+    if (!Directory(dest).existsSync()) {
       Directory(dest).createSync(recursive: true);
+    }
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;
@@ -959,8 +960,9 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync())
+    if (!Directory(dest).existsSync()) {
       Directory(dest).createSync(recursive: true);
+    }
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;
@@ -1002,7 +1004,9 @@ class FileSystemService {
     final sep = Platform.pathSeparator;
     String? best;
     for (final candidate in sourceRoots) {
-      if (path == candidate) return candidate;
+      if (path == candidate) {
+        return candidate;
+      }
       if (path.startsWith(candidate) &&
           path.length > candidate.length &&
           path[candidate.length] == sep) {
@@ -1045,7 +1049,9 @@ class FileSystemService {
         File(src).renameSync(dst);
       } on FileSystemException {
         _copyFileSync(File(src), dst);
-        if (isCancelled()) return;
+        if (isCancelled()) {
+          return;
+        }
         File(src).deleteSync();
       }
     }

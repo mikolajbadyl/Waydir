@@ -87,7 +87,7 @@ class _NotificationsPanelBody extends StatelessWidget {
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 itemCount: reversed.length,
-                separatorBuilder: (_, __) => Padding(
+                separatorBuilder: (_, _) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: Divider(
                     height: 1,

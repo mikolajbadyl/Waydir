@@ -25,7 +25,7 @@ class TabStrip extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           padding: EdgeInsets.zero,
           itemCount: tabs.length + 1,
-          separatorBuilder: (_, __) => const SizedBox(width: 0),
+          separatorBuilder: (_, _) => const SizedBox(width: 0),
           itemBuilder: (context, i) {
             if (i == tabs.length) {
               return _AddButton(
