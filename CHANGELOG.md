@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-09
+
+### Fixed
+- UI scaling across the app via `scaled_app` integration.
+
 ## [0.1.0] - 2026-05-09
 
 ### Added
@@ -17,5 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom dark theme and custom title bar.
 - Settings store with persistent user preferences.
 
-[Unreleased]: https://github.com/mikolajbadyl/waydir/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mikolajbadyl/waydir/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/mikolajbadyl/waydir/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mikolajbadyl/waydir/releases/tag/v0.1.0
