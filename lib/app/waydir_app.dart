@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:signals/signals_flutter.dart';
-import '../core/system/system_scale.dart';
+import 'package:scaled_app/scaled_app.dart';
 import '../i18n/strings.g.dart';
 import '../ui/theme/app_theme.dart';
 import 'waydir_page.dart';
@@ -21,14 +20,10 @@ class WaydirApp extends StatelessWidget {
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.build(),
-      builder: (context, child) {
-        final scale = SystemScale.instance.effectiveScale.watch(context);
-        final mq = MediaQuery.of(context);
-        return MediaQuery(
-          data: mq.copyWith(textScaler: TextScaler.linear(scale)),
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).scale(),
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const WaydirPage(),
     );
   }
