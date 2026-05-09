@@ -21,7 +21,7 @@ void showErrorListDialog({
       child: ListView.separated(
         shrinkWrap: true,
         itemCount: errors.length,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             Divider(height: 1, thickness: 1, color: AppColors.bgDivider),
         itemBuilder: (_, i) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),

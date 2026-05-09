@@ -222,7 +222,7 @@ void main() {
         processedFiles: 42,
         startTime: DateTime.now(),
       );
-      expect(TaskLabel.progressText(task), '42 / 100 files');
+      expect(TaskLabel.progressText(task), '(42/100)');
     });
   });
 
