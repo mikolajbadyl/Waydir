@@ -103,8 +103,10 @@ class _OperationsPanelBody extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 itemCount: ops.length,
                 separatorBuilder: (_, _) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 2,
+                  ),
                   child: Divider(
                     height: 1,
                     thickness: 1,
