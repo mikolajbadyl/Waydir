@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'app/app_info.dart';
 import 'app/waydir_app.dart';
 import 'core/fs/fs_worker_pool.dart';
 import 'core/settings/settings_store.dart';
@@ -11,6 +12,7 @@ void main() async {
   LocaleSettings.useDeviceLocale();
   unawaited(FsWorkerPool.instance.ensureStarted());
   await SettingsStore.instance.load();
+  await AppInfo.init();
   runApp(TranslationProvider(child: const WaydirApp()));
 
   doWhenWindowReady(() {
