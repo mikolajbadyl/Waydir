@@ -43,15 +43,5 @@ class FileEntry {
     return name.substring(dotIndex + 1).toLowerCase();
   }
 
-  bool get isHidden {
-    if (PlatformPaths.isWindows) {
-      if (name.startsWith('.')) return true;
-      try {
-        return File(path).statSync().mode & 0x2 != 0;
-      } catch (_) {
-        return false;
-      }
-    }
-    return name.startsWith('.');
-  }
+  bool get isHidden => name.startsWith('.');
 }
