@@ -35,6 +35,17 @@ class _SidebarState extends State<Sidebar> {
   void initState() {
     super.initState();
     final h = PlatformPaths.homePath;
+    final devices = <_SidebarItem>[];
+    if (PlatformPaths.isWindows) {
+      for (final drive in PlatformPaths.listDrives()) {
+        final label = drive.replaceAll('\\', '');
+        devices.add(_SidebarItem(label, PhosphorIconsRegular.hardDrive, drive));
+      }
+    } else {
+      devices.add(
+        _SidebarItem(t.sidebar.root, PhosphorIconsRegular.hardDrives, '/'),
+      );
+    }
     _sections = [
       (
         title: t.sidebar.favorites,
@@ -72,16 +83,7 @@ class _SidebarState extends State<Sidebar> {
           ),
         ],
       ),
-      (
-        title: t.sidebar.devices,
-        items: [
-          _SidebarItem(
-            t.sidebar.root,
-            PhosphorIconsRegular.hardDrives,
-            PlatformPaths.rootPath,
-          ),
-        ],
-      ),
+      (title: t.sidebar.devices, items: devices),
     ];
   }
 

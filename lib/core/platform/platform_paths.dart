@@ -134,6 +134,21 @@ class PlatformPaths {
     return path;
   }
 
+  static List<String> listDrives() {
+    if (!Platform.isWindows) return [];
+    final drives = <String>[];
+    for (var i = 65; i <= 90; i++) {
+      final letter = String.fromCharCode(i);
+      final root = '$letter:\\';
+      try {
+        if (Directory(root).existsSync()) {
+          drives.add(root);
+        }
+      } catch (_) {}
+    }
+    return drives;
+  }
+
   static String _windowsDriveRoot(String path) {
     if (path.length >= 2 && path[1] == ':') {
       return '${path[0].toUpperCase()}:\\';
