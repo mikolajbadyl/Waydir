@@ -1,5 +1,6 @@
 import 'dart:io';
 import '../platform/platform_paths.dart';
+import '../platform/win32_attributes.dart';
 
 enum FileItemType { folder, file }
 
@@ -43,5 +44,10 @@ class FileEntry {
     return name.substring(dotIndex + 1).toLowerCase();
   }
 
-  bool get isHidden => name.startsWith('.');
+  bool get isHidden {
+    if (PlatformPaths.isWindows) {
+      return name.startsWith('.') || isHiddenOnWindows(path);
+    }
+    return name.startsWith('.');
+  }
 }
