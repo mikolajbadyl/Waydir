@@ -69,7 +69,7 @@ class StatusBar extends StatelessWidget {
             if (active.isEmpty) {
               return _statusText(
                 context,
-                '${AppInfo.name} ${AppInfo.versionLabel}',
+                '${AppInfo.name} ${AppInfo.versionLabel.value}',
               );
             }
 
@@ -80,7 +80,7 @@ class StatusBar extends StatelessWidget {
                   _taskChip(context, task),
                   const SizedBox(width: 8),
                 ],
-                _statusText(context, '${AppInfo.name} ${AppInfo.versionLabel}'),
+                _statusText(context, '${AppInfo.name} ${AppInfo.versionLabel.value}'),
               ],
             );
           }),
