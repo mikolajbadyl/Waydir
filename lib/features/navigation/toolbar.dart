@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -7,6 +6,7 @@ import 'navigation_store.dart';
 import '../../ui/overlays/notification_store.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
+import '../../core/platform/platform_paths.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/overlays/context_menu.dart';
 import '../operations/operations_panel.dart';
@@ -276,11 +276,8 @@ class _PathBarState extends State<_PathBar> {
   }
 
   Widget _buildBreadcrumbs(String path) {
-    final segments = path
-        .split(Platform.pathSeparator)
-        .where((s) => s.isNotEmpty)
-        .toList();
-    final hasRoot = Platform.isLinux || Platform.isMacOS;
+    final segments = PlatformPaths.segments(path);
+    final isWindows = PlatformPaths.isWindows;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -304,11 +301,14 @@ class _PathBarState extends State<_PathBar> {
             measure(s, last ? bold : regular) + segPadding;
 
         final maxW = constraints.maxWidth;
-        final rootW = hasRoot ? segW('/') : 0.0;
+
+        final rootLabel = isWindows ? '${segments.first}\\' : '/';
+        final rootW = segW(rootLabel);
 
         final widths = <double>[];
         double total = rootW;
-        for (int i = 0; i < segments.length; i++) {
+        final offset = isWindows ? 1 : 0;
+        for (int i = offset; i < segments.length; i++) {
           final w =
               caretWidth + segW(segments[i], last: i == segments.length - 1);
           widths.add(w);
@@ -319,16 +319,18 @@ class _PathBarState extends State<_PathBar> {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (hasRoot)
-                _BreadcrumbSegment(
-                  label: '/',
-                  onTap: () => widget.store.navigateTo('/'),
+              _BreadcrumbSegment(
+                label: rootLabel,
+                onTap: () => widget.store.navigateTo(
+                  isWindows ? PlatformPaths.rootPath : '/',
                 ),
-              for (int i = 0; i < segments.length; i++)
+              ),
+              for (int i = 0; i < segments.length - offset; i++)
                 ..._segmentRow(
                   segments,
-                  i,
-                  isLast: i == segments.length - 1,
+                  i + offset,
+                  isWindows: isWindows,
+                  isLast: i + offset == segments.length - 1,
                   flexibleLast: false,
                 ),
             ],
@@ -338,10 +340,11 @@ class _PathBarState extends State<_PathBar> {
         final reserved = rootW + caretWidth + ellipsisWidth;
         double remaining = maxW - reserved;
         final shown = <int>[];
-        for (int i = segments.length - 1; i >= 0; i--) {
-          if (shown.isEmpty || widths[i] <= remaining) {
-            shown.insert(0, i);
-            remaining -= widths[i];
+        for (int i = segments.length - 1; i >= offset; i--) {
+          final idx = i - offset;
+          if (shown.isEmpty || widths[idx] <= remaining) {
+            shown.insert(0, idx);
+            remaining -= widths[idx];
             if (remaining <= 0 && shown.isNotEmpty) break;
           } else {
             break;
@@ -351,24 +354,28 @@ class _PathBarState extends State<_PathBar> {
 
         return Row(
           children: [
-            if (hasRoot)
-              _BreadcrumbSegment(
-                label: '/',
-                onTap: () => widget.store.navigateTo('/'),
+            _BreadcrumbSegment(
+              label: rootLabel,
+              onTap: () => widget.store.navigateTo(
+                isWindows ? PlatformPaths.rootPath : '/',
               ),
+            ),
             _caretIcon(),
             _EllipsisMenu(
               hiddenIndices: hidden,
               allSegments: segments,
+              isWindows: isWindows,
+              offset: offset,
               store: widget.store,
             ),
             for (int k = 0; k < shown.length; k++)
               ...() {
-                final i = shown[k];
+                final i = shown[k] + offset;
                 final isLast = i == segments.length - 1;
                 return _segmentRow(
                   segments,
                   i,
+                  isWindows: isWindows,
                   isLast: isLast,
                   flexibleLast: isLast,
                 );
@@ -382,11 +389,11 @@ class _PathBarState extends State<_PathBar> {
   List<Widget> _segmentRow(
     List<String> segments,
     int i, {
+    required bool isWindows,
     required bool isLast,
     required bool flexibleLast,
   }) {
-    final partial =
-        '${Platform.pathSeparator}${segments.take(i + 1).join(Platform.pathSeparator)}';
+    final partial = PlatformPaths.buildPartialPath(segments, i);
     final segment = _BreadcrumbSegment(
       label: segments[i],
       onTap: isLast ? null : () => widget.store.navigateTo(partial),
@@ -411,11 +418,15 @@ class _PathBarState extends State<_PathBar> {
 class _EllipsisMenu extends StatefulWidget {
   final List<int> hiddenIndices;
   final List<String> allSegments;
+  final bool isWindows;
+  final int offset;
   final NavigationStore store;
 
   const _EllipsisMenu({
     required this.hiddenIndices,
     required this.allSegments,
+    required this.isWindows,
+    required this.offset,
     required this.store,
   });
 
@@ -441,15 +452,14 @@ class _EllipsisMenuState extends State<_EllipsisMenu> {
           .map(
             (i) => ContextMenuItem(
               icon: PhosphorIconsRegular.folder,
-              label: widget.allSegments[i],
+              label: widget.allSegments[i + widget.offset],
               action: '$i',
             ),
           )
           .toList(),
       onSelect: (action) {
-        final i = int.parse(action);
-        final partial =
-            '${Platform.pathSeparator}${widget.allSegments.take(i + 1).join(Platform.pathSeparator)}';
+        final i = int.parse(action) + widget.offset;
+        final partial = PlatformPaths.buildPartialPath(widget.allSegments, i);
         widget.store.navigateTo(partial);
       },
     );
@@ -472,7 +482,7 @@ class _EllipsisMenuState extends State<_EllipsisMenu> {
               : null,
           child: Tooltip(
             message: widget.hiddenIndices
-                .map((i) => widget.allSegments[i])
+                .map((i) => widget.allSegments[i + widget.offset])
                 .join(' › '),
             child: Text(
               '…',

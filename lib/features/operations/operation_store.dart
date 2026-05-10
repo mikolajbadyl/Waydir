@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:isolate';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +8,7 @@ import 'package:signals/signals.dart';
 import '../../core/models/app_notification.dart';
 import '../../core/models/file_operation.dart';
 import '../../core/fs/file_system_service.dart';
+import '../../core/platform/platform_paths.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/overlays/notification_store.dart';
 import '../../ui/theme/app_theme.dart';
@@ -79,9 +79,10 @@ class OperationStore {
   final _conflictNotifIds = <String, String>{};
 
   void enqueueCopy(List<String> sources, String destination) {
+    final sep = PlatformPaths.separator;
     final filtered = sources.where((s) {
-      final name = s.split(Platform.pathSeparator).last;
-      final dst = '$destination${Platform.pathSeparator}$name';
+      final name = PlatformPaths.fileName(s);
+      final dst = '$destination$sep$name';
       return s != dst;
     }).toList();
     if (filtered.isEmpty) return;
@@ -97,9 +98,10 @@ class OperationStore {
   }
 
   void enqueueMove(List<String> sources, String destination) {
+    final sep = PlatformPaths.separator;
     final filtered = sources.where((s) {
-      final name = s.split(Platform.pathSeparator).last;
-      final dst = '$destination${Platform.pathSeparator}$name';
+      final name = PlatformPaths.fileName(s);
+      final dst = '$destination$sep$name';
       return s != dst;
     }).toList();
     if (filtered.isEmpty) return;

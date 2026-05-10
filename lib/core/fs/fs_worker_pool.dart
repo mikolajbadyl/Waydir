@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import '../models/file_entry.dart';
+import '../platform/platform_paths.dart';
 
 enum _Op { list, exists, isDir, mkdir, delete, stat }
 
@@ -178,7 +179,7 @@ class FsWorkerPool {
           e is Directory ||
           (e is Link && stat.type == FileSystemEntityType.directory);
       return FileEntry(
-        name: e.path.split(Platform.pathSeparator).last,
+        name: PlatformPaths.fileName(e.path),
         path: e.path,
         type: isDir ? FileItemType.folder : FileItemType.file,
         size: stat.size,
