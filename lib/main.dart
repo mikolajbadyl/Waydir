@@ -17,7 +17,6 @@ void main() async {
   runApp(TranslationProvider(child: const WaydirApp()));
 
   doWhenWindowReady(() {
-    appWindow.titleBarStyle = TitleBarStyle.hidden;
     final s = SystemScale.instance.uiScale.value;
     appWindow.minSize = Size(700 * s, 450 * s);
     appWindow.size = Size(1100 * s, 700 * s);
