@@ -69,9 +69,9 @@ class PlatformPaths {
   static String buildPartialPath(List<String> segments, int upToIndex) {
     if (Platform.isWindows) {
       final driveLetter = segments.first;
-      if (upToIndex == 0) return '$driveLetter:\\';
+      if (upToIndex == 0) return '$driveLetter\\';
       final rest = segments.sublist(1, upToIndex + 1).join(separator);
-      return '$driveLetter:\\$rest';
+      return '$driveLetter\\$rest';
     }
     return '/${segments.sublist(0, upToIndex + 1).join('/')}';
   }
@@ -125,6 +125,13 @@ class PlatformPaths {
 
   static String fileName(String path) {
     return p.basename(path);
+  }
+
+  static String normalize(String path) {
+    if (Platform.isWindows) {
+      return _normalizeWindowsPath(path);
+    }
+    return path;
   }
 
   static String _windowsDriveRoot(String path) {

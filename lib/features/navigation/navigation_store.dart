@@ -243,19 +243,20 @@ class NavigationStore {
   }
 
   void navigateTo(String path, {bool addToHistory = true}) {
+    final normalized = PlatformPaths.normalize(path);
     closeSearch();
     if (addToHistory) {
       history.value = history.value.sublist(0, historyIndex.value + 1)
-        ..add(path);
+        ..add(normalized);
       historyIndex.value = history.value.length - 1;
     }
     batch(() {
       selectedPaths.value = {};
       cursorIndex.value = -1;
       anchorIndex.value = -1;
-      currentPath.value = path;
+      currentPath.value = normalized;
     });
-    loadDirectory(path);
+    loadDirectory(normalized);
   }
 
   void goBack() {

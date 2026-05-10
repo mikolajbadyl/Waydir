@@ -168,24 +168,31 @@ class FsWorkerPool {
       throw FileSystemException('Directory not found', path);
     }
 
-    final entries = dir.listSync(followLinks: false).map((e) {
-      FileStat stat;
-      try {
-        stat = e.statSync();
-      } catch (_) {
-        stat = FileStat.statSync(e.path);
+    final entries = <FileEntry>[];
+    try {
+      for (final e in dir.listSync(followLinks: false)) {
+        try {
+          FileStat stat;
+          try {
+            stat = e.statSync();
+          } catch (_) {
+            stat = FileStat.statSync(e.path);
+          }
+          final isDir =
+              e is Directory ||
+              (e is Link && stat.type == FileSystemEntityType.directory);
+          entries.add(
+            FileEntry(
+              name: PlatformPaths.fileName(e.path),
+              path: e.path,
+              type: isDir ? FileItemType.folder : FileItemType.file,
+              size: stat.size,
+              modified: stat.modified,
+            ),
+          );
+        } catch (_) {}
       }
-      final isDir =
-          e is Directory ||
-          (e is Link && stat.type == FileSystemEntityType.directory);
-      return FileEntry(
-        name: PlatformPaths.fileName(e.path),
-        path: e.path,
-        type: isDir ? FileItemType.folder : FileItemType.file,
-        size: stat.size,
-        modified: stat.modified,
-      );
-    }).toList();
+    } catch (_) {}
 
     entries.sort((a, b) {
       if (a.type != b.type) return a.type == FileItemType.folder ? -1 : 1;
