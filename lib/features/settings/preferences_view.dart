@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import 'package:signals/signals_flutter.dart';
 
-import '../../core/settings/settings_store.dart';
-import '../../core/terminal/terminal.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
-import '../../ui/widgets/app_dropdown.dart';
+import 'panes/appearance_pane.dart';
+import 'panes/coming_soon_pane.dart';
+import 'panes/terminal_pane.dart';
 
 Future<void> showPreferencesDialog(BuildContext context) {
   return showDialog<void>(
@@ -18,7 +17,7 @@ Future<void> showPreferencesDialog(BuildContext context) {
   );
 }
 
-enum _Category {
+enum Category {
   general,
   appearance,
   terminal,
@@ -28,58 +27,52 @@ enum _Category {
   about,
 }
 
-class _CategoryMeta {
-  final _Category id;
+class CategoryMeta {
+  final Category id;
   final IconData icon;
   final String Function() label;
   final bool comingSoon;
 
-  const _CategoryMeta(
-    this.id,
-    this.icon,
-    this.label, {
-    this.comingSoon = false,
-  });
+  const CategoryMeta(this.id, this.icon, this.label, {this.comingSoon = false});
 }
 
-final _categories = <_CategoryMeta>[
-  _CategoryMeta(
-    _Category.general,
+final categories = <CategoryMeta>[
+  CategoryMeta(
+    Category.general,
     PhosphorIconsRegular.slidersHorizontal,
     () => t.preferences.categories.general,
     comingSoon: true,
   ),
-  _CategoryMeta(
-    _Category.appearance,
+  CategoryMeta(
+    Category.appearance,
     PhosphorIconsRegular.palette,
     () => t.preferences.categories.appearance,
-    comingSoon: true,
   ),
-  _CategoryMeta(
-    _Category.terminal,
+  CategoryMeta(
+    Category.terminal,
     PhosphorIconsRegular.terminal,
     () => t.preferences.categories.terminal,
   ),
-  _CategoryMeta(
-    _Category.shortcuts,
+  CategoryMeta(
+    Category.shortcuts,
     PhosphorIconsRegular.keyboard,
     () => t.preferences.categories.shortcuts,
     comingSoon: true,
   ),
-  _CategoryMeta(
-    _Category.fileAssociations,
+  CategoryMeta(
+    Category.fileAssociations,
     PhosphorIconsRegular.fileArrowUp,
     () => t.preferences.categories.fileAssociations,
     comingSoon: true,
   ),
-  _CategoryMeta(
-    _Category.bookmarks,
+  CategoryMeta(
+    Category.bookmarks,
     PhosphorIconsRegular.bookmarkSimple,
     () => t.preferences.categories.bookmarks,
     comingSoon: true,
   ),
-  _CategoryMeta(
-    _Category.about,
+  CategoryMeta(
+    Category.about,
     PhosphorIconsRegular.info,
     () => t.preferences.categories.about,
     comingSoon: true,
@@ -94,7 +87,7 @@ class _PreferencesDialog extends StatefulWidget {
 }
 
 class _PreferencesDialogState extends State<_PreferencesDialog> {
-  _Category _selected = _Category.terminal;
+  Category _selected = Category.terminal;
 
   @override
   Widget build(BuildContext context) {
@@ -210,8 +203,8 @@ class _CloseButtonState extends State<_CloseButton> {
 }
 
 class _CategorySidebar extends StatelessWidget {
-  final _Category selected;
-  final ValueChanged<_Category> onSelect;
+  final Category selected;
+  final ValueChanged<Category> onSelect;
 
   const _CategorySidebar({required this.selected, required this.onSelect});
 
@@ -223,7 +216,7 @@ class _CategorySidebar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
       child: ListView(
         children: [
-          for (final cat in _categories)
+          for (final cat in categories)
             _CategoryItem(
               meta: cat,
               selected: cat.id == selected,
@@ -236,7 +229,7 @@ class _CategorySidebar extends StatelessWidget {
 }
 
 class _CategoryItem extends StatefulWidget {
-  final _CategoryMeta meta;
+  final CategoryMeta meta;
   final bool selected;
   final VoidCallback onTap;
 
@@ -322,214 +315,20 @@ class _CategoryItemState extends State<_CategoryItem> {
 }
 
 class _ContentPane extends StatelessWidget {
-  final _Category category;
+  final Category category;
   const _ContentPane({required this.category});
 
   @override
   Widget build(BuildContext context) {
-    final meta = _categories.firstWhere((c) => c.id == category);
-    if (meta.comingSoon) return _ComingSoonPane(meta: meta);
+    final meta = categories.firstWhere((c) => c.id == category);
+    if (meta.comingSoon) return ComingSoonPane(meta: meta);
     switch (category) {
-      case _Category.terminal:
-        return const _TerminalPane();
+      case Category.appearance:
+        return const AppearancePane();
+      case Category.terminal:
+        return const TerminalPane();
       default:
-        return _ComingSoonPane(meta: meta);
+        return ComingSoonPane(meta: meta);
     }
-  }
-}
-
-class _ComingSoonPane extends StatelessWidget {
-  final _CategoryMeta meta;
-  const _ComingSoonPane({required this.meta});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PhosphorIcon(meta.icon, size: 36, color: AppColors.fgSubtle),
-          const SizedBox(height: 12),
-          Text(
-            meta.label(),
-            style: context.txt.dialogTitle.copyWith(
-              color: AppColors.fgMuted,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            t.preferences.comingSoon,
-            style: context.txt.muted.copyWith(color: AppColors.fgSubtle),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TerminalPane extends StatefulWidget {
-  const _TerminalPane();
-
-  @override
-  State<_TerminalPane> createState() => _TerminalPaneState();
-}
-
-class _TerminalPaneState extends State<_TerminalPane> {
-  late Future<List<TerminalSpec>> _detected;
-  late final TextEditingController _customController;
-
-  @override
-  void initState() {
-    super.initState();
-    _detected = TerminalService.detectAvailable();
-    _customController = TextEditingController(
-      text: SettingsStore.instance.terminalCustomCommand.value,
-    );
-    _customController.addListener(() {
-      SettingsStore.instance.terminalCustomCommand.value =
-          _customController.text;
-    });
-  }
-
-  @override
-  void dispose() {
-    _customController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(t.preferences.terminal.title, style: context.txt.pageTitle),
-          const SizedBox(height: 4),
-          Text(t.preferences.terminal.subtitle, style: context.txt.muted),
-          const SizedBox(height: 20),
-          Text(t.preferences.terminal.label, style: context.txt.fieldLabel),
-          const SizedBox(height: 8),
-          FutureBuilder<List<TerminalSpec>>(
-            future: _detected,
-            builder: (context, snapshot) {
-              final detected = snapshot.data ?? const <TerminalSpec>[];
-              return Watch((context) {
-                final current = SettingsStore.instance.terminal.value;
-                return _TerminalDropdown(
-                  current: current,
-                  detected: detected,
-                  onChanged: (id) => SettingsStore.instance.terminal.value = id,
-                );
-              });
-            },
-          ),
-          Watch((context) {
-            final current = SettingsStore.instance.terminal.value;
-            if (current != 'custom') return const SizedBox.shrink();
-            return Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: _CustomCommandField(controller: _customController),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class _TerminalDropdown extends StatelessWidget {
-  final String current;
-  final List<TerminalSpec> detected;
-  final ValueChanged<String> onChanged;
-
-  const _TerminalDropdown({
-    required this.current,
-    required this.detected,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final items = <AppDropdownItem<String>>[
-      AppDropdownItem(
-        value: 'auto',
-        label: t.preferences.terminal.auto,
-        icon: PhosphorIconsRegular.magicWand,
-      ),
-      for (final spec in detected)
-        AppDropdownItem(
-          value: spec.id,
-          label: spec.displayName,
-          icon: PhosphorIconsRegular.terminal,
-        ),
-      AppDropdownItem(
-        value: 'custom',
-        label: t.preferences.terminal.custom,
-        icon: PhosphorIconsRegular.code,
-      ),
-    ];
-
-    final values = items.map((e) => e.value).toSet();
-    final value = values.contains(current) ? current : 'auto';
-
-    return SizedBox(
-      width: 360,
-      child: AppDropdown<String>(
-        value: value,
-        items: items,
-        onChanged: onChanged,
-      ),
-    );
-  }
-}
-
-class _CustomCommandField extends StatelessWidget {
-  final TextEditingController controller;
-  const _CustomCommandField({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(t.preferences.terminal.customLabel, style: context.txt.fieldLabel),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          style: context.txt.body,
-          decoration: InputDecoration(
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 8,
-            ),
-            hintText: t.preferences.terminal.customHint,
-            hintStyle: context.txt.body.copyWith(color: AppColors.fgSubtle),
-            filled: true,
-            fillColor: AppColors.bgInput,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: const BorderSide(color: AppColors.borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: const BorderSide(color: AppColors.borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
-              borderSide: const BorderSide(color: AppColors.accent),
-            ),
-          ),
-          cursorColor: AppColors.accent,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          t.preferences.terminal.customHelp,
-          style: context.txt.captionSmall.copyWith(color: AppColors.fgSubtle),
-        ),
-      ],
-    );
   }
 }

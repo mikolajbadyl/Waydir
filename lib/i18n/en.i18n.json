@@ -35,6 +35,19 @@
       "bookmarks": "Bookmarks",
       "about": "About"
     },
+    "appearance": {
+      "title": "Appearance",
+      "subtitle": "Adjust the visual scale of the interface.",
+      "scaleLabel": "UI Scale",
+      "scaleAuto": "Auto (system)",
+      "scale50": "50%",
+      "scale75": "75%",
+      "scale100": "100%",
+      "scale125": "125%",
+      "scale150": "150%",
+      "scale175": "175%",
+      "scale200": "200%"
+    },
     "terminal": {
       "title": "Terminal",
       "subtitle": "Choose the terminal emulator opened from \"Open in Terminal\".",
