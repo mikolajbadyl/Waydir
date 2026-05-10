@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../models/file_entry.dart';
 import '../models/file_operation.dart';
 import '../platform/platform_paths.dart';
+import '../platform/win32_attributes.dart';
 import '../settings/settings_store.dart';
 import '../terminal/terminal.dart';
 import '../../i18n/strings.g.dart';
@@ -85,17 +86,12 @@ class FileSystemService {
       );
 
   static Future<void> openWithDefaultApp(String path) async {
-    if (Platform.isLinux) {
+    if (PlatformPaths.isWindows) {
+      shellOpenOnWindows(path);
+    } else if (Platform.isLinux) {
       await Process.start('xdg-open', [path], mode: ProcessStartMode.detached);
     } else if (Platform.isMacOS) {
       await Process.start('open', [path], mode: ProcessStartMode.detached);
-    } else if (Platform.isWindows) {
-      await Process.start(
-        'cmd',
-        ['/c', 'start', '', path],
-        mode: ProcessStartMode.detached,
-        runInShell: true,
-      );
     }
   }
 
