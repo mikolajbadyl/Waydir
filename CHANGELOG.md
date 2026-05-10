@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Windows support (paths, drives, breadcrumbs, system file filtering, native file opening).
+
+### Changed
+- Removed `scaled_app` and custom UI scaling system.
+
 ### Fixed
 - Double title bar on Windows.
 
