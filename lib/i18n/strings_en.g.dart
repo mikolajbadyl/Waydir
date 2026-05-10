@@ -146,6 +146,7 @@ class TranslationsPreferencesEn {
 	String get comingSoon => 'Coming soon';
 
 	late final TranslationsPreferencesCategoriesEn categories = TranslationsPreferencesCategoriesEn.internal(_root);
+	late final TranslationsPreferencesAppearanceEn appearance = TranslationsPreferencesAppearanceEn.internal(_root);
 	late final TranslationsPreferencesTerminalEn terminal = TranslationsPreferencesTerminalEn.internal(_root);
 }
 
@@ -680,6 +681,48 @@ class TranslationsPreferencesCategoriesEn {
 	String get about => 'About';
 }
 
+// Path: preferences.appearance
+class TranslationsPreferencesAppearanceEn {
+	TranslationsPreferencesAppearanceEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Appearance'
+	String get title => 'Appearance';
+
+	/// en: 'Adjust the visual scale of the interface.'
+	String get subtitle => 'Adjust the visual scale of the interface.';
+
+	/// en: 'UI Scale'
+	String get scaleLabel => 'UI Scale';
+
+	/// en: 'Auto (system)'
+	String get scaleAuto => 'Auto (system)';
+
+	/// en: '50%'
+	String get scale50 => '50%';
+
+	/// en: '75%'
+	String get scale75 => '75%';
+
+	/// en: '100%'
+	String get scale100 => '100%';
+
+	/// en: '125%'
+	String get scale125 => '125%';
+
+	/// en: '150%'
+	String get scale150 => '150%';
+
+	/// en: '175%'
+	String get scale175 => '175%';
+
+	/// en: '200%'
+	String get scale200 => '200%';
+}
+
 // Path: preferences.terminal
 class TranslationsPreferencesTerminalEn {
 	TranslationsPreferencesTerminalEn.internal(this._root);
@@ -832,6 +875,17 @@ extension on Translations {
 			'preferences.categories.fileAssociations' => 'File Associations',
 			'preferences.categories.bookmarks' => 'Bookmarks',
 			'preferences.categories.about' => 'About',
+			'preferences.appearance.title' => 'Appearance',
+			'preferences.appearance.subtitle' => 'Adjust the visual scale of the interface.',
+			'preferences.appearance.scaleLabel' => 'UI Scale',
+			'preferences.appearance.scaleAuto' => 'Auto (system)',
+			'preferences.appearance.scale50' => '50%',
+			'preferences.appearance.scale75' => '75%',
+			'preferences.appearance.scale100' => '100%',
+			'preferences.appearance.scale125' => '125%',
+			'preferences.appearance.scale150' => '150%',
+			'preferences.appearance.scale175' => '175%',
+			'preferences.appearance.scale200' => '200%',
 			'preferences.terminal.title' => 'Terminal',
 			'preferences.terminal.subtitle' => 'Choose the terminal emulator opened from "Open in Terminal".',
 			'preferences.terminal.label' => 'Default terminal',
