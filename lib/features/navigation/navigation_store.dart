@@ -8,6 +8,7 @@ import '../../core/fs/file_system_service.dart';
 import '../../core/fs/directory_watcher_service.dart';
 import '../../core/fs/recursive_search.dart';
 import '../../core/keyboard/keyboard_shortcuts.dart';
+import '../../core/platform/platform_paths.dart';
 import '../../i18n/strings.g.dart';
 import '../operations/operation_store.dart';
 
@@ -86,7 +87,7 @@ class NavigationStore {
   );
 
   NavigationStore({required this.operationStore, String? initialPath}) {
-    final startPath = initialPath ?? Platform.environment['HOME'] ?? '/';
+    final startPath = initialPath ?? PlatformPaths.homePath;
     currentPath.value = startPath;
     history.value = [startPath];
     loadDirectory(startPath);
@@ -242,19 +243,20 @@ class NavigationStore {
   }
 
   void navigateTo(String path, {bool addToHistory = true}) {
+    final normalized = PlatformPaths.normalize(path);
     closeSearch();
     if (addToHistory) {
       history.value = history.value.sublist(0, historyIndex.value + 1)
-        ..add(path);
+        ..add(normalized);
       historyIndex.value = history.value.length - 1;
     }
     batch(() {
       selectedPaths.value = {};
       cursorIndex.value = -1;
       anchorIndex.value = -1;
-      currentPath.value = path;
+      currentPath.value = normalized;
     });
-    loadDirectory(path);
+    loadDirectory(normalized);
   }
 
   void goBack() {
@@ -270,9 +272,9 @@ class NavigationStore {
   }
 
   void goUp() async {
-    final parts = currentPath.value.split(Platform.pathSeparator)..removeLast();
-    final parent = parts.isEmpty ? '/' : parts.join(Platform.pathSeparator);
-    if (parent.isNotEmpty && await FileSystemService.directoryExists(parent)) {
+    final parent = PlatformPaths.parentOf(currentPath.value);
+    if (parent != currentPath.value &&
+        await FileSystemService.directoryExists(parent)) {
       navigateTo(parent);
     }
   }
@@ -398,7 +400,7 @@ class NavigationStore {
           final updated = searchResults.value.map((e) {
             if (e.path != oldPath) return e;
             return FileEntry(
-              name: newPath.split(Platform.pathSeparator).last,
+              name: PlatformPaths.fileName(newPath),
               path: newPath,
               type: e.type,
               size: e.size,
@@ -443,13 +445,13 @@ class NavigationStore {
   Future<void> _commitCreate(String name) async {
     final pending = pendingCreate.value;
     if (pending == null) return;
-    if (name.contains(Platform.pathSeparator) || name == '.' || name == '..') {
+    if (name.contains(PlatformPaths.separator) || name == '.' || name == '..') {
       renameError.value = t.toast.renameInvalidName;
       renameAttempt.value = renameAttempt.value + 1;
       return;
     }
     final dir = currentPath.value;
-    final newPath = '$dir${Platform.pathSeparator}$name';
+    final newPath = PlatformPaths.join(dir, name);
     if (FileSystemEntity.typeSync(newPath) != FileSystemEntityType.notFound) {
       renameError.value = t.toast.renameAlreadyExists(name: name);
       renameAttempt.value = renameAttempt.value + 1;
@@ -542,7 +544,7 @@ class NavigationStore {
   }
 
   void revealInFolder(String path) {
-    final parent = path.substring(0, path.lastIndexOf(Platform.pathSeparator));
+    final parent = PlatformPaths.parentOf(path);
     if (parent.isEmpty) return;
     closeSearch();
     navigateTo(parent);
@@ -663,11 +665,12 @@ class NavigationStore {
     String destination, {
     bool move = false,
   }) {
+    final sep = PlatformPaths.separator;
     final filtered = sourcePaths.where((s) {
-      final parent = s.substring(0, s.lastIndexOf(Platform.pathSeparator));
+      final parent = PlatformPaths.parentOf(s);
       if (parent == destination) return false;
       if (destination == s) return false;
-      if (destination.startsWith('$s${Platform.pathSeparator}')) return false;
+      if (destination.startsWith('$s$sep')) return false;
       return true;
     }).toList();
     if (filtered.isEmpty) return;
@@ -692,11 +695,12 @@ class NavigationStore {
     bool isCut = samePaths && internalCut;
     if (!isCut) isCut = await FileClipboard.isCutOperation();
 
+    final sep = PlatformPaths.separator;
     final filteredPaths = paths.where((s) {
-      final parent = s.substring(0, s.lastIndexOf(Platform.pathSeparator));
+      final parent = PlatformPaths.parentOf(s);
       if (parent == currentPath.value) return false;
       if (currentPath.value == s) return false;
-      if (currentPath.value.startsWith('$s${Platform.pathSeparator}')) {
+      if (currentPath.value.startsWith('$s$sep')) {
         return false;
       }
       return true;

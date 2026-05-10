@@ -13,10 +13,7 @@ class SettingsStore {
 
   final terminal = signal<String>('auto');
   final terminalCustomCommand = signal<String>('');
-  // 0 = auto (follow system); otherwise explicit multiplier (e.g. 1.0, 1.25).
-  final uiScale = signal<double>(0);
 
-  // Session state.
   final sessionIsDual = signal<bool>(false);
   final sessionSplitRatio = signal<double>(0.5);
   final sessionActivePaneIndex = signal<int>(0);
@@ -50,8 +47,6 @@ class SettingsStore {
     if (t is String && t.isNotEmpty) terminal.value = t;
     final tc = data['terminalCustomCommand'];
     if (tc is String) terminalCustomCommand.value = tc;
-    final us = data['uiScale'];
-    if (us is num) uiScale.value = us.toDouble();
 
     final session = data['session'];
     if (session is Map<String, dynamic>) {
@@ -81,7 +76,6 @@ class SettingsStore {
   Map<String, dynamic> _toJson() => {
     'terminal': terminal.value,
     'terminalCustomCommand': terminalCustomCommand.value,
-    'uiScale': uiScale.value,
     'session': {
       'isDual': sessionIsDual.value,
       'splitRatio': sessionSplitRatio.value,
@@ -96,7 +90,6 @@ class SettingsStore {
       effect(() {
         terminal.value;
         terminalCustomCommand.value;
-        uiScale.value;
         sessionIsDual.value;
         sessionSplitRatio.value;
         sessionActivePaneIndex.value;

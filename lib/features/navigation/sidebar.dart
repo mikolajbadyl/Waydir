@@ -6,6 +6,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'navigation_store.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
+import '../../core/platform/platform_paths.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/drag_drop.dart';
 import '../operations/drag_hint.dart';
@@ -33,7 +34,18 @@ class _SidebarState extends State<Sidebar> {
   @override
   void initState() {
     super.initState();
-    final h = Platform.environment['HOME'] ?? '/';
+    final h = PlatformPaths.homePath;
+    final devices = <_SidebarItem>[];
+    if (PlatformPaths.isWindows) {
+      for (final drive in PlatformPaths.listDrives()) {
+        final label = drive.replaceAll('\\', '');
+        devices.add(_SidebarItem(label, PhosphorIconsRegular.hardDrive, drive));
+      }
+    } else {
+      devices.add(
+        _SidebarItem(t.sidebar.root, PhosphorIconsRegular.hardDrives, '/'),
+      );
+    }
     _sections = [
       (
         title: t.sidebar.favorites,
@@ -42,41 +54,36 @@ class _SidebarState extends State<Sidebar> {
           _SidebarItem(
             t.sidebar.desktop,
             PhosphorIconsRegular.desktop,
-            '$h/Desktop',
+            PlatformPaths.desktopPath,
           ),
           _SidebarItem(
             t.sidebar.documents,
             PhosphorIconsRegular.notebook,
-            '$h/Documents',
+            PlatformPaths.documentsPath,
           ),
           _SidebarItem(
             t.sidebar.downloads,
             PhosphorIconsRegular.downloadSimple,
-            '$h/Downloads',
+            PlatformPaths.downloadsPath,
           ),
           _SidebarItem(
             t.sidebar.pictures,
             PhosphorIconsRegular.image,
-            '$h/Pictures',
+            PlatformPaths.picturesPath,
           ),
           _SidebarItem(
             t.sidebar.music,
             PhosphorIconsRegular.musicNote,
-            '$h/Music',
+            PlatformPaths.musicPath,
           ),
           _SidebarItem(
             t.sidebar.videos,
             PhosphorIconsRegular.videoCamera,
-            '$h/Videos',
+            PlatformPaths.videosPath,
           ),
         ],
       ),
-      (
-        title: t.sidebar.devices,
-        items: [
-          _SidebarItem(t.sidebar.root, PhosphorIconsRegular.hardDrives, '/'),
-        ],
-      ),
+      (title: t.sidebar.devices, items: devices),
     ];
   }
 

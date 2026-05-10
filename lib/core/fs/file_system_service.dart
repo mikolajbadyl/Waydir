@@ -4,6 +4,8 @@ import 'dart:isolate';
 import 'package:path/path.dart' as p;
 import '../models/file_entry.dart';
 import '../models/file_operation.dart';
+import '../platform/platform_paths.dart';
+import '../platform/win32_attributes.dart';
 import '../settings/settings_store.dart';
 import '../terminal/terminal.dart';
 import '../../i18n/strings.g.dart';
@@ -37,10 +39,7 @@ class RenameError extends RenameResult {
 
 class FileSystemService {
   static RenameResult rename(String oldPath, String newName) {
-    if (newName.isEmpty ||
-        newName == '.' ||
-        newName == '..' ||
-        newName.contains('/')) {
+    if (!PlatformPaths.isValidFileName(newName)) {
       return const RenameInvalidName();
     }
 
@@ -87,17 +86,12 @@ class FileSystemService {
       );
 
   static Future<void> openWithDefaultApp(String path) async {
-    if (Platform.isLinux) {
+    if (PlatformPaths.isWindows) {
+      shellOpenOnWindows(path);
+    } else if (Platform.isLinux) {
       await Process.start('xdg-open', [path], mode: ProcessStartMode.detached);
     } else if (Platform.isMacOS) {
       await Process.start('open', [path], mode: ProcessStartMode.detached);
-    } else if (Platform.isWindows) {
-      await Process.start(
-        'cmd',
-        ['/c', 'start', '', path],
-        mode: ProcessStartMode.detached,
-        runInShell: true,
-      );
     }
   }
 
@@ -1118,22 +1112,38 @@ class FileSystemService {
   static String _friendlyError(Object e) {
     final msg = e.toString();
     if (e is FileSystemException) {
-      if (msg.contains('Permission denied') || msg.contains('errno = 13')) {
+      if (msg.contains('Permission denied') ||
+          msg.contains('errno = 13') ||
+          msg.contains('Access is denied') ||
+          msg.contains('ERROR_ACCESS_DENIED')) {
         return t.errors.permissionDenied;
       }
-      if (msg.contains('No space left') || msg.contains('errno = 28')) {
+      if (msg.contains('No space left') ||
+          msg.contains('errno = 28') ||
+          msg.contains('ERROR_DISK_FULL') ||
+          msg.contains('There is not enough space')) {
         return t.errors.noSpace;
       }
-      if (msg.contains('Read-only file system') || msg.contains('errno = 30')) {
+      if (msg.contains('Read-only file system') ||
+          msg.contains('errno = 30') ||
+          msg.contains('ERROR_WRITE_PROTECT')) {
         return t.errors.readOnly;
       }
-      if (msg.contains('No such file') || msg.contains('errno = 2')) {
+      if (msg.contains('No such file') ||
+          msg.contains('errno = 2') ||
+          msg.contains('ERROR_FILE_NOT_FOUND') ||
+          msg.contains('ERROR_PATH_NOT_FOUND') ||
+          msg.contains('The system cannot find')) {
         return t.errors.notFound;
       }
-      if (msg.contains('Directory not empty') || msg.contains('errno = 39')) {
+      if (msg.contains('Directory not empty') ||
+          msg.contains('errno = 39') ||
+          msg.contains('ERROR_DIR_NOT_EMPTY')) {
         return t.errors.notEmpty;
       }
-      if (msg.contains('cross-device') || msg.contains('errno = 18')) {
+      if (msg.contains('cross-device') ||
+          msg.contains('errno = 18') ||
+          msg.contains('ERROR_NOT_SAME_DEVICE')) {
         return t.errors.crossDevice;
       }
       if (e.message.isNotEmpty) return e.message;

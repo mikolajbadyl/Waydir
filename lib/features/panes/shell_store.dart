@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:signals/signals.dart';
+import '../../core/platform/platform_paths.dart';
 import '../../core/settings/settings_store.dart';
 import '../navigation/navigation_store.dart';
 import '../operations/operation_store.dart';
@@ -40,10 +42,13 @@ class ShellStore {
     }
     final restored = <PaneStore>[];
     for (int i = 0; i < saved.length; i++) {
+      final validPaths = saved[i]
+          .where((p) => Directory(p).existsSync())
+          .toList();
       restored.add(
         PaneStore.fromPaths(
           operationStore: operationStore,
-          paths: saved[i],
+          paths: validPaths.isEmpty ? [PlatformPaths.homePath] : validPaths,
           activeTabIndex: i < s.sessionPaneActiveTabs.value.length
               ? s.sessionPaneActiveTabs.value[i]
               : 0,

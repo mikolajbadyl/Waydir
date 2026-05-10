@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:signals/signals.dart';
+import '../../core/platform/platform_paths.dart';
 import '../navigation/navigation_store.dart';
 import '../operations/operation_store.dart';
 import 'tab_state.dart';
@@ -20,7 +20,7 @@ class TabsStore {
   int _idCounter = 0;
 
   TabsStore({required this.operationStore, String? initialPath}) {
-    addTab(initialPath ?? Platform.environment['HOME'] ?? '/');
+    addTab(initialPath ?? PlatformPaths.homePath);
   }
 
   TabsStore.fromPaths({
@@ -29,7 +29,7 @@ class TabsStore {
     int activeTabIndex = 0,
   }) {
     if (paths.isEmpty) {
-      addTab(Platform.environment['HOME'] ?? '/');
+      addTab(PlatformPaths.homePath);
       return;
     }
     for (final path in paths) {

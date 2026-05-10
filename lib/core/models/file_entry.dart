@@ -1,4 +1,6 @@
 import 'dart:io';
+import '../platform/platform_paths.dart';
+import '../platform/win32_attributes.dart';
 
 enum FileItemType { folder, file }
 
@@ -27,7 +29,7 @@ class FileEntry {
   factory FileEntry.fromFileSystemEntity(FileSystemEntity entity) {
     final stat = entity.statSync();
     return FileEntry(
-      name: entity.path.split(Platform.pathSeparator).last,
+      name: PlatformPaths.fileName(entity.path),
       path: entity.path,
       type: entity is Directory ? FileItemType.folder : FileItemType.file,
       size: stat.size,
@@ -42,5 +44,10 @@ class FileEntry {
     return name.substring(dotIndex + 1).toLowerCase();
   }
 
-  bool get isHidden => name.startsWith('.');
+  bool get isHidden {
+    if (PlatformPaths.isWindows) {
+      return name.startsWith('.') || isHiddenOnWindows(path);
+    }
+    return name.startsWith('.');
+  }
 }

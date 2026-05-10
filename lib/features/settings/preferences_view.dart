@@ -4,7 +4,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
-import 'panes/appearance_pane.dart';
 import 'panes/coming_soon_pane.dart';
 import 'panes/terminal_pane.dart';
 
@@ -47,6 +46,7 @@ final categories = <CategoryMeta>[
     Category.appearance,
     PhosphorIconsRegular.palette,
     () => t.preferences.categories.appearance,
+    comingSoon: true,
   ),
   CategoryMeta(
     Category.terminal,
@@ -323,8 +323,6 @@ class _ContentPane extends StatelessWidget {
     final meta = categories.firstWhere((c) => c.id == category);
     if (meta.comingSoon) return ComingSoonPane(meta: meta);
     switch (category) {
-      case Category.appearance:
-        return const AppearancePane();
       case Category.terminal:
         return const TerminalPane();
       default:
