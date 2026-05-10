@@ -541,14 +541,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
-  scaled_app:
-    dependency: "direct main"
-    description:
-      name: scaled_app
-      sha256: e56145496f51d1f14cb48d8dfd71795ed37a2adabd5228dd21dad20be1914e69
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.3.1"
   serial_csv:
     dependency: transitive
     description:

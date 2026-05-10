@@ -33,7 +33,6 @@ dependencies:
   slang_flutter: ^4.14.0
   path: ^1.9.1
   ffi: ^2.2.0
-  scaled_app: ^2.3.1
 
 dev_dependencies:
   flutter_test:
