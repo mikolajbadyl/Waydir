@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Mouse drag selection (lasso) to easily select multiple files. Hold `Ctrl` to add to an existing selection.
 - Windows support (paths, drives, breadcrumbs, system file filtering, native file opening).
 
 ### Changed
