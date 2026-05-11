@@ -180,7 +180,7 @@ class _SidebarState extends State<Sidebar> {
                     widget.store.dropFiles(paths, path, move: move);
                   }
                 },
-                onUnmount: (isMounted && drive.id != '/')
+                onUnmount: (isMounted && drive.id != '/' && Platform.isLinux)
                     ? () async {
                         final currentPath = widget.store.currentPath.value;
                         final mountPoint = drive.mountPoint;
@@ -309,12 +309,12 @@ class _ItemRowState extends State<_ItemRow> {
               children: [
                 PhosphorIcon(
                   widget.item.icon,
-                    size: 16,
-                    color: widget.isSelected
-                        ? AppColors.fgAccent
-                        : AppColors.fgMuted,
-                  ),
-                  const SizedBox(width: 8),
+                  size: 16,
+                  color: widget.isSelected
+                      ? AppColors.fgAccent
+                      : AppColors.fgMuted,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.item.label,
