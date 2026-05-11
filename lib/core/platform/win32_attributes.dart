@@ -17,7 +17,8 @@ int Function(
   Pointer<Utf16>,
   Pointer<Utf16>,
   int,
-)? _shellExecuteW;
+)?
+_shellExecuteW;
 
 void _ensureKernel32() {
   if (_kernel32 != null) return;
@@ -34,10 +35,23 @@ void _ensureShell32() {
   _shell32 = DynamicLibrary.open('shell32.dll');
   _shellExecuteW = _shell32!
       .lookupFunction<
-          IntPtr Function(IntPtr, Pointer<Utf16>, Pointer<Utf16>,
-              Pointer<Utf16>, Pointer<Utf16>, Int32),
-          int Function(int, Pointer<Utf16>, Pointer<Utf16>, Pointer<Utf16>,
-              Pointer<Utf16>, int)>('ShellExecuteW');
+        IntPtr Function(
+          IntPtr,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Int32,
+        ),
+        int Function(
+          int,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          int,
+        )
+      >('ShellExecuteW');
 }
 
 bool isHiddenOnWindows(String path) {
