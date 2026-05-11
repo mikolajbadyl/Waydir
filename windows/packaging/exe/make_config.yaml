@@ -5,3 +5,4 @@ publisher_name: mikolajbadyl
 publisher_url: https://github.com/mikolajbadyl/Waydir
 setup_icon_file: windows/runner/resources/app_icon.ico
 create_desktop_icon: false
+script_template: inno_setup.iss

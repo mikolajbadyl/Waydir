@@ -31,17 +31,6 @@ It's built on Flutter so the same binary runs on Linux, Windows and macOS from o
 - Clipboard integration
 - Theming and i18n
 
-## How it works
-
-The short version:
-
-- **`lib/core/`** - the boring-but-important stuff: filesystem ops, clipboard, keyboard routing, settings, system integration.
-- **`lib/features/`** - user-facing surfaces: `panes`, `tabs`, `files`, `navigation`, `operations`, `settings`. Each owns its state and widgets.
-- **`lib/ui/`** - shared widgets and theming.
-- **`lib/i18n/`** - translations via [slang](https://pub.dev/packages/slang).
-
-The big design choice: **anything that touches the disk runs in a background isolate**. The UI thread only ever renders. That's why scrolling stays at 60fps even when a directory is being indexed under you.
-
 ## Quick start
 
 ```bash
