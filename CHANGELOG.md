@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Mouse drag selection (lasso) to easily select multiple files. Hold `Ctrl` to add to an existing selection.
+- Dynamic drive management with real-time detection of connected drives.
+- Mount and unmount drives directly from the sidebar.
+- Mouse drag selection (lasso) to easily select multiple files.
 - Windows support (paths, drives, breadcrumbs, system file filtering, native file opening).
 
 ### Changed
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Double title bar on Windows.
+- Remove autostart from Windows installer.
 
 ## [0.1.1] - 2026-05-09
 
