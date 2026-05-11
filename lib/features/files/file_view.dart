@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import '../../utils/format.dart';
 import '../operations/drag_hint.dart';
 import 'file_icons.dart';
+import 'rubber_band_layer.dart';
 
 typedef FileSelectCallback = void Function(FileSelectionEvent event);
 typedef FileOpenCallback = void Function(FileEntry entry);
@@ -50,6 +51,7 @@ class FileList extends StatefulWidget {
   final bool recursiveResults;
   final VoidCallback? onCloseSearch;
   final OpenInNewTabCallback? onOpenInNewTab;
+  final RubberBandSelectCallback? onRectSelect;
 
   const FileList({
     super.key,
@@ -71,6 +73,7 @@ class FileList extends StatefulWidget {
     this.recursiveResults = false,
     this.onCloseSearch,
     this.onOpenInNewTab,
+    this.onRectSelect,
   });
 
   @override
@@ -152,104 +155,114 @@ class _FileListState extends State<FileList> {
         _ListHeader(recursive: widget.recursiveResults),
         Divider(height: 1, thickness: 1, color: AppColors.bgDivider),
         Expanded(
-          child: DropRegion(
-            formats: [Formats.fileUri, formatLocalFile],
-            hitTestBehavior: HitTestBehavior.opaque,
-            onDropOver: (event) {
-              _updateHover(event.position.local);
-              return DragHintController.instance.mode.value == DragMode.move
-                  ? DropOperation.move
-                  : DropOperation.copy;
-            },
-            onDropLeave: (_) => _clearDrag(),
-            onDropEnded: (_) {
-              _clearDrag();
-            },
-            onPerformDrop: (event) async {
-              final pos = event.position.local;
-              final index = _rowAt(pos);
-              String? target;
-              if (index >= 0 &&
-                  widget.files[index].type == FileItemType.folder) {
-                target = widget.files[index].path;
-              }
-              final paths = await pathsFromSession(event.session);
-              final move =
-                  DragHintController.instance.mode.value == DragMode.move;
-              if (paths.isNotEmpty) {
-                widget.onDropFiles?.call(
-                  paths,
-                  target ?? widget.currentPath,
-                  move: move,
-                );
-              }
-              _clearDrag();
-            },
-            child: Stack(
-              children: [
-                GestureDetector(
-                  onTap: widget.onBackgroundTap,
-                  onSecondaryTapUp: (d) {
-                    final index = _rowAt(d.localPosition);
-                    if (index < 0) {
-                      widget.onBackgroundTap?.call();
-                      widget.onBackgroundContextMenu?.call(d.globalPosition);
-                    }
-                  },
-                  behavior: HitTestBehavior.translucent,
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    padding: EdgeInsets.zero,
-                    itemCount: widget.files.length,
-                    itemExtent: _kItemExtent,
-                    itemBuilder: (context, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: _kRowGap),
-                      child: _ListRow(
-                        entry: widget.files[i],
-                        index: i,
-                        selected: widget.selectedPaths.contains(
-                          widget.files[i].path,
-                        ),
-                        selectedPaths: widget.selectedPaths,
-                        isCut: widget.cutPaths.contains(widget.files[i].path),
-                        isDraggingSelected: widget.selectedPaths.isNotEmpty,
-                        isFolderDragOver:
-                            _hoveredFolderPath == widget.files[i].path,
-                        isRenaming: widget.renamingPath == widget.files[i].path,
-                        renameAttempt: widget.renameAttempt,
-                        onRenameSubmit: widget.onRenameSubmit,
-                        onRenameCancel: widget.onRenameCancel,
-                        onSelect: widget.onSelect,
-                        onOpen: widget.onOpen,
-                        onContextMenu: widget.onContextMenu,
-                        onMenuAction: widget.onMenuAction,
-                        recursive: widget.recursiveResults,
-                        location: widget.recursiveResults
-                            ? _relativeParent(
-                                widget.files[i].path,
-                                widget.currentPath,
-                              )
-                            : null,
-                        onOpenInNewTab: widget.onOpenInNewTab,
-                      ),
-                    ),
-                  ),
-                ),
-                if (_isDragOver)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: AppColors.accent.withValues(alpha: 0.4),
-                            width: 1,
+          child: RubberBandLayer(
+            scrollController: _scrollController,
+            itemCount: widget.files.length,
+            itemExtent: _kItemExtent,
+            rowHeight: _kRowHeight,
+            pathAt: (i) => widget.files[i].path,
+            rowAt: _rowAt,
+            onSelectionChanged: widget.onRectSelect,
+            onBackgroundTap: widget.onBackgroundTap,
+            child: DropRegion(
+              formats: [Formats.fileUri, formatLocalFile],
+              hitTestBehavior: HitTestBehavior.opaque,
+              onDropOver: (event) {
+                _updateHover(event.position.local);
+                return DragHintController.instance.mode.value == DragMode.move
+                    ? DropOperation.move
+                    : DropOperation.copy;
+              },
+              onDropLeave: (_) => _clearDrag(),
+              onDropEnded: (_) {
+                _clearDrag();
+              },
+              onPerformDrop: (event) async {
+                final pos = event.position.local;
+                final index = _rowAt(pos);
+                String? target;
+                if (index >= 0 &&
+                    widget.files[index].type == FileItemType.folder) {
+                  target = widget.files[index].path;
+                }
+                final paths = await pathsFromSession(event.session);
+                final move =
+                    DragHintController.instance.mode.value == DragMode.move;
+                if (paths.isNotEmpty) {
+                  widget.onDropFiles?.call(
+                    paths,
+                    target ?? widget.currentPath,
+                    move: move,
+                  );
+                }
+                _clearDrag();
+              },
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    onSecondaryTapUp: (d) {
+                      final index = _rowAt(d.localPosition);
+                      if (index < 0) {
+                        widget.onBackgroundTap?.call();
+                        widget.onBackgroundContextMenu?.call(d.globalPosition);
+                      }
+                    },
+                    behavior: HitTestBehavior.translucent,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: EdgeInsets.zero,
+                      itemCount: widget.files.length,
+                      itemExtent: _kItemExtent,
+                      itemBuilder: (context, i) => Padding(
+                        padding: const EdgeInsets.only(bottom: _kRowGap),
+                        child: _ListRow(
+                          entry: widget.files[i],
+                          index: i,
+                          selected: widget.selectedPaths.contains(
+                            widget.files[i].path,
                           ),
-                          borderRadius: BorderRadius.circular(4),
+                          selectedPaths: widget.selectedPaths,
+                          isCut: widget.cutPaths.contains(widget.files[i].path),
+                          isDraggingSelected: widget.selectedPaths.isNotEmpty,
+                          isFolderDragOver:
+                              _hoveredFolderPath == widget.files[i].path,
+                          isRenaming:
+                              widget.renamingPath == widget.files[i].path,
+                          renameAttempt: widget.renameAttempt,
+                          onRenameSubmit: widget.onRenameSubmit,
+                          onRenameCancel: widget.onRenameCancel,
+                          onSelect: widget.onSelect,
+                          onOpen: widget.onOpen,
+                          onContextMenu: widget.onContextMenu,
+                          onMenuAction: widget.onMenuAction,
+                          recursive: widget.recursiveResults,
+                          location: widget.recursiveResults
+                              ? _relativeParent(
+                                  widget.files[i].path,
+                                  widget.currentPath,
+                                )
+                              : null,
+                          onOpenInNewTab: widget.onOpenInNewTab,
                         ),
                       ),
                     ),
                   ),
-              ],
+                  if (_isDragOver)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

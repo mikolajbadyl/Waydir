@@ -606,6 +606,23 @@ class NavigationStore {
 
   void onBackgroundTap() => deselectAll();
 
+  void onRectSelect(Set<String> paths, {bool additive = false}) {
+    batch(() {
+      if (additive) {
+        selectedPaths.value = {...selectedPaths.value, ...paths};
+      } else {
+        selectedPaths.value = paths;
+      }
+      if (paths.isNotEmpty) {
+        final idx = _vf.indexWhere((f) => paths.contains(f.path));
+        if (idx >= 0) cursorIndex.value = idx;
+      } else if (!additive) {
+        cursorIndex.value = -1;
+        anchorIndex.value = -1;
+      }
+    });
+  }
+
   List<FileEntry> get selectedEntries {
     final paths = selectedPaths.value;
     return _vf.where((f) => paths.contains(f.path)).toList();
