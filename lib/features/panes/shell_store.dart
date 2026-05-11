@@ -1,5 +1,11 @@
+import 'dart:async';
+
 import 'dart:io';
+
+import 'package:drift/drift.dart';
 import 'package:signals/signals.dart';
+
+import '../../core/database/app_database.dart';
 import '../../core/platform/platform_paths.dart';
 import '../../core/settings/settings_store.dart';
 import '../navigation/navigation_store.dart';
@@ -27,36 +33,51 @@ class ShellStore {
   });
 
   void Function()? _persistDisposer;
+  Timer? _tabPersistDebounce;
 
   ShellStore({required this.operationStore, required this.notificationStore}) {
-    _restoreFromSettings();
+    _restoreSession();
     _wirePersistence();
   }
 
-  void _restoreFromSettings() {
+  Future<void> _restoreSession() async {
     final s = SettingsStore.instance;
-    final saved = s.sessionPanes.value;
-    if (saved.isEmpty) {
+    final db = s.db;
+
+    isDual.value = s.sessionIsDual.value;
+    splitRatio.value = s.sessionSplitRatio.value.clamp(0.2, 0.8);
+
+    final savedTabs = await db.getTabs();
+    if (savedTabs.isEmpty) {
       panes.value = [PaneStore(operationStore: operationStore)];
       return;
     }
+
+    final paneMap = <int, List<String>>{};
+    final activeMap = <int, int>{};
+    for (final tab in savedTabs) {
+      paneMap.putIfAbsent(tab.paneIndex, () => []);
+      paneMap[tab.paneIndex]!.add(tab.path);
+      if (tab.isActive) {
+        activeMap[tab.paneIndex] = tab.tabIndex;
+      }
+    }
+
     final restored = <PaneStore>[];
-    for (int i = 0; i < saved.length; i++) {
-      final validPaths = saved[i]
-          .where((p) => Directory(p).existsSync())
-          .toList();
+    final maxPane = paneMap.keys.reduce((a, b) => a > b ? a : b);
+    for (int i = 0; i <= maxPane; i++) {
+      final paths = paneMap[i] ?? [];
+      final validPaths = paths.where((p) => Directory(p).existsSync()).toList();
       restored.add(
         PaneStore.fromPaths(
           operationStore: operationStore,
           paths: validPaths.isEmpty ? [PlatformPaths.homePath] : validPaths,
-          activeTabIndex: i < s.sessionPaneActiveTabs.value.length
-              ? s.sessionPaneActiveTabs.value[i]
-              : 0,
+          activeTabIndex: activeMap[i] ?? 0,
         ),
       );
     }
+
     panes.value = restored;
-    splitRatio.value = s.sessionSplitRatio.value.clamp(0.2, 0.8);
     final wantDual = s.sessionIsDual.value && restored.length >= 2;
     isDual.value = wantDual;
     final activeIdx = s.sessionActivePaneIndex.value;
@@ -68,20 +89,50 @@ class ShellStore {
   void _wirePersistence() {
     final s = SettingsStore.instance;
     _persistDisposer = effect(() {
-      final paneList = panes.value;
-      final tabPaths = <List<String>>[];
-      final tabActiveIdx = <int>[];
-      for (final pane in paneList) {
-        final tabs = pane.tabs.tabs.value;
-        tabPaths.add(tabs.map((t) => t.store.currentPath.value).toList());
-        tabActiveIdx.add(pane.tabs.activeIndex.value);
+      panes.value;
+      for (final pane in panes.value) {
+        pane.tabs.tabs.value;
+        pane.tabs.activeIndex.value;
+        for (final tab in pane.tabs.tabs.value) {
+          tab.store.currentPath.value;
+        }
       }
-      s.sessionPanes.value = tabPaths;
-      s.sessionPaneActiveTabs.value = tabActiveIdx;
       s.sessionIsDual.value = isDual.value;
       s.sessionSplitRatio.value = splitRatio.value;
       s.sessionActivePaneIndex.value = activePaneIndex.value;
+      _scheduleTabPersist();
     });
+  }
+
+  void _scheduleTabPersist() {
+    _tabPersistDebounce?.cancel();
+    _tabPersistDebounce = Timer(
+      const Duration(milliseconds: 200),
+      _persistTabs,
+    );
+  }
+
+  Future<void> _persistTabs() async {
+    try {
+      final db = SettingsStore.instance.db;
+      final paneList = panes.value;
+      final rows = <SessionTabsCompanion>[];
+      for (int p = 0; p < paneList.length; p++) {
+        final tabs = paneList[p].tabs.tabs.value;
+        final activeIdx = paneList[p].tabs.activeIndex.value;
+        for (int t = 0; t < tabs.length; t++) {
+          rows.add(
+            SessionTabsCompanion.insert(
+              paneIndex: p,
+              tabIndex: t,
+              path: tabs[t].store.currentPath.value,
+              isActive: Value(t == activeIdx),
+            ),
+          );
+        }
+      }
+      await db.replaceTabs(rows);
+    } catch (_) {}
   }
 
   void toggleDual() {
@@ -138,6 +189,7 @@ class ShellStore {
   void dispose() {
     _persistDisposer?.call();
     _persistDisposer = null;
+    _tabPersistDebounce?.cancel();
     for (final pane in panes.value) {
       pane.dispose();
     }
