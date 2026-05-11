@@ -4,8 +4,11 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'navigation_store.dart';
+import '../drives/drive_store.dart';
+import '../drives/drive_model.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
+import '../../ui/dialogs/password_dialog.dart';
 import '../../core/platform/platform_paths.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/drag_drop.dart';
@@ -29,61 +32,44 @@ class Sidebar extends StatefulWidget {
 }
 
 class _SidebarState extends State<Sidebar> {
-  late List<({String title, List<_SidebarItem> items})> _sections;
+  late final List<_SidebarItem> _favorites;
 
   @override
   void initState() {
     super.initState();
     final h = PlatformPaths.homePath;
-    final devices = <_SidebarItem>[];
-    if (PlatformPaths.isWindows) {
-      for (final drive in PlatformPaths.listDrives()) {
-        final label = drive.replaceAll('\\', '');
-        devices.add(_SidebarItem(label, PhosphorIconsRegular.hardDrive, drive));
-      }
-    } else {
-      devices.add(
-        _SidebarItem(t.sidebar.root, PhosphorIconsRegular.hardDrives, '/'),
-      );
-    }
-    _sections = [
-      (
-        title: t.sidebar.favorites,
-        items: [
-          _SidebarItem(t.sidebar.home, PhosphorIconsRegular.house, h),
-          _SidebarItem(
-            t.sidebar.desktop,
-            PhosphorIconsRegular.desktop,
-            PlatformPaths.desktopPath,
-          ),
-          _SidebarItem(
-            t.sidebar.documents,
-            PhosphorIconsRegular.notebook,
-            PlatformPaths.documentsPath,
-          ),
-          _SidebarItem(
-            t.sidebar.downloads,
-            PhosphorIconsRegular.downloadSimple,
-            PlatformPaths.downloadsPath,
-          ),
-          _SidebarItem(
-            t.sidebar.pictures,
-            PhosphorIconsRegular.image,
-            PlatformPaths.picturesPath,
-          ),
-          _SidebarItem(
-            t.sidebar.music,
-            PhosphorIconsRegular.musicNote,
-            PlatformPaths.musicPath,
-          ),
-          _SidebarItem(
-            t.sidebar.videos,
-            PhosphorIconsRegular.videoCamera,
-            PlatformPaths.videosPath,
-          ),
-        ],
+    _favorites = [
+      _SidebarItem(t.sidebar.home, PhosphorIconsRegular.house, h),
+      _SidebarItem(
+        t.sidebar.desktop,
+        PhosphorIconsRegular.desktop,
+        PlatformPaths.desktopPath,
       ),
-      (title: t.sidebar.devices, items: devices),
+      _SidebarItem(
+        t.sidebar.documents,
+        PhosphorIconsRegular.notebook,
+        PlatformPaths.documentsPath,
+      ),
+      _SidebarItem(
+        t.sidebar.downloads,
+        PhosphorIconsRegular.downloadSimple,
+        PlatformPaths.downloadsPath,
+      ),
+      _SidebarItem(
+        t.sidebar.pictures,
+        PhosphorIconsRegular.image,
+        PlatformPaths.picturesPath,
+      ),
+      _SidebarItem(
+        t.sidebar.music,
+        PhosphorIconsRegular.musicNote,
+        PlatformPaths.musicPath,
+      ),
+      _SidebarItem(
+        t.sidebar.videos,
+        PhosphorIconsRegular.videoCamera,
+        PlatformPaths.videosPath,
+      ),
     ];
   }
 
@@ -91,32 +77,128 @@ class _SidebarState extends State<Sidebar> {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.bgSidebar,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: _sections
-            .expand(
-              (section) => [
-                _SectionHeader(title: section.title),
-                ...section.items.map(
-                  (item) => Watch((context) {
-                    final currentPath = widget.store.currentPath.value;
-                    return _ItemRow(
-                      item: item,
-                      isSelected: currentPath == item.path,
-                      onTap: widget.store.navigateTo,
-                      onMiddleTap: widget.onOpenInNewTab != null
-                          ? () => widget.onOpenInNewTab!(item.path)
-                          : null,
-                      onDropFiles: (paths, {bool move = false}) =>
-                          widget.store.dropFiles(paths, item.path, move: move),
-                    );
-                  }),
+      child: Watch((context) {
+        final currentPath = widget.store.currentPath.value;
+        final currentDrives = driveStore.drives.value;
+
+        // Add standard root on Linux if not present dynamically
+        final devices = <Drive>[...currentDrives];
+        if (PlatformPaths.isLinux && !devices.any((d) => d.id == '/')) {
+          devices.insert(
+            0,
+            Drive(
+              id: '/',
+              label: t.sidebar.root,
+              isRemovable: false,
+              mountPoint: '/',
+            ),
+          );
+        }
+
+        return ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _SectionHeader(title: t.sidebar.favorites),
+            ..._favorites.map(
+              (item) => _ItemRow(
+                item: item,
+                isSelected: currentPath == item.path,
+                onTap: widget.store.navigateTo,
+                onMiddleTap: widget.onOpenInNewTab != null
+                    ? () => widget.onOpenInNewTab!(item.path)
+                    : null,
+                onDropFiles: (paths, {bool move = false}) =>
+                    widget.store.dropFiles(paths, item.path, move: move),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _SectionHeader(title: t.sidebar.devices),
+            ...devices.map((drive) {
+              final path = drive.mountPoint ?? drive.id;
+              final isSelected = currentPath == path;
+              final isMounted = drive.isMounted;
+
+              return _ItemRow(
+                item: _SidebarItem(
+                  drive.label,
+                  drive.isRemovable
+                      ? PhosphorIconsRegular.usb
+                      : PhosphorIconsRegular.hardDrive,
+                  path,
                 ),
-                const SizedBox(height: 8),
-              ],
-            )
-            .toList(),
-      ),
+                isSelected: isSelected,
+                isMounted: isMounted,
+                onTap: (p) async {
+                  if (isMounted) {
+                    widget.store.navigateTo(p);
+                  } else {
+                    try {
+                      await driveStore.mount(drive);
+                      Future.microtask(() {
+                        final mountedDrive = driveStore.drives.value
+                            .where((d) => d.id == drive.id)
+                            .firstOrNull;
+                        if (mountedDrive?.isMounted == true) {
+                          widget.store.navigateTo(mountedDrive!.mountPoint!);
+                        }
+                      });
+                    } catch (e) {
+                      final error = e.toString().toLowerCase();
+                      if (error.contains('not authorized') ||
+                          error.contains('polkit') ||
+                          error.contains('authenticate')) {
+                        if (context.mounted) {
+                          final pwd = await showPasswordDialog(
+                            context,
+                            title: 'Mount ${drive.label}',
+                          );
+                          if (pwd != null) {
+                            try {
+                              await driveStore.mountWithPassword(drive, pwd);
+                              Future.microtask(() {
+                                final mountedDrive = driveStore.drives.value
+                                    .where((d) => d.id == drive.id)
+                                    .firstOrNull;
+                                if (mountedDrive?.isMounted == true) {
+                                  widget.store.navigateTo(
+                                    mountedDrive!.mountPoint!,
+                                  );
+                                }
+                              });
+                            } catch (_) {}
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                onMiddleTap: widget.onOpenInNewTab != null && isMounted
+                    ? () => widget.onOpenInNewTab!(path)
+                    : null,
+                onDropFiles: (paths, {bool move = false}) {
+                  if (isMounted) {
+                    widget.store.dropFiles(paths, path, move: move);
+                  }
+                },
+                onUnmount: (isMounted && drive.id != '/')
+                    ? () async {
+                        final currentPath = widget.store.currentPath.value;
+                        final mountPoint = drive.mountPoint;
+                        try {
+                          await driveStore.unmount(drive);
+                          if (mountPoint != null &&
+                              currentPath.startsWith(mountPoint)) {
+                            widget.store.navigateTo(PlatformPaths.homePath);
+                          }
+                        } catch (_) {}
+                      }
+                    : null,
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        );
+      }),
     );
   }
 }
@@ -140,16 +222,20 @@ class _SectionHeader extends StatelessWidget {
 class _ItemRow extends StatefulWidget {
   final _SidebarItem item;
   final bool isSelected;
+  final bool isMounted;
   final ValueChanged<String> onTap;
   final VoidCallback? onMiddleTap;
   final void Function(List<String> paths, {bool move}) onDropFiles;
+  final VoidCallback? onUnmount;
 
   const _ItemRow({
     required this.item,
     required this.isSelected,
+    this.isMounted = true,
     required this.onTap,
     this.onMiddleTap,
     required this.onDropFiles,
+    this.onUnmount,
   });
 
   @override
@@ -199,12 +285,12 @@ class _ItemRowState extends State<_ItemRow> {
         onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
           onTap: () {
-            if (Directory(widget.item.path).existsSync()) {
+            if (!widget.isMounted || Directory(widget.item.path).existsSync()) {
               widget.onTap(widget.item.path);
             }
           },
           onTertiaryTapUp: (_) {
-            if (Directory(widget.item.path).existsSync()) {
+            if (widget.isMounted && Directory(widget.item.path).existsSync()) {
               widget.onMiddleTap?.call();
             }
           },
@@ -223,12 +309,12 @@ class _ItemRowState extends State<_ItemRow> {
               children: [
                 PhosphorIcon(
                   widget.item.icon,
-                  size: 16,
-                  color: widget.isSelected
-                      ? AppColors.fgAccent
-                      : AppColors.fgMuted,
-                ),
-                const SizedBox(width: 8),
+                    size: 16,
+                    color: widget.isSelected
+                        ? AppColors.fgAccent
+                        : AppColors.fgMuted,
+                  ),
+                  const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.item.label,
@@ -236,13 +322,30 @@ class _ItemRowState extends State<_ItemRow> {
                     style: context.txt.body.copyWith(
                       color: widget.isSelected
                           ? AppColors.fg
-                          : AppColors.fg.withValues(alpha: 0.85),
+                          : (widget.isMounted
+                                ? AppColors.fg.withValues(alpha: 0.85)
+                                : AppColors.fgMuted),
                       fontWeight: widget.isSelected
                           ? FontWeight.w500
                           : FontWeight.normal,
                     ),
                   ),
                 ),
+                if (widget.onUnmount != null)
+                  IconButton(
+                    icon: const PhosphorIcon(
+                      PhosphorIconsRegular.eject,
+                      size: 14,
+                      color: AppColors.fgMuted,
+                    ),
+                    onPressed: widget.onUnmount,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    splashRadius: 12,
+                  ),
               ],
             ),
           ),
