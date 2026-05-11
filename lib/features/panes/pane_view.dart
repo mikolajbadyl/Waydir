@@ -7,6 +7,8 @@ import '../../features/files/file_view.dart'
         BackgroundContextMenuCallback,
         FileContextMenuCallback,
         FileMenuActionCallback;
+import '../../features/files/rubber_band_layer.dart'
+    show RubberBandSelectCallback;
 import '../navigation/navigation_store.dart';
 import '../navigation/search_bar_widget.dart';
 import '../navigation/toolbar.dart';
@@ -79,6 +81,8 @@ class PaneView extends StatelessWidget {
                           onContextMenu: onContextMenu,
                           onMenuAction: onMenuAction,
                           onOpenInNewTab: onOpenInNewTab,
+                          onRectSelect: (paths, {additive = false}) =>
+                              tab.store.onRectSelect(paths, additive: additive),
                         ),
                     ],
                   );
@@ -104,6 +108,7 @@ class _TabContent extends StatelessWidget {
   final FileContextMenuCallback? onContextMenu;
   final FileMenuActionCallback? onMenuAction;
   final OpenInNewTabCallback? onOpenInNewTab;
+  final RubberBandSelectCallback? onRectSelect;
 
   const _TabContent({
     required this.store,
@@ -111,6 +116,7 @@ class _TabContent extends StatelessWidget {
     this.onContextMenu,
     this.onMenuAction,
     this.onOpenInNewTab,
+    this.onRectSelect,
   });
 
   @override
@@ -155,6 +161,7 @@ class _TabContent extends StatelessWidget {
           onRenameCancel: store.cancelRename,
           onCloseSearch: store.closeSearch,
           onOpenInNewTab: onOpenInNewTab,
+          onRectSelect: onRectSelect,
         );
       });
     });

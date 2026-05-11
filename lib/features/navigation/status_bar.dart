@@ -80,7 +80,10 @@ class StatusBar extends StatelessWidget {
                   _taskChip(context, task),
                   const SizedBox(width: 8),
                 ],
-                _statusText(context, '${AppInfo.name} ${AppInfo.versionLabel.value}'),
+                _statusText(
+                  context,
+                  '${AppInfo.name} ${AppInfo.versionLabel.value}',
+                ),
               ],
             );
           }),

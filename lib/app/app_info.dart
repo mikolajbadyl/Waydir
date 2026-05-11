@@ -10,8 +10,9 @@ class AppInfo {
   static const String license = 'MIT';
 
   static final version = signal<String>('…');
-  static final Computed<String> versionLabel =
-      computed(() => 'v${version.value}');
+  static final Computed<String> versionLabel = computed(
+    () => 'v${version.value}',
+  );
 
   static Future<void> init() async {
     final info = await PackageInfo.fromPlatform();
