@@ -1,6 +1,7 @@
 display_name: Waydir
 package_name: waydir
 description: A fast, keyboard-driven desktop file manager built with Flutter.
+icon: linux/packaging/deb/waydir.png
 priority: optional
 section: utility
 installed_size: 70000

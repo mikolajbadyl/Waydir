@@ -8,6 +8,7 @@ class AppInfo {
       'A fast, keyboard-driven desktop file manager built with Flutter.';
   static const String homepage = 'https://github.com/mikolajbadyl/waydir';
   static const String license = 'MIT';
+  static const String iconAsset = 'assets/app_icon.png';
 
   static final version = signal<String>('…');
   static final Computed<String> versionLabel = computed(
