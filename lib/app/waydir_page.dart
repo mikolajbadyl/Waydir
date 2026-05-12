@@ -401,33 +401,31 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.ignored;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.f9 ||
-        (HardwareKeyboard.instance.isControlPressed &&
-            HardwareKeyboard.instance.isShiftPressed &&
-            event.logicalKey == LogicalKeyboardKey.keyD)) {
+    final key = event.logicalKey;
+    final ctrl = AppShortcuts.isControl;
+    final shift = HardwareKeyboard.instance.isShiftPressed;
+    final alt = HardwareKeyboard.instance.isAltPressed;
+
+    if (AppShortcuts.isKey('toggle_dual', key)) {
       _shell.toggleDual();
       return KeyEventResult.handled;
     }
 
-    if (!HardwareKeyboard.instance.isControlPressed &&
-        !HardwareKeyboard.instance.isShiftPressed &&
-        event.logicalKey == LogicalKeyboardKey.tab &&
+    if (AppShortcuts.isKey('switch_pane', key) &&
+        !ctrl &&
+        !shift &&
         _shell.isDual.value) {
       final idx = _shell.activePaneIndex.value;
       _shell.setActivePane(1 - idx);
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        !HardwareKeyboard.instance.isShiftPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyT) {
+    if (ctrl && !shift && AppShortcuts.isKey('new_tab', key)) {
       _shell.activePane.value!.tabs.addTab(_active.currentPath.value);
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        !HardwareKeyboard.instance.isShiftPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyW) {
+    if (ctrl && !shift && AppShortcuts.isKey('close_tab', key)) {
       final tabsStore = _shell.activePane.value!.tabs;
       final tab = tabsStore.activeTab.value;
       if (tabsStore.tabs.value.length > 1) {
@@ -436,9 +434,7 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        !HardwareKeyboard.instance.isShiftPressed &&
-        event.logicalKey == LogicalKeyboardKey.tab) {
+    if (ctrl && !shift && AppShortcuts.isKey('next_tab', key)) {
       final tabsStore = _shell.activePane.value!.tabs;
       final idx = tabsStore.activeIndex.value;
       final next = (idx + 1) % tabsStore.tabs.value.length;
@@ -446,9 +442,7 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        HardwareKeyboard.instance.isShiftPressed &&
-        event.logicalKey == LogicalKeyboardKey.tab) {
+    if (ctrl && shift && AppShortcuts.isKey('prev_tab', key)) {
       final tabsStore = _shell.activePane.value!.tabs;
       final idx = tabsStore.activeIndex.value;
       final prev =
@@ -457,7 +451,7 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed) {
+    if (ctrl) {
       final digitKeys = [
         LogicalKeyboardKey.digit1,
         LogicalKeyboardKey.digit2,
@@ -469,7 +463,7 @@ class _WaydirPageState extends State<WaydirPage> {
         LogicalKeyboardKey.digit8,
         LogicalKeyboardKey.digit9,
       ];
-      final digitIdx = digitKeys.indexOf(event.logicalKey);
+      final digitIdx = digitKeys.indexOf(key);
       if (digitIdx >= 0) {
         _shell.activePane.value!.tabs.selectTab(digitIdx);
         return KeyEventResult.handled;
@@ -478,28 +472,22 @@ class _WaydirPageState extends State<WaydirPage> {
 
     final store = _active;
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        HardwareKeyboard.instance.isShiftPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyF) {
+    if (ctrl && shift && AppShortcuts.isKey('recursive_search', key)) {
       store.openSearch(recursive: true);
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        !HardwareKeyboard.instance.isShiftPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyF) {
+    if (ctrl && !shift && AppShortcuts.isKey('search', key)) {
       store.openSearch();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.escape &&
-        store.searchActive.value) {
+    if (AppShortcuts.isKey('close_search', key) && store.searchActive.value) {
       store.closeSearch();
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyC) {
+    if (ctrl && AppShortcuts.isKey('copy', key)) {
       store.copySelected();
       final count = store.selectedPaths.value.length;
       if (count > 0) {
@@ -511,8 +499,7 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyX) {
+    if (ctrl && AppShortcuts.isKey('cut', key)) {
       store.cutSelected();
       final count = store.selectedPaths.value.length;
       if (count > 0) {
@@ -524,40 +511,37 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isControlPressed &&
-        event.logicalKey == LogicalKeyboardKey.keyV) {
+    if (ctrl && AppShortcuts.isKey('paste', key)) {
       store.paste();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == AppShortcuts.openItem) {
+    if (AppShortcuts.isKey('open_item', key)) {
       store.openSelected();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == AppShortcuts.selectAll &&
-        HardwareKeyboard.instance.isControlPressed) {
+    if (ctrl && AppShortcuts.isKey('select_all', key)) {
       store.selectAll();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == AppShortcuts.deselectAll) {
+    if (AppShortcuts.isKey('deselect_all', key) && !store.searchActive.value) {
       store.deselectAll();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == AppShortcuts.toggleSelectDown) {
+    if (AppShortcuts.isKey('toggle_select', key)) {
       store.toggleSelectAndAdvance();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == AppShortcuts.goUp &&
-        !HardwareKeyboard.instance.isAltPressed) {
+    if (AppShortcuts.isKey('go_up', key) && !alt) {
       store.goUp();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.f5) {
+    if (AppShortcuts.isKey('dual_copy', key)) {
       if (_shell.isDual.value) {
         final activeIdx = _shell.activePaneIndex.value;
         final otherPane = _shell.panes.value[1 - activeIdx];
@@ -573,12 +557,12 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.f7) {
+    if (AppShortcuts.isKey('new_folder', key)) {
       store.startCreate();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.f6 && _shell.isDual.value) {
+    if (AppShortcuts.isKey('dual_move', key) && _shell.isDual.value) {
       final activeIdx = _shell.activePaneIndex.value;
       final otherPane = _shell.panes.value[1 - activeIdx];
       final otherPath = otherPane.tabs.activeTab.value.store.currentPath.value;
@@ -589,35 +573,32 @@ class _WaydirPageState extends State<WaydirPage> {
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isAltPressed &&
-        event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+    if (alt && AppShortcuts.isKey('go_back', key)) {
       store.goBack();
       return KeyEventResult.handled;
     }
 
-    if (HardwareKeyboard.instance.isAltPressed &&
-        event.logicalKey == LogicalKeyboardKey.arrowRight) {
+    if (alt && AppShortcuts.isKey('go_forward', key)) {
       store.goForward();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.delete ||
-        event.logicalKey == AppShortcuts.delete) {
+    if (AppShortcuts.isKey('delete', key)) {
       _confirmAndDelete();
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+    if (AppShortcuts.isKey('cursor_down', key)) {
       store.moveCursor(1);
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+    if (AppShortcuts.isKey('cursor_up', key)) {
       store.moveCursor(-1);
       return KeyEventResult.handled;
     }
 
-    if (event.logicalKey == AppShortcuts.rename) {
+    if (AppShortcuts.isKey('rename', key)) {
       store.startRename();
       return KeyEventResult.handled;
     }
