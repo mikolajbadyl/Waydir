@@ -31,6 +31,19 @@ class _AppSearchBarState extends State<AppSearchBar> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
+    _initFocusEffect();
+  }
+
+  @override
+  void didUpdateWidget(covariant AppSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.store != widget.store) {
+      _disposeFocusEffect?.call();
+      _initFocusEffect();
+    }
+  }
+
+  void _initFocusEffect() {
     _disposeFocusEffect = effect(() {
       widget.store.searchFocusRequest.value;
       WidgetsBinding.instance.addPostFrameCallback((_) {
