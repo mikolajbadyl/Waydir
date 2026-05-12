@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Windows support (paths, drives, breadcrumbs, system file filtering, native file opening).
 
 ### Changed
+- Migrated settings persistence from JSON file to SQLite via Drift.
 - Removed `scaled_app` and custom UI scaling system.
 
 ### Fixed

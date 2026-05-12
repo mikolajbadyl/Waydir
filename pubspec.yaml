@@ -35,12 +35,16 @@ dependencies:
   ffi: ^2.2.0
   package_info_plus: ^9.0.1
   win32: ^5.15.0
+  drift: ^2.33.0
+  drift_flutter: ^0.3.0
+  sqlite3_flutter_libs: ^0.6.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   build_runner: ^2.4.9
+  drift_dev: ^2.33.0
   slang_build_runner: ^4.14.0
 
 flutter:
