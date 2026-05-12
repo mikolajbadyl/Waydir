@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../app/app_info.dart';
 import '../../app/waydir_app.dart';
 import '../../features/settings/keybindings_help_view.dart';
 import '../../features/settings/preferences_view.dart';
@@ -103,10 +104,10 @@ class _TitleBarRow extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: 10),
-            const PhosphorIcon(
-              PhosphorIconsRegular.folders,
-              size: 14,
-              color: AppColors.fgAccent,
+            Image.asset(
+              AppInfo.iconAsset,
+              width: 14,
+              height: 14,
             ),
             const SizedBox(width: 8),
             const _MenuBar(),
