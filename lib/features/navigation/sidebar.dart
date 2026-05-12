@@ -83,7 +83,8 @@ class _SidebarState extends State<Sidebar> {
 
         // Add standard root on Linux if not present dynamically
         final devices = <Drive>[...currentDrives];
-        if (PlatformPaths.isLinux && !devices.any((d) => d.id == '/')) {
+        final isUnix = PlatformPaths.isLinux || PlatformPaths.isMacOS;
+        if (isUnix && !devices.any((d) => d.mountPoint == '/')) {
           devices.insert(
             0,
             Drive(
@@ -180,7 +181,7 @@ class _SidebarState extends State<Sidebar> {
                     widget.store.dropFiles(paths, path, move: move);
                   }
                 },
-                onUnmount: (isMounted && drive.id != '/' && Platform.isLinux)
+                onUnmount: (isMounted && drive.id != '/' && drive.isRemovable)
                     ? () async {
                         final currentPath = widget.store.currentPath.value;
                         final mountPoint = drive.mountPoint;

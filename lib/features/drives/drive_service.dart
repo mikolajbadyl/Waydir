@@ -19,7 +19,7 @@ abstract class DriveService {
     } else if (PlatformPaths.isLinux) {
       return _LinuxDriveService();
     } else {
-      return _DummyDriveService();
+      return _MacDriveService();
     }
   }
 }
@@ -254,16 +254,82 @@ class _LinuxDriveService implements DriveService {
   }
 }
 
-class _DummyDriveService implements DriveService {
+class _MacDriveService implements DriveService {
   @override
-  Future<List<Drive>> getDrives() async => [];
+  Future<List<Drive>> getDrives() async {
+    try {
+      final dfResult = await Process.run('df', ['-lP']);
+      if (dfResult.exitCode != 0) return [];
+
+      final drives = <Drive>[];
+      final lines = (dfResult.stdout as String).split('\n');
+
+      for (final line in lines.skip(1)) {
+        if (line.trim().isEmpty) continue;
+        final parts = line.split(RegExp(r'\s+'));
+        if (parts.length < 6) continue;
+
+        final device = parts[0];
+        final mountPoint = parts.sublist(5).join(' ');
+
+        if (!device.startsWith('/dev/disk')) continue;
+        if (mountPoint == '/System/Volumes/Data') continue;
+
+        final isRoot = mountPoint == '/';
+        final isVolumes = mountPoint.startsWith('/Volumes/');
+        if (!isRoot && !isVolumes) continue;
+
+        final label = isRoot
+            ? 'Macintosh HD'
+            : mountPoint.substring('/Volumes/'.length);
+
+        bool isRemovable = false;
+        if (!isRoot) {
+          try {
+            final info = await Process.run(
+              'diskutil',
+              ['info', device],
+            );
+            if (info.exitCode == 0) {
+              final output = info.stdout as String;
+              isRemovable =
+                  output.contains('Removable Media: Removable') ||
+                  output.contains('Removable Media:    Removable') ||
+                  output.contains('Protocol: USB') ||
+                  output.contains('Protocol:    USB');
+            }
+          } catch (_) {}
+        }
+
+        drives.add(
+          Drive(
+            id: device,
+            label: label,
+            mountPoint: mountPoint,
+            isRemovable: isRemovable,
+            fsType: null,
+          ),
+        );
+      }
+
+      return drives;
+    } catch (_) {
+      return [];
+    }
+  }
 
   @override
-  Future<void> mount(Drive drive) async {}
+  Future<void> mount(Drive drive) async {
+    await Process.run('diskutil', ['mount', drive.id]);
+  }
 
   @override
-  Future<void> mountWithPassword(Drive drive, String password) async {}
+  Future<void> mountWithPassword(Drive drive, String password) async {
+    await Process.run('diskutil', ['mount', drive.id]);
+  }
 
   @override
-  Future<void> unmount(Drive drive) async {}
+  Future<void> unmount(Drive drive) async {
+    await Process.run('diskutil', ['unmount', drive.id]);
+  }
 }
