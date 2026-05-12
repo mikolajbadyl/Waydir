@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Double title bar on Windows.
 - Remove autostart from Windows installer.
+- Disable macOS app sandbox to allow full filesystem access.
 
 ## [0.1.1] - 2026-05-09
 
