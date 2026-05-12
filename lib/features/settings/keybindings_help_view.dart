@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../core/keyboard/keyboard_shortcuts.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
@@ -14,108 +15,65 @@ Future<void> showKeybindingsHelp(BuildContext context) {
   );
 }
 
-class _ShortcutEntry {
-  final String keys;
-  final String Function() label;
-  final String Function()? hint;
-
-  const _ShortcutEntry({required this.keys, required this.label, this.hint});
-}
-
-class _ShortcutGroup {
-  final String Function() title;
-  final IconData icon;
-  final List<_ShortcutEntry> entries;
-
-  const _ShortcutGroup({
-    required this.title,
-    required this.icon,
-    required this.entries,
-  });
-}
-
-final _groups = <_ShortcutGroup>[
-  _ShortcutGroup(
+final _groupMeta = <ShortcutGroup, ({String Function() title, IconData icon})>{
+  ShortcutGroup.navigation: (
     title: () => t.keybindings.categories.navigation,
     icon: PhosphorIconsRegular.compass,
-    entries: [
-      _ShortcutEntry(keys: 'Enter', label: () => t.keybindings.openItem),
-      _ShortcutEntry(keys: 'Backspace', label: () => t.keybindings.goUp),
-      _ShortcutEntry(keys: 'Alt+←', label: () => t.keybindings.goBack),
-      _ShortcutEntry(keys: 'Alt+→', label: () => t.keybindings.goForward),
-      _ShortcutEntry(keys: '↑', label: () => t.keybindings.cursorUp),
-      _ShortcutEntry(keys: '↓', label: () => t.keybindings.cursorDown),
-    ],
   ),
-  _ShortcutGroup(
+  ShortcutGroup.tabs: (
     title: () => t.keybindings.categories.tabs,
     icon: PhosphorIconsRegular.tabs,
-    entries: [
-      _ShortcutEntry(keys: 'Ctrl+T', label: () => t.keybindings.newTab),
-      _ShortcutEntry(keys: 'Ctrl+W', label: () => t.keybindings.closeTab),
-      _ShortcutEntry(keys: 'Ctrl+Tab', label: () => t.keybindings.nextTab),
-      _ShortcutEntry(
-        keys: 'Ctrl+Shift+Tab',
-        label: () => t.keybindings.prevTab,
-      ),
-      _ShortcutEntry(keys: 'Ctrl+1…9', label: () => t.keybindings.switchTab),
-    ],
   ),
-  _ShortcutGroup(
+  ShortcutGroup.panes: (
     title: () => t.keybindings.categories.panes,
     icon: PhosphorIconsRegular.columns,
-    entries: [
-      _ShortcutEntry(
-        keys: 'F9 / Ctrl+Shift+D',
-        label: () => t.keybindings.toggleDual,
-      ),
-      _ShortcutEntry(keys: 'Tab', label: () => t.keybindings.switchPane),
-    ],
   ),
-  _ShortcutGroup(
+  ShortcutGroup.fileOps: (
     title: () => t.keybindings.categories.fileOps,
     icon: PhosphorIconsRegular.copy,
-    entries: [
-      _ShortcutEntry(keys: 'Ctrl+C', label: () => t.keybindings.copy),
-      _ShortcutEntry(keys: 'Ctrl+X', label: () => t.keybindings.cut),
-      _ShortcutEntry(keys: 'Ctrl+V', label: () => t.keybindings.paste),
-      _ShortcutEntry(keys: 'Delete', label: () => t.keybindings.delete),
-      _ShortcutEntry(keys: 'F2', label: () => t.keybindings.rename),
-      _ShortcutEntry(keys: 'F7', label: () => t.keybindings.newFolder),
-      _ShortcutEntry(
-        keys: 'F5',
-        label: () => t.keybindings.dualCopy,
-        hint: () => 'dual',
-      ),
-      _ShortcutEntry(
-        keys: 'F6',
-        label: () => t.keybindings.dualMove,
-        hint: () => 'dual',
-      ),
-    ],
   ),
-  _ShortcutGroup(
+  ShortcutGroup.selection: (
     title: () => t.keybindings.categories.selection,
     icon: PhosphorIconsRegular.checkSquare,
-    entries: [
-      _ShortcutEntry(keys: 'Ctrl+A', label: () => t.keybindings.selectAll),
-      _ShortcutEntry(keys: 'Esc', label: () => t.keybindings.deselectAll),
-      _ShortcutEntry(keys: 'Insert', label: () => t.keybindings.toggleSelect),
-    ],
   ),
-  _ShortcutGroup(
+  ShortcutGroup.search: (
     title: () => t.keybindings.categories.search,
     icon: PhosphorIconsRegular.magnifyingGlass,
-    entries: [
-      _ShortcutEntry(keys: 'Ctrl+F', label: () => t.keybindings.search),
-      _ShortcutEntry(
-        keys: 'Ctrl+Shift+F',
-        label: () => t.keybindings.recursiveSearch,
-      ),
-      _ShortcutEntry(keys: 'Esc', label: () => t.keybindings.closeSearch),
-    ],
   ),
-];
+};
+
+final _groupOrder = ShortcutGroup.values;
+
+String _labelFor(ShortcutDef s) => switch (s.id) {
+  'open_item' => t.keybindings.openItem,
+  'go_up' => t.keybindings.goUp,
+  'go_back' => t.keybindings.goBack,
+  'go_forward' => t.keybindings.goForward,
+  'cursor_up' => t.keybindings.cursorUp,
+  'cursor_down' => t.keybindings.cursorDown,
+  'new_tab' => t.keybindings.newTab,
+  'close_tab' => t.keybindings.closeTab,
+  'next_tab' => t.keybindings.nextTab,
+  'prev_tab' => t.keybindings.prevTab,
+  'switch_tab' => t.keybindings.switchTab,
+  'toggle_dual' => t.keybindings.toggleDual,
+  'switch_pane' => t.keybindings.switchPane,
+  'copy' => t.keybindings.copy,
+  'cut' => t.keybindings.cut,
+  'paste' => t.keybindings.paste,
+  'delete' => t.keybindings.delete,
+  'rename' => t.keybindings.rename,
+  'new_folder' => t.keybindings.newFolder,
+  'dual_copy' => t.keybindings.dualCopy,
+  'dual_move' => t.keybindings.dualMove,
+  'select_all' => t.keybindings.selectAll,
+  'deselect_all' => t.keybindings.deselectAll,
+  'toggle_select' => t.keybindings.toggleSelect,
+  'search' => t.keybindings.search,
+  'recursive_search' => t.keybindings.recursiveSearch,
+  'close_search' => t.keybindings.closeSearch,
+  _ => s.id,
+};
 
 class _KeybindingsHelpDialog extends StatefulWidget {
   const _KeybindingsHelpDialog();
@@ -134,21 +92,24 @@ class _KeybindingsHelpDialogState extends State<_KeybindingsHelpDialog> {
     super.dispose();
   }
 
-  List<_ShortcutGroup> _filtered() {
+  List<(ShortcutGroup, List<ShortcutDef>)> _filtered() {
     final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return _groups;
-    final out = <_ShortcutGroup>[];
-    for (final g in _groups) {
-      final matches = g.entries.where((e) {
-        return e.label().toLowerCase().contains(q) ||
-            e.keys.toLowerCase().contains(q) ||
-            g.title().toLowerCase().contains(q);
-      }).toList();
-      if (matches.isNotEmpty) {
-        out.add(_ShortcutGroup(title: g.title, icon: g.icon, entries: matches));
+    final result = <ShortcutGroup, List<ShortcutDef>>{};
+    for (final s in AppShortcuts.all) {
+      final label = _labelFor(s).toLowerCase();
+      final keys = s.displayKeys.toLowerCase();
+      final groupTitle = _groupMeta[s.group]!.title().toLowerCase();
+      if (q.isEmpty ||
+          label.contains(q) ||
+          keys.contains(q) ||
+          groupTitle.contains(q)) {
+        result.putIfAbsent(s.group, () => []).add(s);
       }
     }
-    return out;
+    return [
+      for (final g in _groupOrder)
+        if (result.containsKey(g)) (g, result[g]!),
+    ];
   }
 
   @override
@@ -190,7 +151,7 @@ class _KeybindingsHelpDialogState extends State<_KeybindingsHelpDialog> {
                 Expanded(
                   child: groups.isEmpty
                       ? const _EmptyState()
-                      : _ShortcutGrid(groups: groups),
+                      : _ShortcutList(groups: groups),
                 ),
               ],
             ),
@@ -373,18 +334,21 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _ShortcutGrid extends StatelessWidget {
-  final List<_ShortcutGroup> groups;
-  const _ShortcutGrid({required this.groups});
+class _ShortcutList extends StatelessWidget {
+  final List<(ShortcutGroup, List<ShortcutDef>)> groups;
+  const _ShortcutList({required this.groups});
 
   @override
   Widget build(BuildContext context) {
     final items = <Widget>[];
     for (int g = 0; g < groups.length; g++) {
-      final group = groups[g];
-      items.add(_GroupHeader(group: group, isFirst: g == 0));
-      for (final entry in group.entries) {
-        items.add(_ShortcutRow(entry: entry));
+      final (group, entries) = groups[g];
+      final meta = _groupMeta[group]!;
+      items.add(
+        _GroupHeader(title: meta.title, icon: meta.icon, isFirst: g == 0),
+      );
+      for (final entry in entries) {
+        items.add(_ShortcutRow(def: entry));
       }
     }
     return ListView(padding: EdgeInsets.zero, children: items);
@@ -392,9 +356,14 @@ class _ShortcutGrid extends StatelessWidget {
 }
 
 class _GroupHeader extends StatelessWidget {
-  final _ShortcutGroup group;
+  final String Function() title;
+  final IconData icon;
   final bool isFirst;
-  const _GroupHeader({required this.group, required this.isFirst});
+  const _GroupHeader({
+    required this.title,
+    required this.icon,
+    required this.isFirst,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -402,9 +371,9 @@ class _GroupHeader extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(16, isFirst ? 14 : 22, 16, 6),
       child: Row(
         children: [
-          PhosphorIcon(group.icon, size: 12, color: AppColors.fgMuted),
+          PhosphorIcon(icon, size: 12, color: AppColors.fgMuted),
           const SizedBox(width: 7),
-          Text(group.title().toUpperCase(), style: context.txt.sectionLabel),
+          Text(title().toUpperCase(), style: context.txt.sectionLabel),
           const SizedBox(width: 10),
           Expanded(child: Container(height: 1, color: AppColors.bgDivider)),
         ],
@@ -414,8 +383,8 @@ class _GroupHeader extends StatelessWidget {
 }
 
 class _ShortcutRow extends StatefulWidget {
-  final _ShortcutEntry entry;
-  const _ShortcutRow({required this.entry});
+  final ShortcutDef def;
+  const _ShortcutRow({required this.def});
 
   @override
   State<_ShortcutRow> createState() => _ShortcutRowState();
@@ -440,16 +409,16 @@ class _ShortcutRowState extends State<_ShortcutRow> {
                 children: [
                   Flexible(
                     child: Text(
-                      widget.entry.label(),
+                      _labelFor(widget.def),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: context.txt.row,
                     ),
                   ),
-                  if (widget.entry.hint != null) ...[
+                  if (widget.def.hint != null) ...[
                     const SizedBox(width: 6),
                     Text(
-                      widget.entry.hint!(),
+                      widget.def.hint!() ?? '',
                       style: context.txt.caption.copyWith(
                         fontStyle: FontStyle.italic,
                       ),
@@ -459,7 +428,10 @@ class _ShortcutRowState extends State<_ShortcutRow> {
               ),
             ),
             const SizedBox(width: 12),
-            _KeyBadge(keys: widget.entry.keys),
+            _KeyBadge(
+              primary: widget.def.displayKeys,
+              alternate: widget.def.displayAltKeys,
+            ),
           ],
         ),
       ),
@@ -468,22 +440,22 @@ class _ShortcutRowState extends State<_ShortcutRow> {
 }
 
 class _KeyBadge extends StatelessWidget {
-  final String keys;
-  const _KeyBadge({required this.keys});
+  final String primary;
+  final String? alternate;
+  const _KeyBadge({required this.primary, this.alternate});
 
   @override
   Widget build(BuildContext context) {
-    final alternates = keys.split(RegExp(r'\s*/\s*'));
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (int a = 0; a < alternates.length; a++) ...[
-          if (a > 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text('or', style: context.txt.micro),
-            ),
-          ..._renderCombo(context, alternates[a]),
+        ..._renderCombo(context, primary),
+        if (alternate != null) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text('or', style: context.txt.micro),
+          ),
+          ..._renderCombo(context, alternate!),
         ],
       ],
     );
