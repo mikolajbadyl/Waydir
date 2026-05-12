@@ -161,6 +161,19 @@ class _PathBarState extends State<_PathBar> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.store.currentPath.value);
+    _initPathEffect();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PathBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.store != widget.store) {
+      _disposePathListener?.call();
+      _initPathEffect();
+    }
+  }
+
+  void _initPathEffect() {
     _disposePathListener = effect(() {
       final path = widget.store.currentPath.value;
       if (!_editing && _controller.text != path) {

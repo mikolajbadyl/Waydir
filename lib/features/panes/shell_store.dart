@@ -20,16 +20,18 @@ class ShellStore {
   final splitRatio = signal(0.5);
   final OperationStore operationStore;
   final NotificationStore notificationStore;
+  final ready = signal(false);
 
   late final activePane = computed(() {
     final list = panes.value;
+    if (list.isEmpty) return null;
     final idx = activePaneIndex.value;
     if (idx < 0 || idx >= list.length) return list.first;
     return list[idx];
   });
 
   late final activeStore = computed(() {
-    return activePane.value.tabs.activeTab.value.store;
+    return activePane.value?.tabs.activeTab.value.store;
   });
 
   void Function()? _persistDisposer;
@@ -37,53 +39,60 @@ class ShellStore {
 
   ShellStore({required this.operationStore, required this.notificationStore}) {
     _restoreSession();
-    _wirePersistence();
   }
 
   Future<void> _restoreSession() async {
     final s = SettingsStore.instance;
     final db = s.db;
 
-    isDual.value = s.sessionIsDual.value;
-    splitRatio.value = s.sessionSplitRatio.value.clamp(0.2, 0.8);
-
     final savedTabs = await db.getTabs();
+
     if (savedTabs.isEmpty) {
-      panes.value = [PaneStore(operationStore: operationStore)];
-      return;
-    }
-
-    final paneMap = <int, List<String>>{};
-    final activeMap = <int, int>{};
-    for (final tab in savedTabs) {
-      paneMap.putIfAbsent(tab.paneIndex, () => []);
-      paneMap[tab.paneIndex]!.add(tab.path);
-      if (tab.isActive) {
-        activeMap[tab.paneIndex] = tab.tabIndex;
+      batch(() {
+        panes.value = [PaneStore(operationStore: operationStore)];
+        ready.value = true;
+      });
+    } else {
+      final paneMap = <int, List<String>>{};
+      final activeMap = <int, int>{};
+      for (final tab in savedTabs) {
+        paneMap.putIfAbsent(tab.paneIndex, () => []);
+        paneMap[tab.paneIndex]!.add(tab.path);
+        if (tab.isActive) {
+          activeMap[tab.paneIndex] = tab.tabIndex;
+        }
       }
+
+      final restored = <PaneStore>[];
+      final maxPane = paneMap.keys.reduce((a, b) => a > b ? a : b);
+      for (int i = 0; i <= maxPane; i++) {
+        final paths = paneMap[i] ?? [];
+        final validPaths = paths
+            .where((p) => Directory(p).existsSync())
+            .toList();
+        restored.add(
+          PaneStore.fromPaths(
+            operationStore: operationStore,
+            paths: validPaths.isEmpty ? [PlatformPaths.homePath] : validPaths,
+            activeTabIndex: activeMap[i] ?? 0,
+          ),
+        );
+      }
+
+      final wantDual = s.sessionIsDual.value && restored.length >= 2;
+      final activeIdx = s.sessionActivePaneIndex.value;
+      batch(() {
+        panes.value = restored;
+        isDual.value = wantDual;
+        splitRatio.value = s.sessionSplitRatio.value.clamp(0.2, 0.8);
+        activePaneIndex.value = wantDual
+            ? activeIdx.clamp(0, restored.length - 1)
+            : 0;
+        ready.value = true;
+      });
     }
 
-    final restored = <PaneStore>[];
-    final maxPane = paneMap.keys.reduce((a, b) => a > b ? a : b);
-    for (int i = 0; i <= maxPane; i++) {
-      final paths = paneMap[i] ?? [];
-      final validPaths = paths.where((p) => Directory(p).existsSync()).toList();
-      restored.add(
-        PaneStore.fromPaths(
-          operationStore: operationStore,
-          paths: validPaths.isEmpty ? [PlatformPaths.homePath] : validPaths,
-          activeTabIndex: activeMap[i] ?? 0,
-        ),
-      );
-    }
-
-    panes.value = restored;
-    final wantDual = s.sessionIsDual.value && restored.length >= 2;
-    isDual.value = wantDual;
-    final activeIdx = s.sessionActivePaneIndex.value;
-    activePaneIndex.value = wantDual
-        ? activeIdx.clamp(0, restored.length - 1)
-        : 0;
+    _wirePersistence();
   }
 
   void _wirePersistence() {
@@ -145,7 +154,7 @@ class ShellStore {
 
   void enterDual() {
     if (isDual.value) return;
-    final currentPath = activeStore.value.currentPath.value;
+    final currentPath = activeStore.value!.currentPath.value;
     final secondPane = PaneStore(
       operationStore: operationStore,
       initialPath: currentPath,

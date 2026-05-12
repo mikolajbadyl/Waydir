@@ -44,13 +44,14 @@ class _WaydirPageState extends State<WaydirPage> {
   final _effectDisposers = <void Function()>[];
   final _renameErrorDisposers = <String, void Function()>{};
 
-  NavigationStore get _active => _shell.activeStore.value;
+  NavigationStore get _active => _shell.activeStore.value!;
 
   @override
   void initState() {
     super.initState();
     _effectDisposers.add(
       effect(() {
+        if (!_shell.ready.value) return;
         final completedId = _operationStore.taskCompleted.value;
         if (completedId != null) {
           _operationStore.taskCompleted.value = null;
@@ -93,6 +94,7 @@ class _WaydirPageState extends State<WaydirPage> {
     );
     _effectDisposers.add(
       effect(() {
+        if (!_shell.ready.value) return;
         final active = _active.searchActive.value;
         if (!active) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -105,11 +107,11 @@ class _WaydirPageState extends State<WaydirPage> {
     );
     _effectDisposers.add(
       effect(() {
+        if (!_shell.ready.value) return;
         _shell.panes.value;
         _installRenameErrorEffects();
       }),
     );
-    _installRenameErrorEffects();
   }
 
   void _installRenameErrorEffects() {
@@ -365,7 +367,7 @@ class _WaydirPageState extends State<WaydirPage> {
       case 'open_in_new_tab':
         final entries = store.selectedEntries;
         if (entries.length == 1 && entries.first.type == FileItemType.folder) {
-          _shell.activePane.value.tabs.addTab(entries.first.path);
+          _shell.activePane.value!.tabs.addTab(entries.first.path);
         }
     }
   }
@@ -419,14 +421,14 @@ class _WaydirPageState extends State<WaydirPage> {
     if (HardwareKeyboard.instance.isControlPressed &&
         !HardwareKeyboard.instance.isShiftPressed &&
         event.logicalKey == LogicalKeyboardKey.keyT) {
-      _shell.activePane.value.tabs.addTab(_active.currentPath.value);
+      _shell.activePane.value!.tabs.addTab(_active.currentPath.value);
       return KeyEventResult.handled;
     }
 
     if (HardwareKeyboard.instance.isControlPressed &&
         !HardwareKeyboard.instance.isShiftPressed &&
         event.logicalKey == LogicalKeyboardKey.keyW) {
-      final tabsStore = _shell.activePane.value.tabs;
+      final tabsStore = _shell.activePane.value!.tabs;
       final tab = tabsStore.activeTab.value;
       if (tabsStore.tabs.value.length > 1) {
         tabsStore.closeTab(tab.id);
@@ -437,7 +439,7 @@ class _WaydirPageState extends State<WaydirPage> {
     if (HardwareKeyboard.instance.isControlPressed &&
         !HardwareKeyboard.instance.isShiftPressed &&
         event.logicalKey == LogicalKeyboardKey.tab) {
-      final tabsStore = _shell.activePane.value.tabs;
+      final tabsStore = _shell.activePane.value!.tabs;
       final idx = tabsStore.activeIndex.value;
       final next = (idx + 1) % tabsStore.tabs.value.length;
       tabsStore.selectTab(next);
@@ -447,7 +449,7 @@ class _WaydirPageState extends State<WaydirPage> {
     if (HardwareKeyboard.instance.isControlPressed &&
         HardwareKeyboard.instance.isShiftPressed &&
         event.logicalKey == LogicalKeyboardKey.tab) {
-      final tabsStore = _shell.activePane.value.tabs;
+      final tabsStore = _shell.activePane.value!.tabs;
       final idx = tabsStore.activeIndex.value;
       final prev =
           (idx - 1 + tabsStore.tabs.value.length) % tabsStore.tabs.value.length;
@@ -469,7 +471,7 @@ class _WaydirPageState extends State<WaydirPage> {
       ];
       final digitIdx = digitKeys.indexOf(event.logicalKey);
       if (digitIdx >= 0) {
-        _shell.activePane.value.tabs.selectTab(digitIdx);
+        _shell.activePane.value!.tabs.selectTab(digitIdx);
         return KeyEventResult.handled;
       }
     }
@@ -624,7 +626,7 @@ class _WaydirPageState extends State<WaydirPage> {
   }
 
   void _openInNewTab(String path) {
-    _shell.activePane.value.tabs.addTab(path);
+    _shell.activePane.value!.tabs.addTab(path);
   }
 
   List<String> _dualPaneSources(NavigationStore store) {
@@ -661,104 +663,120 @@ class _WaydirPageState extends State<WaydirPage> {
         child: Stack(
           children: [
             TitleBar(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 200,
-                          child: Watch(
-                            (context) => Sidebar(
-                              store: _active,
-                              onOpenInNewTab: _openInNewTab,
+              child: Watch((context) {
+                if (!_shell.ready.value) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.fgMuted,
+                      ),
+                    ),
+                  );
+                }
+                return Column(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 200,
+                            child: Watch(
+                              (context) => Sidebar(
+                                store: _active,
+                                onOpenInNewTab: _openInNewTab,
+                              ),
                             ),
                           ),
-                        ),
-                        Container(width: 1, color: AppColors.bgDivider),
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              return Watch((_) {
-                                final dual = _shell.isDual.value;
-                                final panes = _shell.panes.value;
-                                final activeIdx = _shell.activePaneIndex.value;
+                          Container(width: 1, color: AppColors.bgDivider),
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return Watch((_) {
+                                  final dual = _shell.isDual.value;
+                                  final panes = _shell.panes.value;
+                                  final activeIdx =
+                                      _shell.activePaneIndex.value;
 
-                                if (!dual) {
-                                  return PaneView(
-                                    pane: panes[0],
-                                    isActive: true,
-                                    onActivate: _restoreFocus,
-                                    operationStore: _operationStore,
-                                    notificationStore: _notificationStore,
-                                    shellStore: _shell,
-                                    onBackgroundContextMenu:
-                                        _handleBackgroundContextMenu,
-                                    onContextMenu: _handleContextMenu,
-                                    onMenuAction: _handleMenuAction,
-                                    onOpenInNewTab: _openInNewTab,
+                                  if (!dual) {
+                                    return PaneView(
+                                      pane: panes[0],
+                                      isActive: true,
+                                      onActivate: _restoreFocus,
+                                      operationStore: _operationStore,
+                                      notificationStore: _notificationStore,
+                                      shellStore: _shell,
+                                      onBackgroundContextMenu:
+                                          _handleBackgroundContextMenu,
+                                      onContextMenu: _handleContextMenu,
+                                      onMenuAction: _handleMenuAction,
+                                      onOpenInNewTab: _openInNewTab,
+                                    );
+                                  }
+
+                                  final ratio = _shell.splitRatio.value;
+                                  final leftFlex = (ratio * 1000).round();
+                                  final rightFlex = ((1 - ratio) * 1000)
+                                      .round();
+
+                                  return Row(
+                                    children: [
+                                      Flexible(
+                                        flex: leftFlex,
+                                        child: PaneView(
+                                          pane: panes[0],
+                                          isActive: activeIdx == 0,
+                                          onActivate: _activatePane(0),
+                                          operationStore: _operationStore,
+                                          notificationStore: _notificationStore,
+                                          shellStore: _shell,
+                                          onBackgroundContextMenu:
+                                              _handleBackgroundContextMenu,
+                                          onContextMenu: _handleContextMenu,
+                                          onMenuAction: _handleMenuAction,
+                                          onOpenInNewTab: _openInNewTab,
+                                        ),
+                                      ),
+                                      PaneDivider(
+                                        shell: _shell,
+                                        totalWidth: constraints.maxWidth,
+                                      ),
+                                      Flexible(
+                                        flex: rightFlex,
+                                        child: PaneView(
+                                          pane: panes[1],
+                                          isActive: activeIdx == 1,
+                                          onActivate: _activatePane(1),
+                                          operationStore: _operationStore,
+                                          notificationStore: _notificationStore,
+                                          shellStore: _shell,
+                                          onBackgroundContextMenu:
+                                              _handleBackgroundContextMenu,
+                                          onContextMenu: _handleContextMenu,
+                                          onMenuAction: _handleMenuAction,
+                                          onOpenInNewTab: _openInNewTab,
+                                        ),
+                                      ),
+                                    ],
                                   );
-                                }
-
-                                final ratio = _shell.splitRatio.value;
-                                final leftFlex = (ratio * 1000).round();
-                                final rightFlex = ((1 - ratio) * 1000).round();
-
-                                return Row(
-                                  children: [
-                                    Flexible(
-                                      flex: leftFlex,
-                                      child: PaneView(
-                                        pane: panes[0],
-                                        isActive: activeIdx == 0,
-                                        onActivate: _activatePane(0),
-                                        operationStore: _operationStore,
-                                        notificationStore: _notificationStore,
-                                        shellStore: _shell,
-                                        onBackgroundContextMenu:
-                                            _handleBackgroundContextMenu,
-                                        onContextMenu: _handleContextMenu,
-                                        onMenuAction: _handleMenuAction,
-                                        onOpenInNewTab: _openInNewTab,
-                                      ),
-                                    ),
-                                    PaneDivider(
-                                      shell: _shell,
-                                      totalWidth: constraints.maxWidth,
-                                    ),
-                                    Flexible(
-                                      flex: rightFlex,
-                                      child: PaneView(
-                                        pane: panes[1],
-                                        isActive: activeIdx == 1,
-                                        onActivate: _activatePane(1),
-                                        operationStore: _operationStore,
-                                        notificationStore: _notificationStore,
-                                        shellStore: _shell,
-                                        onBackgroundContextMenu:
-                                            _handleBackgroundContextMenu,
-                                        onContextMenu: _handleContextMenu,
-                                        onMenuAction: _handleMenuAction,
-                                        onOpenInNewTab: _openInNewTab,
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              });
-                            },
+                                });
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Watch(
-                    (context) => StatusBar(
-                      store: _active,
-                      operationStore: _operationStore,
+                    Watch(
+                      (context) => StatusBar(
+                        store: _active,
+                        operationStore: _operationStore,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              }),
             ),
             NotificationOverlay(store: _notificationStore),
           ],
