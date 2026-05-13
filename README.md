@@ -4,17 +4,15 @@
 
 A fast, keyboard-driven desktop file manager built with Flutter.
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.29+-02569B?logo=flutter&logoColor=white&style=flat-square)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.9+-0175C2?logo=dart&logoColor=white&style=flat-square)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.35+-02569B?logo=flutter&logoColor=white&style=flat-square)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.10+-0175C2?logo=dart&logoColor=white&style=flat-square)](https://dart.dev)
 [![Platform](https://img.shields.io/badge/Linux%20%7C%20Windows%20%7C%20macOS-informational?style=flat-square)]()
 
 </div>
 
 ![Waydir](docs/screenshots/waydir.png)
 
----
-
-> Heads up: Waydir is **WIP**. It works, but corners are still being polished. Expect rough edges and breaking changes.
+![Waydir dual pane](docs/screenshots/waydir-dual-pane.png)
 
 ## What is Waydir?
 
@@ -22,28 +20,57 @@ Waydir is the file manager I wanted on my own machine: hands stay on the keyboar
 
 It's built on Flutter so the same binary runs on Linux, Windows and macOS from one codebase.
 
-## What works today
+## Install
+
+Download the latest build from the [Releases](https://github.com/mikolajbadyl/waydir/releases) page.
+
+Linux builds are available as `.deb`, `.rpm`, and `.tar.gz` packages. Windows builds are available as an `.exe` installer and a `.zip` archive. macOS builds are available as a `.dmg` package.
+
+On Linux, the portable archive can be unpacked and launched directly:
+
+```bash
+tar -xzf waydir-*-linux-x64.tar.gz
+./waydir
+```
+
+## Features
 
 - Dual-pane navigation with tabs
 - Keyboard-driven nav, selection, and file ops
 - Background-isolate directory scanning (no UI jank)
 - Copy / move / delete with progress
 - Clipboard integration
-- Theming and i18n
+- Minimal dark interface
+- Linux, Windows and macOS builds
 
-## Quick start
+## Development
+
+Requirements:
+
+- Flutter 3.35+
+- Dart 3.10+
 
 ```bash
 git clone https://github.com/mikolajbadyl/waydir.git
 cd waydir
 flutter pub get
-flutter run -d linux   # or -d windows / -d macos
+flutter run -d linux
 ```
 
-Build a release binary:
+Run checks before opening a PR:
 
 ```bash
-flutter build linux    # windows / macos
+dart format .
+flutter analyze
+flutter test
+```
+
+Build a release binary locally:
+
+```bash
+flutter build linux
+flutter build windows
+flutter build macos
 ```
 
 ## Contributing
