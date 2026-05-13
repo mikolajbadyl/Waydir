@@ -12,12 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mount and unmount drives directly from the sidebar.
 - Mouse drag selection (lasso) to easily select multiple files.
 - Windows support (paths, drives, breadcrumbs, system file filtering, native file opening).
+- View menu with dual-pane and hidden-file toggles.
+- Notification history access from the status bar.
+- Active operation progress shortcut in the sidebar.
 
 ### Changed
+- Polished the main layout, sidebar, status bar, title bar, and notification surfaces.
+- Moved operation and notification controls out of the pane toolbar for a cleaner file view.
+- Improved file operation conflict notifications with apply-to-all actions.
 - Migrated settings persistence from JSON file to SQLite via Drift.
 - Removed `scaled_app` and custom UI scaling system.
 
 ### Fixed
+- Safer file replacement during copy operations, including Windows replace handling and temporary-file cleanup.
+- More resilient filesystem worker startup, failure handling, and disposal.
+- Operation conflict handling now correctly waits for user resolution and keeps conflict state in sync.
 - Double title bar on Windows.
 - Remove autostart from Windows installer.
 - Disable macOS app sandbox to allow full filesystem access.
