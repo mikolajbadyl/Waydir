@@ -26,38 +26,88 @@ class FsWorkerPool {
 
   SendPort? _commandPort;
   ReceivePort? _replyPort;
+  ReceivePort? _errorPort;
+  ReceivePort? _exitPort;
   Isolate? _isolate;
+  StreamSubscription? _replySubscription;
+  StreamSubscription? _errorSubscription;
+  StreamSubscription? _exitSubscription;
   final _pending = <int, Completer<dynamic>>{};
   int _nextId = 0;
   Future<void>? _initFuture;
 
-  Future<void> ensureStarted() {
-    return _initFuture ??= _start();
+  Future<void> ensureStarted() async {
+    final existing = _initFuture;
+    if (existing != null) return existing;
+    final future = _start();
+    _initFuture = future;
+    try {
+      await future;
+    } catch (_) {
+      if (identical(_initFuture, future)) {
+        _initFuture = null;
+      }
+      rethrow;
+    }
   }
 
   Future<void> _start() async {
     final ready = ReceivePort();
-    _isolate = await Isolate.spawn<SendPort>(
-      _entryPoint,
-      ready.sendPort,
-      errorsAreFatal: false,
-    );
+    _errorPort = ReceivePort();
+    _exitPort = ReceivePort();
+    final workerReady = Completer<SendPort>();
 
-    final completer = Completer<SendPort>();
-    late StreamSubscription sub;
-    sub = ready.listen((msg) {
-      if (msg is SendPort && !completer.isCompleted) {
-        completer.complete(msg);
-        sub.cancel();
+    late StreamSubscription readySub;
+    readySub = ready.listen((msg) {
+      if (msg is SendPort && !workerReady.isCompleted) {
+        workerReady.complete(msg);
+        readySub.cancel();
         ready.close();
       }
     });
 
-    _commandPort = await completer.future;
+    _errorSubscription = _errorPort!.listen((err) {
+      if (!workerReady.isCompleted) {
+        workerReady.completeError(StateError('FS worker failed: $err'));
+      }
+      _handleWorkerFailure(StateError('FS worker failed: $err'));
+    });
+    _exitSubscription = _exitPort!.listen((_) {
+      if (!workerReady.isCompleted) {
+        workerReady.completeError(StateError('FS worker exited before ready'));
+      }
+      _handleWorkerFailure(StateError('FS worker exited unexpectedly'));
+    });
+
+    try {
+      _isolate = await Isolate.spawn<SendPort>(
+        _entryPoint,
+        ready.sendPort,
+        errorsAreFatal: false,
+        onError: _errorPort!.sendPort,
+        onExit: _exitPort!.sendPort,
+      );
+
+      _commandPort = await workerReady.future;
+    } catch (_) {
+      await readySub.cancel();
+      ready.close();
+      _errorSubscription?.cancel();
+      _exitSubscription?.cancel();
+      _errorPort?.close();
+      _exitPort?.close();
+      _errorSubscription = null;
+      _exitSubscription = null;
+      _errorPort = null;
+      _exitPort = null;
+      _isolate?.kill(priority: Isolate.immediate);
+      _isolate = null;
+      rethrow;
+    }
 
     _replyPort = ReceivePort();
     _commandPort!.send(_replyPort!.sendPort);
-    _replyPort!.listen((msg) {
+    _replySubscription = _replyPort!.listen((msg) {
       if (msg is _Response) {
         final completer = _pending.remove(msg.id);
         if (completer == null) return;
@@ -95,7 +145,12 @@ class FsWorkerPool {
   Future<FileEntry?> stat(String path) => _run<FileEntry?>(_Op.stat, [path]);
 
   void dispose() {
+    _replySubscription?.cancel();
+    _errorSubscription?.cancel();
+    _exitSubscription?.cancel();
     _replyPort?.close();
+    _errorPort?.close();
+    _exitPort?.close();
     _isolate?.kill(priority: Isolate.immediate);
     for (final c in _pending.values) {
       if (!c.isCompleted) c.completeError(StateError('Pool disposed'));
@@ -103,8 +158,36 @@ class FsWorkerPool {
     _pending.clear();
     _commandPort = null;
     _replyPort = null;
+    _errorPort = null;
+    _exitPort = null;
+    _isolate = null;
+    _replySubscription = null;
+    _errorSubscription = null;
+    _exitSubscription = null;
+    _initFuture = null;
+  }
+
+  void _handleWorkerFailure(Object error) {
+    _replySubscription?.cancel();
+    _errorSubscription?.cancel();
+    _exitSubscription?.cancel();
+    _replySubscription = null;
+    _errorSubscription = null;
+    _exitSubscription = null;
+    _replyPort?.close();
+    _errorPort?.close();
+    _exitPort?.close();
+    _replyPort = null;
+    _errorPort = null;
+    _exitPort = null;
+    _commandPort = null;
+    _isolate?.kill(priority: Isolate.immediate);
     _isolate = null;
     _initFuture = null;
+    for (final c in _pending.values) {
+      if (!c.isCompleted) c.completeError(error);
+    }
+    _pending.clear();
   }
 
   static void _entryPoint(SendPort initial) {
@@ -192,7 +275,10 @@ class FsWorkerPool {
           );
         } catch (_) {}
       }
-    } catch (_) {}
+    } catch (e) {
+      if (e is FileSystemException) rethrow;
+      throw FileSystemException(e.toString(), path);
+    }
 
     entries.sort((a, b) {
       if (a.type != b.type) return a.type == FileItemType.folder ? -1 : 1;

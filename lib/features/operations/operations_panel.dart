@@ -133,15 +133,15 @@ class _TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = switch (task.status) {
-      TaskStatus.queued => const Color(0xFF7B8794),
+      TaskStatus.queued => AppColors.neutral,
       TaskStatus.preparing => AppColors.accent,
-      TaskStatus.waitingConflicts => const Color(0xFFF9E2AF),
+      TaskStatus.waitingConflicts => AppColors.warning,
       TaskStatus.running => AppColors.accent,
-      TaskStatus.paused => const Color(0xFFF9E2AF),
-      TaskStatus.cancelling => const Color(0xFF7B8794),
-      TaskStatus.completed => const Color(0xFFA6E3A1),
+      TaskStatus.paused => AppColors.warning,
+      TaskStatus.cancelling => AppColors.neutral,
+      TaskStatus.completed => AppColors.success,
       TaskStatus.failed => AppColors.danger,
-      TaskStatus.cancelled => const Color(0xFF7B8794),
+      TaskStatus.cancelled => AppColors.neutral,
     };
 
     final statusIcon = switch (task.status) {
@@ -238,11 +238,12 @@ class _TaskTile extends StatelessWidget {
             ),
           ],
           if (task.conflicts.isNotEmpty &&
-              task.status == TaskStatus.running) ...[
+              (task.status == TaskStatus.running ||
+                  task.status == TaskStatus.waitingConflicts)) ...[
             const SizedBox(height: 6),
             Text(
               t.tasks.status.conflicts(count: task.conflicts.length),
-              style: context.txt.row.copyWith(color: const Color(0xFFF9E2AF)),
+              style: context.txt.row.copyWith(color: AppColors.warning),
             ),
           ],
           if (task.status == TaskStatus.completed &&

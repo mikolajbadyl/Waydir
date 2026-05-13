@@ -172,6 +172,9 @@ class OperationStore {
           .where((c) => c.sourcePath != head.sourcePath)
           .toList();
     }
+    if (queue.isEmpty && task.status == TaskStatus.waitingConflicts) {
+      task.status = TaskStatus.running;
+    }
     _updateTask(task);
 
     _currentWorker!.sendPort.send(
@@ -277,7 +280,9 @@ class OperationStore {
           task.totalBytes = msg.totalBytes;
           task.conflicts = msg.conflicts;
 
-          task.status = TaskStatus.running;
+          task.status = msg.conflicts.isEmpty
+              ? TaskStatus.running
+              : TaskStatus.waitingConflicts;
           _updateTask(task);
 
           handle.sendPort.send(ExecuteCommand(resolutions: {}));
@@ -403,7 +408,7 @@ class OperationStore {
         type = NotificationType.persistent;
       case TaskStatus.completed:
         message = t.tasks.status.completed;
-        color = const Color(0xFFA6E3A1);
+        color = AppColors.success;
         icon = PhosphorIconsRegular.check;
       case TaskStatus.failed:
         message = t.tasks.status.failed;
@@ -435,6 +440,11 @@ class OperationStore {
     final queue = _conflictQueues.putIfAbsent(task.id, () => []);
     if (queue.any((c) => c.sourcePath == conflict.sourcePath)) return;
     queue.add(conflict);
+    if (!task.conflicts.any((c) => c.sourcePath == conflict.sourcePath)) {
+      task.conflicts = [...task.conflicts, conflict];
+    }
+    task.status = TaskStatus.waitingConflicts;
+    _updateTask(task);
     _renderConflictNotification(task);
   }
 
@@ -466,7 +476,7 @@ class OperationStore {
         message: message,
         type: NotificationType.persistent,
         icon: PhosphorIconsRegular.warning,
-        accentColor: const Color(0xFFF9E2AF),
+        accentColor: AppColors.warning,
         actions: [
           NotificationAction(
             label: t.operations.replace,
@@ -477,7 +487,7 @@ class OperationStore {
           ),
           NotificationAction(
             label: t.operations.keepBoth,
-            color: const Color(0xFFA6E3A1),
+            color: AppColors.success,
             dismissOnTap: false,
             onTap: () =>
                 resolveCurrentConflict(task.id, ConflictResolution.rename),

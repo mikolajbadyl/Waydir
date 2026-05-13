@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
-/// Custom format so DropRegion recognises internal Waydir drag sessions.
 const formatLocalFile = CustomValueFormat<String>(
   applicationId: 'dev.waydir.local-file',
 );

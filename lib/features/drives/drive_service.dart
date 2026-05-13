@@ -70,8 +70,7 @@ class _WindowsDriveService implements DriveService {
                   label: '$label ($letter:)',
                   mountPoint: rootPath,
                   isRemovable: driveType == DRIVE_REMOVABLE,
-                  fsType:
-                      null, // Windows specific FSType could be queried but isn't strictly needed here
+                  fsType: null,
                 ),
               );
             } finally {
@@ -88,14 +87,10 @@ class _WindowsDriveService implements DriveService {
   }
 
   @override
-  Future<void> mount(Drive drive) async {
-    // Windows auto-mounts drives
-  }
+  Future<void> mount(Drive drive) async {}
 
   @override
-  Future<void> mountWithPassword(Drive drive, String password) async {
-    // Windows doesn't use standard sudo-like mount with password for basic volumes.
-  }
+  Future<void> mountWithPassword(Drive drive, String password) async {}
 
   @override
   Future<void> unmount(Drive drive) async {
@@ -145,7 +140,6 @@ class _LinuxDriveService implements DriveService {
 
     final isRemovable = rm == true || rm == '1' || rm == 1;
 
-    // Add partitions or disks that have a filesystem
     if (type == 'part' || type == 'disk') {
       if (fstype != null && fstype != 'swap') {
         final lowerLabel = label?.toLowerCase() ?? '';
@@ -165,14 +159,12 @@ class _LinuxDriveService implements DriveService {
             lowerPartType.contains('reserved') ||
             lowerPartType.contains('extended boot');
 
-        // Skip loop devices, snaps, system partitions, EFI, and recovery/reserved partitions
         if (type != 'loop' &&
             !(mountPoint != null && mountPoint.contains('snap')) &&
             !isSystem &&
             !isEfi &&
             !isRecoveryOrReserved) {
           final id = '/dev/$name';
-          // Check if it's already added
           if (!drives.any((d) => d.id == id)) {
             drives.add(
               Drive(
@@ -188,7 +180,6 @@ class _LinuxDriveService implements DriveService {
       }
     }
 
-    // Process children (partitions of a disk)
     final children = device['children'] as List<dynamic>?;
     if (children != null) {
       for (final child in children) {
@@ -208,16 +199,12 @@ class _LinuxDriveService implements DriveService {
   @override
   Future<void> mountWithPassword(Drive drive, String password) async {
     final user = Platform.environment['USER'] ?? 'user';
-    final safeLabel = drive.label.replaceAll(RegExp(r'\s+'), '_');
+    final safeLabel = drive.label.replaceAll(RegExp(r'[/\\\s]+'), '_');
     final mnt = '/run/media/$user/$safeLabel';
 
-    // Ensure the mount directory exists
-    await Process.run('sh', [
-      '-c',
-      'echo "$password" | sudo -S mkdir -p "$mnt"',
-    ]);
+    await _runSudoWithPassword(['mkdir', '-p', mnt], password);
 
-    String options = '';
+    List<String> options = const [];
     if (drive.fsType == 'ntfs' ||
         drive.fsType == 'vfat' ||
         drive.fsType == 'exfat') {
@@ -225,31 +212,34 @@ class _LinuxDriveService implements DriveService {
         final uidRes = await Process.run('id', ['-u']);
         final gidRes = await Process.run('id', ['-g']);
         if (uidRes.exitCode == 0 && gidRes.exitCode == 0) {
-          options =
-              '-o uid=${uidRes.stdout.toString().trim()},gid=${gidRes.stdout.toString().trim()}';
+          options = [
+            '-o',
+            'uid=${uidRes.stdout.toString().trim()},gid=${gidRes.stdout.toString().trim()}',
+          ];
         }
       } catch (_) {}
     }
 
-    final res = await Process.run('sh', [
-      '-c',
-      'echo "$password" | sudo -S mount $options "${drive.id}" "$mnt"',
-    ]);
-
-    if (res.exitCode != 0) {
-      throw Exception(res.stderr.toString());
-    }
+    await _runSudoWithPassword(['mount', ...options, drive.id, mnt], password);
   }
 
   @override
   Future<void> unmount(Drive drive) async {
     final result = await Process.run('udisksctl', ['unmount', '-b', drive.id]);
     if (result.exitCode != 0 &&
-        result.stderr.toString().contains('Not mounted')) {
-      // if standard udisksctl fails because it might have been mounted via sudo, try sudo umount
-      // We can't prompt for password here gracefully without changing the API, but unmounting usually
-      // works with udisksctl if it was mounted by it. If mounted by sudo, the user might need sudo again.
-      // However, udisksctl normally handles even /run/media mounts.
+        !result.stderr.toString().contains('Not mounted')) {
+      throw Exception(result.stderr.toString());
+    }
+  }
+
+  Future<void> _runSudoWithPassword(List<String> args, String password) async {
+    final process = await Process.start('sudo', ['-S', ...args]);
+    process.stdin.writeln(password);
+    await process.stdin.close();
+    final stderr = await process.stderr.transform(utf8.decoder).join();
+    final exitCode = await process.exitCode;
+    if (exitCode != 0) {
+      throw Exception(stderr);
     }
   }
 }
@@ -286,10 +276,7 @@ class _MacDriveService implements DriveService {
         bool isRemovable = false;
         if (!isRoot) {
           try {
-            final info = await Process.run(
-              'diskutil',
-              ['info', device],
-            );
+            final info = await Process.run('diskutil', ['info', device]);
             if (info.exitCode == 0) {
               final output = info.stdout as String;
               isRemovable =

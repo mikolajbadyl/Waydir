@@ -227,7 +227,7 @@ class _MenuTileState<T> extends State<_MenuTile<T>> {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: _hovered
-                ? const Color(0xFF333639)
+                ? AppColors.bgHoverStrong
                 : (widget.isSelected
                       ? AppColors.bgSelectedMuted
                       : Colors.transparent),

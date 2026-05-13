@@ -23,6 +23,23 @@ class AppColors {
   static const fgAccent = Color(0xFF7CBCFF);
 
   static const danger = Color(0xFFCF6679);
+  static const success = Color(0xFFA6E3A1);
+  static const warning = Color(0xFFF9E2AF);
+  static const neutral = Color(0xFF7B8794);
+  static const bgHoverStrong = Color(0xFF333639);
+  static const windowCloseHover = Color(0xFFE81123);
+  static const windowClosePressed = Color(0xFFBF0F1F);
+  static const shadowSubtle = Color(0x33000000);
+
+  static const fileCode = accent;
+  static const fileJs = Color(0xFFF7DF1E);
+  static const fileHtml = Color(0xFFE34F26);
+  static const fileCss = Color(0xFF1572B6);
+  static const fileImage = success;
+  static const fileArchive = Color(0xFFFAB387);
+  static const fileAudio = Color(0xFFCBA6F7);
+  static const fileVideo = Color(0xFFF5C2E7);
+  static const fileDefault = Color(0xFF6B6B6B);
 
   static Color get folderColor => accent;
 }
