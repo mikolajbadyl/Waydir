@@ -3,27 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import 'navigation_store.dart';
-import '../../ui/overlays/notification_store.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
 import '../../core/platform/platform_paths.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/overlays/context_menu.dart';
-import '../operations/operations_panel.dart';
-import '../../ui/overlays/notifications_panel.dart';
-import '../panes/shell_store.dart';
 
-class Toolbar extends StatelessWidget {
+class PaneLocationBar extends StatelessWidget {
   final NavigationStore store;
-  final NotificationStore notificationStore;
-  final ShellStore? shellStore;
 
-  const Toolbar({
-    super.key,
-    required this.store,
-    required this.notificationStore,
-    this.shellStore,
-  });
+  const PaneLocationBar({super.key, required this.store});
 
   @override
   Widget build(BuildContext context) {
@@ -83,9 +72,6 @@ class Toolbar extends StatelessWidget {
             ),
           ),
           _NewFolderButton(store: store),
-          _OperationsButton(store: store),
-          _ViewOptionsButton(store: store, shellStore: shellStore),
-          _NotificationsButton(notificationStore: notificationStore),
           const SizedBox(width: 4),
         ],
       ),
@@ -568,89 +554,6 @@ class _BreadcrumbSegmentState extends State<_BreadcrumbSegment> {
   }
 }
 
-class _ViewOptionsButton extends StatefulWidget {
-  final NavigationStore store;
-  final ShellStore? shellStore;
-
-  const _ViewOptionsButton({required this.store, this.shellStore});
-
-  @override
-  State<_ViewOptionsButton> createState() => _ViewOptionsButtonState();
-}
-
-class _ViewOptionsButtonState extends State<_ViewOptionsButton> {
-  bool _hovered = false;
-
-  void _openMenu() {
-    final box = context.findRenderObject() as RenderBox;
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final offset = box.localToGlobal(
-      Offset(0, box.size.height),
-      ancestor: overlay,
-    );
-
-    final items = <ContextMenuItem>[
-      if (widget.shellStore != null)
-        ContextMenuItem(
-          icon: PhosphorIconsRegular.columns,
-          label: t.menu.dualPaneMode,
-          action: 'toggle_dual',
-          isToggle: true,
-          toggleSignal: widget.shellStore!.isDual,
-        ),
-      if (widget.shellStore != null) ContextMenuItem.divider,
-      ContextMenuItem(
-        icon: PhosphorIconsRegular.eye,
-        label: t.menu.showHidden,
-        action: 'toggle_hidden',
-        isToggle: true,
-        toggleSignal: widget.store.showHidden,
-      ),
-    ];
-
-    showContextMenu(
-      context: context,
-      position: offset,
-      items: items,
-      onSelect: (action) {
-        if (action == 'toggle_hidden') {
-          widget.store.showHidden.value = !widget.store.showHidden.value;
-        } else if (action == 'toggle_dual') {
-          widget.shellStore?.toggleDual();
-        }
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: t.toolbar.viewOptions,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          onTap: _openMenu,
-          child: Container(
-            width: 30,
-            height: 30,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            decoration: BoxDecoration(
-              color: _hovered ? AppColors.bgHover : Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: PhosphorIcon(
-              PhosphorIconsRegular.sliders,
-              size: 16,
-              color: _hovered ? AppColors.fg : AppColors.fgMuted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _NewFolderButton extends StatefulWidget {
   final NavigationStore store;
 
@@ -688,194 +591,6 @@ class _NewFolderButtonState extends State<_NewFolderButton> {
               PhosphorIconsRegular.folderPlus,
               size: 16,
               color: _hovered ? AppColors.fg : AppColors.fgMuted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OperationsButton extends StatefulWidget {
-  final NavigationStore store;
-
-  const _OperationsButton({required this.store});
-
-  @override
-  State<_OperationsButton> createState() => _OperationsButtonState();
-}
-
-class _OperationsButtonState extends State<_OperationsButton>
-    with SingleTickerProviderStateMixin {
-  bool _hovered = false;
-  late final AnimationController _spin = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  );
-
-  @override
-  void dispose() {
-    _spin.dispose();
-    super.dispose();
-  }
-
-  void _openPanel() {
-    final box = context.findRenderObject() as RenderBox;
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final offset = box.localToGlobal(
-      Offset(0, box.size.height),
-      ancestor: overlay,
-    );
-
-    showOperationsPanel(
-      context: context,
-      position: offset,
-      operationStore: widget.store.operationStore,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Watch((context) {
-      final count = widget.store.operationStore.activeCount.value;
-      if (count == 0) {
-        if (_spin.isAnimating) _spin.stop();
-        return const SizedBox.shrink();
-      }
-      if (!_spin.isAnimating) _spin.repeat();
-
-      return Tooltip(
-        message: t.toolbar.operations,
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit: (_) => setState(() => _hovered = false),
-          child: GestureDetector(
-            onTap: _openPanel,
-            child: Container(
-              width: 30,
-              height: 30,
-              margin: const EdgeInsets.symmetric(horizontal: 1),
-              decoration: BoxDecoration(
-                color: _hovered
-                    ? AppColors.accent.withValues(alpha: 0.22)
-                    : AppColors.accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.55),
-                  width: 1,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Center(
-                    child: RotationTransition(
-                      turns: _spin,
-                      child: PhosphorIcon(
-                        PhosphorIconsRegular.circleNotch,
-                        size: 14,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 1,
-                    top: 1,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 12,
-                        minHeight: 12,
-                      ),
-                      child: Center(
-                        child: Text('$count', style: context.txt.badge),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    });
-  }
-}
-
-class _NotificationsButton extends StatefulWidget {
-  final NotificationStore notificationStore;
-
-  const _NotificationsButton({required this.notificationStore});
-
-  @override
-  State<_NotificationsButton> createState() => _NotificationsButtonState();
-}
-
-class _NotificationsButtonState extends State<_NotificationsButton> {
-  bool _hovered = false;
-
-  void _open() {
-    final box = context.findRenderObject() as RenderBox;
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final offset = box.localToGlobal(
-      Offset(0, box.size.height),
-      ancestor: overlay,
-    );
-
-    showNotificationsPanel(
-      context: context,
-      position: offset,
-      store: widget.notificationStore,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: t.toolbar.notifications,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: GestureDetector(
-          onTap: _open,
-          child: Container(
-            width: 30,
-            height: 30,
-            margin: const EdgeInsets.symmetric(horizontal: 1),
-            decoration: BoxDecoration(
-              color: _hovered ? AppColors.bgHover : Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Center(
-                  child: PhosphorIcon(
-                    PhosphorIconsRegular.bell,
-                    size: 16,
-                    color: _hovered ? AppColors.fg : AppColors.fgMuted,
-                  ),
-                ),
-                Watch((context) {
-                  final count = widget.notificationStore.history.value.length;
-                  if (count == 0) return const SizedBox.shrink();
-                  return Positioned(
-                    right: 4,
-                    top: 6,
-                    child: Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                    ),
-                  );
-                }),
-              ],
             ),
           ),
         ),

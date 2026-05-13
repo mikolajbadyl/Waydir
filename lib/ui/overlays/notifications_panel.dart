@@ -62,7 +62,7 @@ class _NotificationsPanelBody extends StatelessWidget {
                 Text(t.notifications.title, style: context.txt.dialogTitle),
                 const Spacer(),
                 Watch((context) {
-                  final has = store.history.value.isNotEmpty;
+                  final has = store.history.value.any((n) => n.dismissible);
                   if (!has) return const SizedBox.shrink();
                   return _ClearButton(onTap: () => store.clearHistory());
                 }),
@@ -150,6 +150,7 @@ class _NotificationTile extends StatefulWidget {
 
 class _NotificationTileState extends State<_NotificationTile> {
   bool _hovered = false;
+  bool _applyToAll = false;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +188,29 @@ class _NotificationTileState extends State<_NotificationTile> {
                     n.message,
                     style: context.txt.row.copyWith(height: 1.35),
                   ),
+                  if (n.applyToAllLabel != null) ...[
+                    const SizedBox(height: 7),
+                    _InlineCheckbox(
+                      label: n.applyToAllLabel!,
+                      value: _applyToAll,
+                      onChanged: (value) => setState(() => _applyToAll = value),
+                    ),
+                  ],
+                  if (n.actions.isNotEmpty) ...[
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: n.actions
+                          .map(
+                            (action) => _PanelActionButton(
+                              action: action,
+                              applyToAll: _applyToAll,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
                   const SizedBox(height: 3),
                   Text(
                     formatTimeAgo(n.timestamp),
@@ -197,7 +221,7 @@ class _NotificationTileState extends State<_NotificationTile> {
                 ],
               ),
             ),
-            if (_hovered)
+            if (_hovered && n.dismissible)
               GestureDetector(
                 onTap: widget.onRemove,
                 child: Padding(
@@ -210,6 +234,116 @@ class _NotificationTileState extends State<_NotificationTile> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineCheckbox extends StatefulWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _InlineCheckbox({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  State<_InlineCheckbox> createState() => _InlineCheckboxState();
+}
+
+class _InlineCheckboxState extends State<_InlineCheckbox> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _hovered ? AppColors.fg : AppColors.fgMuted;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: () => widget.onChanged(!widget.value),
+        behavior: HitTestBehavior.opaque,
+        child: Row(
+          children: [
+            Container(
+              width: 13,
+              height: 13,
+              decoration: BoxDecoration(
+                color: widget.value ? AppColors.accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(
+                  color: widget.value
+                      ? AppColors.accent
+                      : AppColors.borderColor,
+                ),
+              ),
+              child: widget.value
+                  ? PhosphorIcon(
+                      PhosphorIconsRegular.check,
+                      size: 9,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                widget.label,
+                style: context.txt.caption.copyWith(color: color),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PanelActionButton extends StatefulWidget {
+  final NotificationAction action;
+  final bool applyToAll;
+
+  const _PanelActionButton({required this.action, required this.applyToAll});
+
+  @override
+  State<_PanelActionButton> createState() => _PanelActionButtonState();
+}
+
+class _PanelActionButtonState extends State<_PanelActionButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.action.color ?? AppColors.accent;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: () {
+          final onTapWithApplyToAll = widget.action.onTapWithApplyToAll;
+          if (onTapWithApplyToAll != null) {
+            onTapWithApplyToAll(widget.applyToAll);
+          } else {
+            widget.action.onTap();
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: _hovered ? color.withValues(alpha: 0.2) : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: _hovered ? color : AppColors.borderColor),
+          ),
+          child: Text(
+            widget.action.label,
+            style: context.txt.caption.copyWith(color: color),
+          ),
         ),
       ),
     );

@@ -634,6 +634,67 @@ class _WaydirPageState extends State<WaydirPage> {
     };
   }
 
+  void _toggleShowHidden() {
+    if (!_shell.ready.value) return;
+    final store = _active;
+    store.showHidden.value = !store.showHidden.value;
+  }
+
+  Widget _buildViewMenu() {
+    return Watch((_) {
+      if (!_shell.ready.value) return const SizedBox.shrink();
+      final store = _active;
+      return TitleMenuButton(
+        label: 'View',
+        items: [
+          ContextMenuItem(
+            icon: PhosphorIconsRegular.columns,
+            label: t.menu.dualPaneMode,
+            action: 'toggle_dual',
+            isToggle: true,
+            toggleSignal: _shell.isDual,
+          ),
+          ContextMenuItem.divider,
+          ContextMenuItem(
+            icon: PhosphorIconsRegular.eye,
+            label: t.menu.showHidden,
+            action: 'toggle_hidden',
+            isToggle: true,
+            toggleSignal: store.showHidden,
+          ),
+        ],
+        onSelect: (action) {
+          switch (action) {
+            case 'toggle_dual':
+              _shell.toggleDual();
+            case 'toggle_hidden':
+              _toggleShowHidden();
+          }
+        },
+      );
+    });
+  }
+
+  List<PlatformMenu> _platformViewMenus() {
+    return [
+      PlatformMenu(
+        label: 'View',
+        menus: [
+          PlatformMenuItem(
+            label: t.menu.dualPaneMode,
+            onSelected: () {
+              if (_shell.ready.value) _shell.toggleDual();
+            },
+          ),
+          PlatformMenuItem(
+            label: t.menu.showHidden,
+            onSelected: _toggleShowHidden,
+          ),
+        ],
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -644,6 +705,8 @@ class _WaydirPageState extends State<WaydirPage> {
         child: Stack(
           children: [
             TitleBar(
+              menuTrailing: _buildViewMenu(),
+              platformMenus: _platformViewMenus(),
               child: Watch((context) {
                 if (!_shell.ready.value) {
                   return const Center(
@@ -667,6 +730,7 @@ class _WaydirPageState extends State<WaydirPage> {
                             child: Watch(
                               (context) => Sidebar(
                                 store: _active,
+                                operationStore: _operationStore,
                                 onOpenInNewTab: _openInNewTab,
                               ),
                             ),
@@ -686,9 +750,6 @@ class _WaydirPageState extends State<WaydirPage> {
                                       pane: panes[0],
                                       isActive: true,
                                       onActivate: _restoreFocus,
-                                      operationStore: _operationStore,
-                                      notificationStore: _notificationStore,
-                                      shellStore: _shell,
                                       onBackgroundContextMenu:
                                           _handleBackgroundContextMenu,
                                       onContextMenu: _handleContextMenu,
@@ -710,9 +771,6 @@ class _WaydirPageState extends State<WaydirPage> {
                                           pane: panes[0],
                                           isActive: activeIdx == 0,
                                           onActivate: _activatePane(0),
-                                          operationStore: _operationStore,
-                                          notificationStore: _notificationStore,
-                                          shellStore: _shell,
                                           onBackgroundContextMenu:
                                               _handleBackgroundContextMenu,
                                           onContextMenu: _handleContextMenu,
@@ -730,9 +788,6 @@ class _WaydirPageState extends State<WaydirPage> {
                                           pane: panes[1],
                                           isActive: activeIdx == 1,
                                           onActivate: _activatePane(1),
-                                          operationStore: _operationStore,
-                                          notificationStore: _notificationStore,
-                                          shellStore: _shell,
                                           onBackgroundContextMenu:
                                               _handleBackgroundContextMenu,
                                           onContextMenu: _handleContextMenu,
@@ -753,6 +808,7 @@ class _WaydirPageState extends State<WaydirPage> {
                       (context) => StatusBar(
                         store: _active,
                         operationStore: _operationStore,
+                        notificationStore: _notificationStore,
                       ),
                     ),
                   ],

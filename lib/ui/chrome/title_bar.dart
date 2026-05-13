@@ -26,8 +26,15 @@ void _openKeybindingsHelp() {
 
 class TitleBar extends StatelessWidget {
   final Widget child;
+  final Widget? menuTrailing;
+  final List<PlatformMenu> platformMenus;
 
-  const TitleBar({super.key, required this.child});
+  const TitleBar({
+    super.key,
+    required this.child,
+    this.menuTrailing,
+    this.platformMenus = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +43,7 @@ class TitleBar extends StatelessWidget {
     }
     return Column(
       children: [
-        const _TitleBarRow(),
+        _TitleBarRow(menuTrailing: menuTrailing),
         Expanded(child: child),
       ],
     );
@@ -85,12 +92,15 @@ class TitleBar extends StatelessWidget {
           ),
         ],
       ),
+      ...platformMenus,
     ];
   }
 }
 
 class _TitleBarRow extends StatelessWidget {
-  const _TitleBarRow();
+  final Widget? menuTrailing;
+
+  const _TitleBarRow({this.menuTrailing});
 
   @override
   Widget build(BuildContext context) {
@@ -103,10 +113,10 @@ class _TitleBarRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const SizedBox(width: 10),
-            Image.asset(AppInfo.iconAsset, width: 14, height: 14),
-            const SizedBox(width: 8),
-            const _MenuBar(),
+            const SizedBox(width: 9),
+            Image.asset(AppInfo.iconAsset, width: 13, height: 13),
+            const SizedBox(width: 7),
+            _MenuBar(trailing: menuTrailing),
             Expanded(child: MoveWindow()),
             const _WindowButtons(),
           ],
@@ -117,14 +127,16 @@ class _TitleBarRow extends StatelessWidget {
 }
 
 class _MenuBar extends StatelessWidget {
-  const _MenuBar();
+  final Widget? trailing;
+
+  const _MenuBar({this.trailing});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _MenuButton(
+        TitleMenuButton(
           label: 'Waydir',
           items: [
             ContextMenuItem(
@@ -155,27 +167,29 @@ class _MenuBar extends StatelessWidget {
             }
           },
         ),
+        ?trailing,
       ],
     );
   }
 }
 
-class _MenuButton extends StatefulWidget {
+class TitleMenuButton extends StatefulWidget {
   final String label;
   final List<ContextMenuItem> items;
   final void Function(String action) onSelect;
 
-  const _MenuButton({
+  const TitleMenuButton({
+    super.key,
     required this.label,
     required this.items,
     required this.onSelect,
   });
 
   @override
-  State<_MenuButton> createState() => _MenuButtonState();
+  State<TitleMenuButton> createState() => _TitleMenuButtonState();
 }
 
-class _MenuButtonState extends State<_MenuButton> {
+class _TitleMenuButtonState extends State<TitleMenuButton> {
   final _key = GlobalKey();
   bool _hovered = false;
 
@@ -202,11 +216,21 @@ class _MenuButtonState extends State<_MenuButton> {
         onTap: _open,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          height: 32,
+          height: 24,
+          margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          color: _hovered ? AppColors.bgHover : Colors.transparent,
+          decoration: BoxDecoration(
+            color: _hovered ? AppColors.bgHover : Colors.transparent,
+            borderRadius: BorderRadius.circular(5),
+          ),
           alignment: Alignment.center,
-          child: Text(widget.label, style: context.txt.bodyEmphasis),
+          child: Text(
+            widget.label,
+            style: context.txt.captionSmall.copyWith(
+              color: _hovered ? AppColors.fg : AppColors.fgMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );

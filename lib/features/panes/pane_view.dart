@@ -13,19 +13,13 @@ import '../navigation/navigation_store.dart';
 import '../navigation/search_bar_widget.dart';
 import '../navigation/toolbar.dart';
 import '../tabs/tab_strip.dart';
-import '../../ui/overlays/notification_store.dart';
 import '../../ui/theme/app_theme.dart';
-import '../operations/operation_store.dart';
 import 'pane_store.dart';
-import 'shell_store.dart';
 
 class PaneView extends StatelessWidget {
   final PaneStore pane;
   final bool isActive;
   final VoidCallback onActivate;
-  final OperationStore operationStore;
-  final NotificationStore notificationStore;
-  final ShellStore shellStore;
   final BackgroundContextMenuCallback? onBackgroundContextMenu;
   final FileContextMenuCallback? onContextMenu;
   final FileMenuActionCallback? onMenuAction;
@@ -36,9 +30,6 @@ class PaneView extends StatelessWidget {
     required this.pane,
     required this.isActive,
     required this.onActivate,
-    required this.operationStore,
-    required this.notificationStore,
-    required this.shellStore,
     this.onBackgroundContextMenu,
     this.onContextMenu,
     this.onMenuAction,
@@ -56,11 +47,7 @@ class PaneView extends StatelessWidget {
             children: [
               TabStrip(tabsStore: pane.tabs, isActive: isActive),
               Watch(
-                (_) => Toolbar(
-                  store: pane.tabs.activeTab.value.store,
-                  notificationStore: notificationStore,
-                  shellStore: shellStore,
-                ),
+                (_) => PaneLocationBar(store: pane.tabs.activeTab.value.store),
               ),
               Watch(
                 (_) => pane.tabs.activeTab.value.store.searchActive.value
