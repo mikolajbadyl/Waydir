@@ -124,12 +124,12 @@ class StatusBar extends StatelessWidget {
           PhosphorIcon(
             PhosphorIconsRegular.warning,
             size: 11,
-            color: const Color(0xFFF9E2AF),
+            color: AppColors.warning,
           ),
           const SizedBox(width: 3),
           Text(
             '${task.conflicts.length}',
-            style: context.txt.row.copyWith(color: const Color(0xFFF9E2AF)),
+            style: context.txt.row.copyWith(color: AppColors.warning),
           ),
         ],
       ],

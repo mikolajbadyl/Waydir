@@ -10,6 +10,7 @@ import '../settings/settings_store.dart';
 import '../terminal/terminal.dart';
 import '../../i18n/strings.g.dart';
 import 'fs_worker_pool.dart';
+import 'safe_file_replace.dart';
 
 sealed class RenameResult {
   const RenameResult();
@@ -287,6 +288,16 @@ class FileSystemService {
           emitPrompt(c);
         }
       }
+      while (!cancelled &&
+          pendingConflicts.keys.any(
+            (s) =>
+                runtimeApplyAll == null &&
+                runtimeResolutions[s] == null &&
+                resolutions[s] == null,
+          )) {
+        decisionWaker = Completer<void>();
+        await decisionWaker!.future;
+      }
 
       for (final srcPath in allPaths) {
         if (cancelled) break;
@@ -402,6 +413,8 @@ class FileSystemService {
     bool cancelled = false;
     final allPaths = <String>[];
     final sourceRoots = <String>{};
+    final sourceRootOrder = <String>[];
+    final sourceRootCounts = <String, int>{};
     final visitedDirs = <String>{};
     int totalFiles = 0;
     final conflicts = <ConflictInfo>[];
@@ -460,16 +473,38 @@ class FileSystemService {
           Directory(src),
           targetPath,
           visitedDirs,
-          (path, conflict) {
+          (path, _) {
             allPaths.add(path);
             totalFiles++;
-            if (conflict != null) conflicts.add(conflict);
           },
           (errorPath, errorMsg) {
             errors.add(TaskError(path: errorPath, message: errorMsg));
             mainSendPort.send(ErrorMessage(path: errorPath, message: errorMsg));
           },
         );
+        if (FileSystemEntity.typeSync(targetPath) !=
+            FileSystemEntityType.notFound) {
+          try {
+            final targetStat = FileStat.statSync(targetPath);
+            final sourceStat = FileStat.statSync(src);
+            conflicts.add(
+              ConflictInfo(
+                sourcePath: src,
+                targetPath: targetPath,
+                name: name,
+                sourceSize: sourceStat.size,
+                targetSize: targetStat.size,
+                sourceModified: sourceStat.modified,
+                targetModified: targetStat.modified,
+              ),
+            );
+          } catch (e) {
+            errors.add(TaskError(path: src, message: _friendlyError(e)));
+            mainSendPort.send(
+              ErrorMessage(path: src, message: _friendlyError(e)),
+            );
+          }
+        }
       } else {
         try {
           allPaths.add(src);
@@ -525,7 +560,7 @@ class FileSystemService {
       );
     }
 
-    Future<bool> processMoveItem(String srcPath) async {
+    Future<bool> processMoveRoot(String srcPath) async {
       var resolution =
           runtimeApplyAll ??
           runtimeResolutions[srcPath] ??
@@ -540,13 +575,37 @@ class FileSystemService {
       }
 
       try {
+        final targetType = FileSystemEntity.typeSync(
+          dstPath,
+          followLinks: false,
+        );
         if (resolution != ConflictResolution.overwrite &&
-            FileSystemEntity.typeSync(dstPath) !=
-                FileSystemEntityType.notFound) {
+            targetType != FileSystemEntityType.notFound) {
           final info = buildConflictInfo(srcPath, dstPath);
           pendingConflicts[srcPath] = info;
           emitPrompt(info);
           return false;
+        }
+        if (resolution == ConflictResolution.overwrite &&
+            targetType != FileSystemEntityType.notFound) {
+          final tempDstPath = SafeFileReplace.temporarySiblingPath(dstPath);
+          await _moveEntity(srcPath, tempDstPath, () => cancelled, null);
+          if (cancelled) return true;
+          if (targetType == FileSystemEntityType.file ||
+              targetType == FileSystemEntityType.link) {
+            SafeFileReplace.replaceWithFile(tempDstPath, dstPath);
+          } else {
+            _deleteExistingEntity(dstPath);
+            await _moveEntity(tempDstPath, dstPath, () => false, null);
+          }
+          return true;
+        }
+        final dstDir = dstPath.substring(
+          0,
+          dstPath.lastIndexOf(Platform.pathSeparator),
+        );
+        if (!Directory(dstDir).existsSync()) {
+          Directory(dstDir).createSync(recursive: true);
         }
         await _moveEntity(srcPath, dstPath, () => cancelled, null);
       } catch (e) {
@@ -562,117 +621,60 @@ class FileSystemService {
           emitPrompt(c);
         }
       }
+      while (!cancelled &&
+          pendingConflicts.keys.any(
+            (s) =>
+                runtimeApplyAll == null &&
+                runtimeResolutions[s] == null &&
+                resolutions[s] == null,
+          )) {
+        decisionWaker = Completer<void>();
+        await decisionWaker!.future;
+      }
 
-      final canFastPath =
-          sourceRoots.length == 1 && allPaths.length > 1 && conflicts.isEmpty;
+      for (final srcPath in sourceRootOrder) {
+        if (cancelled) break;
 
-      if (canFastPath) {
-        final src = sourceRoots.first;
-        final name = src.split(Platform.pathSeparator).last;
-        var dstPath = '$destination${Platform.pathSeparator}$name';
-        var resolution =
-            runtimeApplyAll ?? runtimeResolutions[src] ?? resolutions[src];
+        if (pendingConflicts.containsKey(srcPath) &&
+            runtimeApplyAll == null &&
+            runtimeResolutions[srcPath] == null &&
+            resolutions[srcPath] == null) {
+          continue;
+        }
 
-        if (resolution == ConflictResolution.skip) {
-          mainSendPort.send(
-            TaskDoneMessage(cancelled: cancelled, errors: errors),
-          );
-          workerReceivePort.close();
-          return;
+        final handled = await processMoveRoot(srcPath);
+        if (handled) {
+          pendingConflicts.remove(srcPath);
+          processedFiles += sourceRootCounts[srcPath] ?? 1;
+          if (processedFiles > totalFiles) processedFiles = totalFiles;
+          maybeReport(srcPath.split(Platform.pathSeparator).last);
+          await Future.delayed(Duration.zero);
         }
-        if (resolution == ConflictResolution.rename) {
-          dstPath = _uniqueName(dstPath);
+      }
+
+      while (pendingConflicts.isNotEmpty && !cancelled) {
+        final resolvable = pendingConflicts.keys
+            .where(
+              (s) =>
+                  runtimeApplyAll != null ||
+                  runtimeResolutions[s] != null ||
+                  resolutions[s] != null,
+            )
+            .toList();
+        if (resolvable.isEmpty) {
+          decisionWaker = Completer<void>();
+          await decisionWaker!.future;
+          continue;
         }
-        try {
-          if (!cancelled) {
-            if (resolution != ConflictResolution.overwrite &&
-                FileSystemEntity.typeSync(dstPath) !=
-                    FileSystemEntityType.notFound) {
-              final info = buildConflictInfo(src, dstPath);
-              pendingConflicts[src] = info;
-              emitPrompt(info);
-              while (!cancelled &&
-                  runtimeApplyAll == null &&
-                  runtimeResolutions[src] == null) {
-                decisionWaker = Completer<void>();
-                await decisionWaker!.future;
-              }
-              if (cancelled) {
-                mainSendPort.send(
-                  TaskDoneMessage(cancelled: cancelled, errors: errors),
-                );
-                workerReceivePort.close();
-                return;
-              }
-              resolution = runtimeApplyAll ?? runtimeResolutions[src];
-              pendingConflicts.remove(src);
-              if (resolution == ConflictResolution.skip) {
-                mainSendPort.send(
-                  TaskDoneMessage(cancelled: cancelled, errors: errors),
-                );
-                workerReceivePort.close();
-                return;
-              }
-              if (resolution == ConflictResolution.rename) {
-                dstPath = _uniqueName(dstPath);
-              }
-            }
-            await _moveEntity(src, dstPath, () => cancelled, (current) {
-              processedFiles++;
-              maybeReport(current);
-            });
-            if (!cancelled) processedFiles = totalFiles;
-          }
-        } catch (e) {
-          errors.add(TaskError(path: src, message: _friendlyError(e)));
-        }
-      } else {
-        for (final srcPath in allPaths) {
+        for (final srcPath in resolvable) {
           if (cancelled) break;
-
-          if (pendingConflicts.containsKey(srcPath) &&
-              runtimeApplyAll == null &&
-              runtimeResolutions[srcPath] == null &&
-              resolutions[srcPath] == null) {
-            continue;
-          }
-
-          final handled = await processMoveItem(srcPath);
+          final handled = await processMoveRoot(srcPath);
           if (handled) {
             pendingConflicts.remove(srcPath);
-            processedFiles++;
+            processedFiles += sourceRootCounts[srcPath] ?? 1;
+            if (processedFiles > totalFiles) processedFiles = totalFiles;
             maybeReport(srcPath.split(Platform.pathSeparator).last);
-            if (processedFiles % 4 == 0) {
-              await Future.delayed(Duration.zero);
-            }
-          }
-        }
-
-        while (pendingConflicts.isNotEmpty && !cancelled) {
-          final resolvable = pendingConflicts.keys
-              .where(
-                (s) =>
-                    runtimeApplyAll != null ||
-                    runtimeResolutions[s] != null ||
-                    resolutions[s] != null,
-              )
-              .toList();
-          if (resolvable.isEmpty) {
-            decisionWaker = Completer<void>();
-            await decisionWaker!.future;
-            continue;
-          }
-          for (final srcPath in resolvable) {
-            if (cancelled) break;
-            final handled = await processMoveItem(srcPath);
-            if (handled) {
-              pendingConflicts.remove(srcPath);
-              processedFiles++;
-              maybeReport(srcPath.split(Platform.pathSeparator).last);
-              if (processedFiles % 4 == 0) {
-                await Future.delayed(Duration.zero);
-              }
-            }
+            await Future.delayed(Duration.zero);
           }
         }
       }
@@ -687,7 +689,10 @@ class FileSystemService {
           destination = msg.destination;
           for (final src in msg.sources) {
             sourceRoots.add(src);
+            sourceRootOrder.add(src);
+            final before = totalFiles;
             scanEntity(src, destination!);
+            sourceRootCounts[src] = totalFiles - before;
           }
           mainSendPort.send(
             PreScanResultMessage(
@@ -881,19 +886,7 @@ class FileSystemService {
   }
 
   static void _copyFileSync(File src, String dstPath) {
-    const chunkSize = 1024 * 1024;
-    final input = src.openSync(mode: FileMode.read);
-    final output = File(dstPath).openSync(mode: FileMode.write);
-    try {
-      while (true) {
-        final chunk = input.readSync(chunkSize);
-        if (chunk.isEmpty) break;
-        output.writeFromSync(chunk);
-      }
-    } finally {
-      input.closeSync();
-      output.closeSync();
-    }
+    SafeFileReplace.copyFile(src, dstPath);
   }
 
   static void _scanDirForCopy(
@@ -905,9 +898,6 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync()) {
-      Directory(dest).createSync(recursive: true);
-    }
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;
@@ -954,9 +944,6 @@ class FileSystemService {
   ) {
     final canonical = _resolveCanonical(dir.path);
     if (!visited.add(canonical)) return;
-    if (!Directory(dest).existsSync()) {
-      Directory(dest).createSync(recursive: true);
-    }
     try {
       for (final entity in dir.listSync(followLinks: false)) {
         final name = entity.path.split(Platform.pathSeparator).last;
@@ -1048,6 +1035,17 @@ class FileSystemService {
         }
         File(src).deleteSync();
       }
+    }
+  }
+
+  static void _deleteExistingEntity(String path) {
+    final type = FileSystemEntity.typeSync(path, followLinks: false);
+    if (type == FileSystemEntityType.link) {
+      Link(path).deleteSync();
+    } else if (type == FileSystemEntityType.directory) {
+      Directory(path).deleteSync(recursive: true);
+    } else if (type == FileSystemEntityType.file) {
+      File(path).deleteSync();
     }
   }
 

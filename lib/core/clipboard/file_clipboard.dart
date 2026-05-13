@@ -74,14 +74,12 @@ class FileClipboard {
     }
   }
 
-  // ── Windows (PowerShell) ──────────────────────────────
-
   static Future<void> _writeWindows(List<String> paths) async {
-    final escaped = paths.map((p) => '"${p.replaceAll('"', '""')}"').join(',');
+    final escaped = paths.map((p) => "'${p.replaceAll("'", "''")}'").join(',');
     final process = await Process.start('powershell', [
       '-NoProfile',
       '-Command',
-      'Set-Clipboard -Path $escaped',
+      'Set-Clipboard -LiteralPath @($escaped)',
     ]);
     await process.exitCode;
   }
@@ -100,8 +98,6 @@ class FileClipboard {
         .toList();
   }
 
-  // ── macOS (pbcopy/pbpaste) ────────────────────────────
-
   static Future<void> _writeMacOS(List<String> paths) async {
     final uris = paths.map((p) => Uri.file(p).toString()).join('\n');
     await _runWrite('pbcopy', <String>[], uris);
@@ -112,8 +108,6 @@ class FileClipboard {
     if (output == null) return [];
     return _parseUris(output);
   }
-
-  // ── Linux X11 ─────────────────────────────────────────
 
   static Future<List<String>> _readX11() async {
     var output = await _runRead('xclip', [
@@ -143,8 +137,6 @@ class FileClipboard {
     return [];
   }
 
-  // ── Linux Wayland ─────────────────────────────────────
-
   static Future<List<String>> _readWayland() async {
     final types = await _runRead('wl-paste', [
       '-l',
@@ -158,8 +150,6 @@ class FileClipboard {
     if (output != null) return _parseUris(output);
     return [];
   }
-
-  // ── Helpers ───────────────────────────────────────────
 
   static Future<void> _runWrite(
     String cmd,

@@ -97,7 +97,6 @@ class _FileListState extends State<FileList> {
     final index = (adjustedY / _kItemExtent).floor();
     if (index < 0 || index >= widget.files.length) return -1;
 
-    // Treat gap as background
     final relativeY = adjustedY % _kItemExtent;
     if (relativeY >= _kRowHeight) return -1;
 
@@ -497,8 +496,6 @@ class _ListRowState extends State<_ListRow> {
   Widget _buildDragImage(BuildContext context, Widget child) {
     final dragCount = widget.selected ? widget.selectedPaths.length : 1;
 
-    // We recreate the visual row for the drag image to have a consistent fixed width
-    // because the original row might be stretched to a very wide window.
     final e = widget.entry;
     final isFolder = e.type == FileItemType.folder;
 
@@ -559,7 +556,6 @@ class _ListRowState extends State<_ListRow> {
     final item = DragItem(localData: {'paths': pathsToDrag});
     item.add(formatLocalFile(pathsToDrag.join('\n')));
 
-    // For external drops (might only take the last one due to format overwrite, but we add anyway)
     for (final path in pathsToDrag) {
       item.add(Formats.fileUri(Uri.file(path)));
     }

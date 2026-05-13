@@ -23,9 +23,7 @@ class DriveStore {
     try {
       final updatedDrives = await _service.getDrives();
       drives.value = updatedDrives;
-    } catch (_) {
-      // Ignore errors in background polling
-    }
+    } catch (_) {}
   }
 
   Future<void> mount(Drive drive) async {
@@ -50,5 +48,4 @@ class DriveStore {
   }
 }
 
-// Global instance for UI
 final driveStore = DriveStore();

@@ -147,7 +147,7 @@ class _ContextMenuItemTileState extends State<_ContextMenuItemTile> {
     final dangerColor = AppColors.danger;
     final hoverBg = item.danger
         ? dangerColor.withValues(alpha: 0.12)
-        : const Color(0xFF333639);
+        : AppColors.bgHoverStrong;
     final fg = _hovered
         ? (item.danger ? dangerColor : AppColors.fg)
         : AppColors.fgMuted;

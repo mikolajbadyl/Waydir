@@ -494,7 +494,7 @@ class _KeyCap extends StatelessWidget {
         border: Border.all(color: AppColors.borderColor),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x33000000),
+            color: AppColors.shadowSubtle,
             blurRadius: 0,
             offset: Offset(0, 1),
           ),

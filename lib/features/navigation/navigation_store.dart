@@ -50,6 +50,7 @@ class NavigationStore {
   SearchHandle? _searchHandle;
   Timer? _searchDebounce;
   Timer? _searchUiFlush;
+  void Function()? _showHiddenDisposer;
   List<FileEntry>? _pendingSearchResults;
   static const _kSearchLimit = 5000;
   static const _kSearchUiFlushMs = 250;
@@ -95,7 +96,7 @@ class NavigationStore {
   }
 
   void _setupShowHiddenEffect() {
-    effect(() {
+    _showHiddenDisposer = effect(() {
       showHidden.value;
       if (searchActive.value && searchRecursive.value) {
         _restartRecursiveSearch();
@@ -372,7 +373,7 @@ class NavigationStore {
     });
   }
 
-  void commitRename(String newName) {
+  void commitRename(String newName) async {
     final oldPath = renamingPath.value;
     if (oldPath == null) return;
 
@@ -416,7 +417,7 @@ class NavigationStore {
             });
           }
         } else {
-          refresh();
+          await refresh();
           final idx = _vf.indexWhere((f) => f.path == newPath);
           if (idx >= 0) {
             batch(() {
@@ -445,7 +446,7 @@ class NavigationStore {
   Future<void> _commitCreate(String name) async {
     final pending = pendingCreate.value;
     if (pending == null) return;
-    if (name.contains(PlatformPaths.separator) || name == '.' || name == '..') {
+    if (!PlatformPaths.isValidFileName(name)) {
       renameError.value = t.toast.renameInvalidName;
       renameAttempt.value = renameAttempt.value + 1;
       return;
@@ -481,6 +482,8 @@ class NavigationStore {
   }
 
   void dispose() {
+    _showHiddenDisposer?.call();
+    _showHiddenDisposer = null;
     _searchDebounce?.cancel();
     _searchUiFlush?.cancel();
     _searchHandle?.cancel();
@@ -516,9 +519,11 @@ class NavigationStore {
       } else if (shift && !ctrl) {
         int start;
         if (anchorIndex.value >= 0 &&
+            anchorIndex.value < _vf.length &&
             selectedPaths.value.contains(_vf[anchorIndex.value].path)) {
           start = anchorIndex.value;
         } else if (cursorIndex.value >= 0 &&
+            cursorIndex.value < _vf.length &&
             selectedPaths.value.contains(_vf[cursorIndex.value].path)) {
           start = cursorIndex.value;
           anchorIndex.value = start;
@@ -564,7 +569,12 @@ class NavigationStore {
     if (cursorIndex.value >= 0 && cursorIndex.value < _vf.length) {
       entry = _vf[cursorIndex.value];
     } else if (selectedPaths.value.length == 1) {
-      entry = _vf.firstWhere((f) => f.path == selectedPaths.value.first);
+      for (final file in _vf) {
+        if (file.path == selectedPaths.value.first) {
+          entry = file;
+          break;
+        }
+      }
     }
     if (entry == null) return;
     if (entry.type == FileItemType.folder) {
@@ -763,8 +773,11 @@ class NavigationStore {
       if (next < 0 || next >= _vf.length) return;
 
       if (shift) {
-        final lo = next < anchorIndex.value ? next : anchorIndex.value;
-        final hi = next < anchorIndex.value ? anchorIndex.value : next;
+        final anchor = anchorIndex.value >= 0 && anchorIndex.value < _vf.length
+            ? anchorIndex.value
+            : cursorIndex.value;
+        final lo = next < anchor ? next : anchor;
+        final hi = next < anchor ? anchor : next;
         final paths = <String>{};
         for (int i = lo; i <= hi; i++) {
           paths.add(_vf[i].path);

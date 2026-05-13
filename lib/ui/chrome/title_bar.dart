@@ -104,11 +104,7 @@ class _TitleBarRow extends StatelessWidget {
         child: Row(
           children: [
             const SizedBox(width: 10),
-            Image.asset(
-              AppInfo.iconAsset,
-              width: 14,
-              height: 14,
-            ),
+            Image.asset(AppInfo.iconAsset, width: 14, height: 14),
             const SizedBox(width: 8),
             const _MenuBar(),
             Expanded(child: MoveWindow()),
@@ -233,8 +229,8 @@ class _WindowButtons extends StatelessWidget {
   static final _closeColors = WindowButtonColors(
     iconNormal: _iconColor,
     iconMouseOver: Colors.white,
-    mouseOver: const Color(0xFFE81123),
-    mouseDown: const Color(0xFFBF0F1F),
+    mouseOver: AppColors.windowCloseHover,
+    mouseDown: AppColors.windowClosePressed,
   );
 
   @override

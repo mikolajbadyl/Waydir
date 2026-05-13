@@ -81,7 +81,6 @@ class _SidebarState extends State<Sidebar> {
         final currentPath = widget.store.currentPath.value;
         final currentDrives = driveStore.drives.value;
 
-        // Add standard root on Linux if not present dynamically
         final devices = <Drive>[...currentDrives];
         final isUnix = PlatformPaths.isLinux || PlatformPaths.isMacOS;
         if (isUnix && !devices.any((d) => d.mountPoint == '/')) {
