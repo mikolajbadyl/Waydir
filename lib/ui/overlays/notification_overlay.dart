@@ -64,6 +64,7 @@ class _NotificationCardState extends State<_NotificationCard>
   late final Animation<double> _opacity;
   late final Animation<Offset> _slide;
   bool _dismissed = false;
+  bool _applyToAll = false;
 
   @override
   void initState() {
@@ -90,6 +91,7 @@ class _NotificationCardState extends State<_NotificationCard>
   }
 
   void _dismiss() {
+    if (!widget.notification.dismissible) return;
     if (_dismissed || !mounted) return;
     _dismissed = true;
     _anim.reverse().then((_) {
@@ -167,20 +169,32 @@ class _NotificationCardState extends State<_NotificationCard>
                         ],
                       ),
                     ),
-                    GestureDetector(
-                      onTap: _dismiss,
-                      child: PhosphorIcon(
-                        PhosphorIconsRegular.x,
-                        size: 14,
-                        color: AppColors.fgMuted,
+                    if (n.dismissible)
+                      GestureDetector(
+                        onTap: _dismiss,
+                        child: PhosphorIcon(
+                          PhosphorIconsRegular.x,
+                          size: 14,
+                          color: AppColors.fgMuted,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
+              if (n.applyToAllLabel != null)
+                _ApplyToAllCheckbox(
+                  label: n.applyToAllLabel!,
+                  value: _applyToAll,
+                  onChanged: (value) => setState(() => _applyToAll = value),
+                ),
               if (n.actions.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  padding: EdgeInsets.fromLTRB(
+                    12,
+                    n.applyToAllLabel != null ? 6 : 0,
+                    12,
+                    8,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: n.actions.map((action) {
@@ -189,6 +203,7 @@ class _NotificationCardState extends State<_NotificationCard>
                         child: _ActionButton(
                           action: action,
                           onDismiss: _dismiss,
+                          applyToAll: _applyToAll,
                         ),
                       );
                     }).toList(),
@@ -202,11 +217,83 @@ class _NotificationCardState extends State<_NotificationCard>
   }
 }
 
+class _ApplyToAllCheckbox extends StatefulWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _ApplyToAllCheckbox({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ApplyToAllCheckbox> createState() => _ApplyToAllCheckboxState();
+}
+
+class _ApplyToAllCheckboxState extends State<_ApplyToAllCheckbox> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _hovered ? AppColors.fg : AppColors.fgMuted;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: () => widget.onChanged(!widget.value),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+          child: Row(
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: widget.value ? AppColors.accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(
+                    color: widget.value
+                        ? AppColors.accent
+                        : AppColors.borderColor,
+                  ),
+                ),
+                child: widget.value
+                    ? PhosphorIcon(
+                        PhosphorIconsRegular.check,
+                        size: 10,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  widget.label,
+                  style: context.txt.row.copyWith(color: color),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionButton extends StatefulWidget {
   final NotificationAction action;
   final VoidCallback onDismiss;
+  final bool applyToAll;
 
-  const _ActionButton({required this.action, required this.onDismiss});
+  const _ActionButton({
+    required this.action,
+    required this.onDismiss,
+    required this.applyToAll,
+  });
 
   @override
   State<_ActionButton> createState() => _ActionButtonState();
@@ -223,7 +310,12 @@ class _ActionButtonState extends State<_ActionButton> {
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
         onTap: () {
-          widget.action.onTap();
+          final onTapWithApplyToAll = widget.action.onTapWithApplyToAll;
+          if (onTapWithApplyToAll != null) {
+            onTapWithApplyToAll(widget.applyToAll);
+          } else {
+            widget.action.onTap();
+          }
           if (widget.action.dismissOnTap) widget.onDismiss();
         },
         child: Container(

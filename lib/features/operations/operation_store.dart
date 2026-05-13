@@ -477,27 +477,43 @@ class OperationStore {
         type: NotificationType.persistent,
         icon: PhosphorIconsRegular.warning,
         accentColor: AppColors.warning,
+        dismissible: false,
+        applyToAllLabel: remaining > 0
+            ? t.operations.applyToAll(count: remaining)
+            : null,
         actions: [
           NotificationAction(
             label: t.operations.replace,
+            onTap: () {},
+            onTapWithApplyToAll: (applyToAll) => resolveCurrentConflict(
+              task.id,
+              ConflictResolution.overwrite,
+              applyToAll: applyToAll,
+            ),
             color: AppColors.accent,
             dismissOnTap: false,
-            onTap: () =>
-                resolveCurrentConflict(task.id, ConflictResolution.overwrite),
           ),
           NotificationAction(
             label: t.operations.keepBoth,
+            onTap: () {},
+            onTapWithApplyToAll: (applyToAll) => resolveCurrentConflict(
+              task.id,
+              ConflictResolution.rename,
+              applyToAll: applyToAll,
+            ),
             color: AppColors.success,
             dismissOnTap: false,
-            onTap: () =>
-                resolveCurrentConflict(task.id, ConflictResolution.rename),
           ),
           NotificationAction(
             label: t.operations.skip,
+            onTap: () {},
+            onTapWithApplyToAll: (applyToAll) => resolveCurrentConflict(
+              task.id,
+              ConflictResolution.skip,
+              applyToAll: applyToAll,
+            ),
             color: AppColors.fgMuted,
             dismissOnTap: false,
-            onTap: () =>
-                resolveCurrentConflict(task.id, ConflictResolution.skip),
           ),
         ],
       ),
@@ -508,7 +524,10 @@ class OperationStore {
   void _dismissTaskConflictNotification(String taskId) {
     _conflictQueues.remove(taskId);
     final notifId = _conflictNotifIds.remove(taskId);
-    if (notifId != null) notificationStore?.dismiss(notifId);
+    if (notifId != null) {
+      notificationStore?.dismiss(notifId, force: true);
+      notificationStore?.removeFromHistory(notifId, force: true);
+    }
   }
 
   IconData _iconForType(TaskType type) {

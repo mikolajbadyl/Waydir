@@ -25,6 +25,8 @@ class NotificationStore {
       actions: notification.actions,
       icon: notification.icon,
       accentColor: notification.accentColor,
+      dismissible: notification.dismissible,
+      applyToAllLabel: notification.applyToAllLabel,
       timestamp: notification.timestamp,
     );
 
@@ -73,7 +75,13 @@ class NotificationStore {
     return id;
   }
 
-  void dismiss(String id) {
+  void dismiss(String id, {bool force = false}) {
+    if (!force) {
+      final notification = _notifications.value
+          .where((n) => n.id == id)
+          .firstOrNull;
+      if (notification?.dismissible == false) return;
+    }
     _timers[id]?.cancel();
     _timers.remove(id);
     _notifications.value = _notifications.value
@@ -82,10 +90,14 @@ class NotificationStore {
   }
 
   void clearHistory() {
-    _history.value = [];
+    _history.value = _history.value.where((n) => !n.dismissible).toList();
   }
 
-  void removeFromHistory(String id) {
+  void removeFromHistory(String id, {bool force = false}) {
+    if (!force) {
+      final notification = _history.value.where((n) => n.id == id).firstOrNull;
+      if (notification?.dismissible == false) return;
+    }
     _history.value = _history.value.where((n) => n.id != id).toList();
   }
 

@@ -5,6 +5,8 @@ import 'navigation_store.dart';
 import '../../app/app_info.dart';
 import '../../core/models/file_operation.dart';
 import '../operations/operation_store.dart';
+import '../../ui/overlays/notification_store.dart';
+import '../../ui/overlays/notifications_panel.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
 import '../../i18n/strings.g.dart';
@@ -12,11 +14,13 @@ import '../../i18n/strings.g.dart';
 class StatusBar extends StatelessWidget {
   final NavigationStore store;
   final OperationStore operationStore;
+  final NotificationStore notificationStore;
 
   const StatusBar({
     super.key,
     required this.store,
     required this.operationStore,
+    required this.notificationStore,
   });
 
   @override
@@ -87,6 +91,8 @@ class StatusBar extends StatelessWidget {
               ],
             );
           }),
+          const SizedBox(width: 8),
+          _StatusNotificationsButton(notificationStore: notificationStore),
         ],
       ),
     );
@@ -146,6 +152,103 @@ class StatusBar extends StatelessWidget {
       child: Text(
         '|',
         style: context.txt.row.copyWith(color: AppColors.fgSubtle),
+      ),
+    );
+  }
+}
+
+class _StatusNotificationsButton extends StatelessWidget {
+  final NotificationStore notificationStore;
+
+  const _StatusNotificationsButton({required this.notificationStore});
+
+  void _open(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox;
+    final offset = box.localToGlobal(Offset(0, box.size.height));
+    showNotificationsPanel(
+      context: context,
+      position: offset,
+      store: notificationStore,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch((context) {
+      final count = notificationStore.history.value.length;
+      return _StatusIconButton(
+        icon: PhosphorIconsRegular.bell,
+        tooltip: t.toolbar.notifications,
+        badge: count,
+        onTap: () => _open(context),
+      );
+    });
+  }
+}
+
+class _StatusIconButton extends StatefulWidget {
+  final IconData icon;
+  final String tooltip;
+  final int badge;
+  final VoidCallback onTap;
+
+  const _StatusIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  @override
+  State<_StatusIconButton> createState() => _StatusIconButtonState();
+}
+
+class _StatusIconButtonState extends State<_StatusIconButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = _hovered ? AppColors.fg : AppColors.fgMuted;
+    return Tooltip(
+      message: widget.tooltip,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            width: 24,
+            height: 20,
+            margin: const EdgeInsets.only(left: 2),
+            decoration: BoxDecoration(
+              color: _hovered ? AppColors.bgHover : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Center(
+                  child: PhosphorIcon(widget.icon, size: 13, color: iconColor),
+                ),
+                if (widget.badge > 0)
+                  Positioned(
+                    right: 4,
+                    top: 3,
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

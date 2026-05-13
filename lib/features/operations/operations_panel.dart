@@ -62,32 +62,19 @@ class _OperationsPanelBody extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(t.operations.title, style: context.txt.dialogTitle),
                 const Spacer(),
-                Watch((context) {
-                  final hasDone = operationStore.tasks.value.any(
-                    (t) =>
-                        t.status == TaskStatus.completed ||
-                        t.status == TaskStatus.failed ||
-                        t.status == TaskStatus.cancelled,
-                  );
-                  if (!hasDone) return const SizedBox.shrink();
-                  return MouseRegion(
-                    child: GestureDetector(
-                      onTap: () => operationStore.clearCompleted(),
-                      child: Text(
-                        t.operations.clear,
-                        style: context.txt.row.copyWith(
-                          color: AppColors.accent,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
               ],
             ),
           ),
           Divider(height: 1, thickness: 1, color: AppColors.bgDivider),
           Watch((context) {
-            final ops = operationStore.tasks.value;
+            final ops = operationStore.tasks.value
+                .where(
+                  (task) =>
+                      task.status != TaskStatus.completed &&
+                      task.status != TaskStatus.failed &&
+                      task.status != TaskStatus.cancelled,
+                )
+                .toList();
             if (ops.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
