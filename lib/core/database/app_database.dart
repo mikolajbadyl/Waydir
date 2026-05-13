@@ -25,12 +25,29 @@ class SessionTabs extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(false))();
 }
 
-@DriftDatabase(tables: [AppSettings, SessionTabs])
+class Bookmarks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get orderIndex => integer()();
+  TextColumn get label => text()();
+  TextColumn get path => text().unique()();
+}
+
+@DriftDatabase(tables: [AppSettings, SessionTabs, Bookmarks])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(bookmarks);
+      }
+    },
+  );
 
   static QueryExecutor _openConnection() {
     return driftDatabase(
@@ -75,5 +92,42 @@ class AppDatabase extends _$AppDatabase {
           (t) => OrderingTerm.asc(t.tabIndex),
         ]))
         .get();
+  }
+
+  Future<List<Bookmark>> getBookmarks() {
+    return (select(
+      bookmarks,
+    )..orderBy([(t) => OrderingTerm.asc(t.orderIndex)])).get();
+  }
+
+  Future<Bookmark?> getBookmarkByPath(String path) {
+    return (select(
+      bookmarks,
+    )..where((t) => t.path.equals(path))).getSingleOrNull();
+  }
+
+  Future<Bookmark> addBookmark(String label, String path) async {
+    final maxOrder = bookmarks.orderIndex.max();
+    final row = await (selectOnly(
+      bookmarks,
+    )..addColumns([maxOrder])).getSingleOrNull();
+    final nextOrder = (row?.read(maxOrder) ?? -1) + 1;
+    return into(bookmarks).insertReturning(
+      BookmarksCompanion.insert(
+        orderIndex: nextOrder,
+        label: label,
+        path: path,
+      ),
+    );
+  }
+
+  Future<void> renameBookmark(int id, String label) {
+    return (update(bookmarks)..where((t) => t.id.equals(id))).write(
+      BookmarksCompanion(label: Value(label)),
+    );
+  }
+
+  Future<void> deleteBookmark(int id) {
+    return (delete(bookmarks)..where((t) => t.id.equals(id))).go();
   }
 }

@@ -156,4 +156,48 @@ void main() {
       expect(tabs[2].path, '/pane1');
     });
   });
+
+  group('Bookmarks', () {
+    test('getBookmarks returns empty list initially', () async {
+      final bookmarks = await db.getBookmarks();
+      expect(bookmarks, isEmpty);
+    });
+
+    test('addBookmark inserts rows in order', () async {
+      await db.addBookmark('Downloads', '/home/user/Downloads');
+      await db.addBookmark('Projects', '/home/user/Projects');
+
+      final bookmarks = await db.getBookmarks();
+      expect(bookmarks.length, 2);
+      expect(bookmarks[0].label, 'Downloads');
+      expect(bookmarks[0].path, '/home/user/Downloads');
+      expect(bookmarks[1].label, 'Projects');
+      expect(bookmarks[1].orderIndex, bookmarks[0].orderIndex + 1);
+    });
+
+    test('getBookmarkByPath returns matching row', () async {
+      final added = await db.addBookmark('Projects', '/home/user/Projects');
+
+      final bookmark = await db.getBookmarkByPath('/home/user/Projects');
+      expect(bookmark?.id, added.id);
+    });
+
+    test('renameBookmark updates label', () async {
+      final added = await db.addBookmark('Projects', '/home/user/Projects');
+
+      await db.renameBookmark(added.id, 'Code');
+
+      final bookmark = await db.getBookmarkByPath('/home/user/Projects');
+      expect(bookmark?.label, 'Code');
+    });
+
+    test('deleteBookmark removes row', () async {
+      final added = await db.addBookmark('Projects', '/home/user/Projects');
+
+      await db.deleteBookmark(added.id);
+
+      final bookmarks = await db.getBookmarks();
+      expect(bookmarks, isEmpty);
+    });
+  });
 }

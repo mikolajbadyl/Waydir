@@ -121,6 +121,9 @@ class TranslationsMenuEn {
 	/// en: 'Open in New Tab'
 	String get openInNewTab => 'Open in New Tab';
 
+	/// en: 'Remove Bookmark'
+	String get removeBookmark => 'Remove Bookmark';
+
 	/// en: 'Dual Pane Mode'
 	String get dualPaneMode => 'Dual Pane Mode';
 }
@@ -359,6 +362,12 @@ class TranslationsSidebarEn {
 
 	/// en: 'Root'
 	String get root => 'Root';
+
+	/// en: 'Bookmarks'
+	String get bookmarks => 'Bookmarks';
+
+	/// en: 'Drop folder to bookmark'
+	String get dropBookmark => 'Drop folder to bookmark';
 }
 
 // Path: toolbar
@@ -863,6 +872,7 @@ extension on Translations {
 			'menu.rename' => 'Rename',
 			'menu.openLocation' => 'Open Location',
 			'menu.openInNewTab' => 'Open in New Tab',
+			'menu.removeBookmark' => 'Remove Bookmark',
 			'menu.dualPaneMode' => 'Dual Pane Mode',
 			'preferences.title' => 'Preferences',
 			'preferences.menuLabel' => 'Preferences…',
@@ -955,6 +965,8 @@ extension on Translations {
 			'sidebar.music' => 'Music',
 			'sidebar.videos' => 'Videos',
 			'sidebar.root' => 'Root',
+			'sidebar.bookmarks' => 'Bookmarks',
+			'sidebar.dropBookmark' => 'Drop folder to bookmark',
 			'toolbar.back' => 'Back',
 			'toolbar.forward' => 'Forward',
 			'toolbar.up' => 'Up',
