@@ -23,6 +23,8 @@ void main() {
       expect(settings.isDual, false);
       expect(settings.splitRatio, 0.5);
       expect(settings.activePaneIndex, 0);
+      expect(settings.dateFormat, 'locale');
+      expect(settings.recentDatesRelative, true);
     });
 
     test('getSettings returns existing row on subsequent calls', () async {

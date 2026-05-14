@@ -177,7 +177,21 @@ class $AppSettingsTable extends AppSettings
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('iso'),
+    defaultValue: const Constant('locale'),
+  );
+  static const VerificationMeta _recentDatesRelativeMeta =
+      const VerificationMeta('recentDatesRelative');
+  @override
+  late final GeneratedColumn<bool> recentDatesRelative = GeneratedColumn<bool>(
+    'recent_dates_relative',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("recent_dates_relative" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -194,6 +208,7 @@ class $AppSettingsTable extends AppSettings
     showHiddenDefault,
     rowDensity,
     dateFormat,
+    recentDatesRelative,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -303,6 +318,15 @@ class $AppSettingsTable extends AppSettings
         dateFormat.isAcceptableOrUnknown(data['date_format']!, _dateFormatMeta),
       );
     }
+    if (data.containsKey('recent_dates_relative')) {
+      context.handle(
+        _recentDatesRelativeMeta,
+        recentDatesRelative.isAcceptableOrUnknown(
+          data['recent_dates_relative']!,
+          _recentDatesRelativeMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -364,6 +388,10 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.string,
         data['${effectivePrefix}date_format'],
       )!,
+      recentDatesRelative: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}recent_dates_relative'],
+      )!,
     );
   }
 
@@ -387,6 +415,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   final bool showHiddenDefault;
   final String rowDensity;
   final String dateFormat;
+  final bool recentDatesRelative;
   const AppSetting({
     required this.id,
     required this.terminal,
@@ -401,6 +430,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     required this.showHiddenDefault,
     required this.rowDensity,
     required this.dateFormat,
+    required this.recentDatesRelative,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -418,6 +448,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     map['show_hidden_default'] = Variable<bool>(showHiddenDefault);
     map['row_density'] = Variable<String>(rowDensity);
     map['date_format'] = Variable<String>(dateFormat);
+    map['recent_dates_relative'] = Variable<bool>(recentDatesRelative);
     return map;
   }
 
@@ -436,6 +467,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       showHiddenDefault: Value(showHiddenDefault),
       rowDensity: Value(rowDensity),
       dateFormat: Value(dateFormat),
+      recentDatesRelative: Value(recentDatesRelative),
     );
   }
 
@@ -462,6 +494,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       showHiddenDefault: serializer.fromJson<bool>(json['showHiddenDefault']),
       rowDensity: serializer.fromJson<String>(json['rowDensity']),
       dateFormat: serializer.fromJson<String>(json['dateFormat']),
+      recentDatesRelative: serializer.fromJson<bool>(
+        json['recentDatesRelative'],
+      ),
     );
   }
   @override
@@ -481,6 +516,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       'showHiddenDefault': serializer.toJson<bool>(showHiddenDefault),
       'rowDensity': serializer.toJson<String>(rowDensity),
       'dateFormat': serializer.toJson<String>(dateFormat),
+      'recentDatesRelative': serializer.toJson<bool>(recentDatesRelative),
     };
   }
 
@@ -498,6 +534,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     bool? showHiddenDefault,
     String? rowDensity,
     String? dateFormat,
+    bool? recentDatesRelative,
   }) => AppSetting(
     id: id ?? this.id,
     terminal: terminal ?? this.terminal,
@@ -512,6 +549,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     showHiddenDefault: showHiddenDefault ?? this.showHiddenDefault,
     rowDensity: rowDensity ?? this.rowDensity,
     dateFormat: dateFormat ?? this.dateFormat,
+    recentDatesRelative: recentDatesRelative ?? this.recentDatesRelative,
   );
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
@@ -548,6 +586,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       dateFormat: data.dateFormat.present
           ? data.dateFormat.value
           : this.dateFormat,
+      recentDatesRelative: data.recentDatesRelative.present
+          ? data.recentDatesRelative.value
+          : this.recentDatesRelative,
     );
   }
 
@@ -566,7 +607,8 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ..write('confirmDelete: $confirmDelete, ')
           ..write('showHiddenDefault: $showHiddenDefault, ')
           ..write('rowDensity: $rowDensity, ')
-          ..write('dateFormat: $dateFormat')
+          ..write('dateFormat: $dateFormat, ')
+          ..write('recentDatesRelative: $recentDatesRelative')
           ..write(')'))
         .toString();
   }
@@ -586,6 +628,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     showHiddenDefault,
     rowDensity,
     dateFormat,
+    recentDatesRelative,
   );
   @override
   bool operator ==(Object other) =>
@@ -603,7 +646,8 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           other.confirmDelete == this.confirmDelete &&
           other.showHiddenDefault == this.showHiddenDefault &&
           other.rowDensity == this.rowDensity &&
-          other.dateFormat == this.dateFormat);
+          other.dateFormat == this.dateFormat &&
+          other.recentDatesRelative == this.recentDatesRelative);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
@@ -620,6 +664,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<bool> showHiddenDefault;
   final Value<String> rowDensity;
   final Value<String> dateFormat;
+  final Value<bool> recentDatesRelative;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.terminal = const Value.absent(),
@@ -634,6 +679,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.showHiddenDefault = const Value.absent(),
     this.rowDensity = const Value.absent(),
     this.dateFormat = const Value.absent(),
+    this.recentDatesRelative = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -649,6 +695,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.showHiddenDefault = const Value.absent(),
     this.rowDensity = const Value.absent(),
     this.dateFormat = const Value.absent(),
+    this.recentDatesRelative = const Value.absent(),
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
@@ -664,6 +711,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Expression<bool>? showHiddenDefault,
     Expression<String>? rowDensity,
     Expression<String>? dateFormat,
+    Expression<bool>? recentDatesRelative,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -681,6 +729,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       if (showHiddenDefault != null) 'show_hidden_default': showHiddenDefault,
       if (rowDensity != null) 'row_density': rowDensity,
       if (dateFormat != null) 'date_format': dateFormat,
+      if (recentDatesRelative != null)
+        'recent_dates_relative': recentDatesRelative,
     });
   }
 
@@ -698,6 +748,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Value<bool>? showHiddenDefault,
     Value<String>? rowDensity,
     Value<String>? dateFormat,
+    Value<bool>? recentDatesRelative,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -714,6 +765,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       showHiddenDefault: showHiddenDefault ?? this.showHiddenDefault,
       rowDensity: rowDensity ?? this.rowDensity,
       dateFormat: dateFormat ?? this.dateFormat,
+      recentDatesRelative: recentDatesRelative ?? this.recentDatesRelative,
     );
   }
 
@@ -763,6 +815,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     if (dateFormat.present) {
       map['date_format'] = Variable<String>(dateFormat.value);
     }
+    if (recentDatesRelative.present) {
+      map['recent_dates_relative'] = Variable<bool>(recentDatesRelative.value);
+    }
     return map;
   }
 
@@ -781,7 +836,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           ..write('confirmDelete: $confirmDelete, ')
           ..write('showHiddenDefault: $showHiddenDefault, ')
           ..write('rowDensity: $rowDensity, ')
-          ..write('dateFormat: $dateFormat')
+          ..write('dateFormat: $dateFormat, ')
+          ..write('recentDatesRelative: $recentDatesRelative')
           ..write(')'))
         .toString();
   }
@@ -1465,6 +1521,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<bool> showHiddenDefault,
       Value<String> rowDensity,
       Value<String> dateFormat,
+      Value<bool> recentDatesRelative,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -1481,6 +1538,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<bool> showHiddenDefault,
       Value<String> rowDensity,
       Value<String> dateFormat,
+      Value<bool> recentDatesRelative,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -1554,6 +1612,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<String> get dateFormat => $composableBuilder(
     column: $table.dateFormat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get recentDatesRelative => $composableBuilder(
+    column: $table.recentDatesRelative,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1631,6 +1694,11 @@ class $$AppSettingsTableOrderingComposer
     column: $table.dateFormat,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get recentDatesRelative => $composableBuilder(
+    column: $table.recentDatesRelative,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -1700,6 +1768,11 @@ class $$AppSettingsTableAnnotationComposer
     column: $table.dateFormat,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get recentDatesRelative => $composableBuilder(
+    column: $table.recentDatesRelative,
+    builder: (column) => column,
+  );
 }
 
 class $$AppSettingsTableTableManager
@@ -1746,6 +1819,7 @@ class $$AppSettingsTableTableManager
                 Value<bool> showHiddenDefault = const Value.absent(),
                 Value<String> rowDensity = const Value.absent(),
                 Value<String> dateFormat = const Value.absent(),
+                Value<bool> recentDatesRelative = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 terminal: terminal,
@@ -1760,6 +1834,7 @@ class $$AppSettingsTableTableManager
                 showHiddenDefault: showHiddenDefault,
                 rowDensity: rowDensity,
                 dateFormat: dateFormat,
+                recentDatesRelative: recentDatesRelative,
               ),
           createCompanionCallback:
               ({
@@ -1776,6 +1851,7 @@ class $$AppSettingsTableTableManager
                 Value<bool> showHiddenDefault = const Value.absent(),
                 Value<String> rowDensity = const Value.absent(),
                 Value<String> dateFormat = const Value.absent(),
+                Value<bool> recentDatesRelative = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 terminal: terminal,
@@ -1790,6 +1866,7 @@ class $$AppSettingsTableTableManager
                 showHiddenDefault: showHiddenDefault,
                 rowDensity: rowDensity,
                 dateFormat: dateFormat,
+                recentDatesRelative: recentDatesRelative,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

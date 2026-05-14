@@ -21,7 +21,8 @@ class SettingsStore {
   final confirmDelete = signal<bool>(true);
   final showHiddenDefault = signal<bool>(false);
   final rowDensity = signal<String>('comfortable');
-  final dateFormat = signal<String>('iso');
+  final dateFormat = signal<String>('locale');
+  final recentDatesRelative = signal<bool>(true);
 
   late final AppDatabase _db;
   bool _loaded = false;
@@ -52,6 +53,7 @@ class SettingsStore {
     showHiddenDefault.value = row.showHiddenDefault;
     rowDensity.value = row.rowDensity;
     dateFormat.value = row.dateFormat;
+    recentDatesRelative.value = row.recentDatesRelative;
   }
 
   void _wireAutoSave() {
@@ -69,6 +71,7 @@ class SettingsStore {
         showHiddenDefault.value;
         rowDensity.value;
         dateFormat.value;
+        recentDatesRelative.value;
         if (!_loaded) return;
         _scheduleSave();
       }),
@@ -96,6 +99,7 @@ class SettingsStore {
           showHiddenDefault: Value(showHiddenDefault.value),
           rowDensity: Value(rowDensity.value),
           dateFormat: Value(dateFormat.value),
+          recentDatesRelative: Value(recentDatesRelative.value),
         ),
       );
     } catch (_) {}

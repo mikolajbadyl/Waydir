@@ -26,7 +26,9 @@ class AppSettings extends Table {
       boolean().withDefault(const Constant(false))();
   TextColumn get rowDensity =>
       text().withDefault(const Constant('comfortable'))();
-  TextColumn get dateFormat => text().withDefault(const Constant('iso'))();
+  TextColumn get dateFormat => text().withDefault(const Constant('locale'))();
+  BoolColumn get recentDatesRelative =>
+      boolean().withDefault(const Constant(true))();
 }
 
 class SessionTabs extends Table {
@@ -49,7 +51,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -68,6 +70,9 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(appSettings, appSettings.showHiddenDefault);
         await m.addColumn(appSettings, appSettings.rowDensity);
         await m.addColumn(appSettings, appSettings.dateFormat);
+      }
+      if (from < 5) {
+        await m.addColumn(appSettings, appSettings.recentDatesRelative);
       }
     },
   );

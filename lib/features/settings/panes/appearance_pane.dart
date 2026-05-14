@@ -20,6 +20,9 @@ class AppearancePane extends StatelessWidget {
             ),
             RegistrySettingRow(setting: registry.byId('appearance.rowDensity')),
             RegistrySettingRow(setting: registry.byId('appearance.dateFormat')),
+            RegistrySettingRow(
+              setting: registry.byId('appearance.recentDatesRelative'),
+            ),
           ],
         ),
       ],

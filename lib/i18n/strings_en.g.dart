@@ -833,11 +833,17 @@ class TranslationsPreferencesAppearanceEn {
 	/// en: 'ISO (2026-05-14 13:45)'
 	String get dateFormatIso => 'ISO (2026-05-14 13:45)';
 
-	/// en: 'Locale short'
-	String get dateFormatLocale => 'Locale short';
+	/// en: 'System locale'
+	String get dateFormatLocale => 'System locale';
 
 	/// en: 'Relative (2h ago)'
 	String get dateFormatRelative => 'Relative (2h ago)';
+
+	/// en: 'Use relative dates for recent files'
+	String get recentDatesRelative => 'Use relative dates for recent files';
+
+	/// en: 'When System locale is selected, files modified in the last 24 hours show as relative.'
+	String get recentDatesRelativeHint => 'When System locale is selected, files modified in the last 24 hours show as relative.';
 
 	/// en: 'Sidebar'
 	String get sidebarSection => 'Sidebar';
@@ -1043,8 +1049,10 @@ extension on Translations {
 			'preferences.appearance.rowDensityCompact' => 'Compact',
 			'preferences.appearance.dateFormat' => 'Date format',
 			'preferences.appearance.dateFormatIso' => 'ISO (2026-05-14 13:45)',
-			'preferences.appearance.dateFormatLocale' => 'Locale short',
+			'preferences.appearance.dateFormatLocale' => 'System locale',
 			'preferences.appearance.dateFormatRelative' => 'Relative (2h ago)',
+			'preferences.appearance.recentDatesRelative' => 'Use relative dates for recent files',
+			'preferences.appearance.recentDatesRelativeHint' => 'When System locale is selected, files modified in the last 24 hours show as relative.',
 			'preferences.appearance.sidebarSection' => 'Sidebar',
 			'preferences.appearance.sidebarCollapsed' => 'Collapsed by default',
 			'preferences.bookmarks.title' => 'Bookmarks',
