@@ -88,3 +88,5 @@ If you're picking up something non-trivial, open an issue first so we can sync o
 ## License
 
 [MIT](LICENSE)
+
+### Bundled third-party code

@@ -45,6 +45,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final TranslationsPreferencesEn preferences = TranslationsPreferencesEn.internal(_root);
 	late final TranslationsAppMenuEn appMenu = TranslationsAppMenuEn.internal(_root);
 	late final TranslationsKeybindingsEn keybindings = TranslationsKeybindingsEn.internal(_root);
+	late final TranslationsCommandPaletteEn commandPalette = TranslationsCommandPaletteEn.internal(_root);
 	late final TranslationsToastEn toast = TranslationsToastEn.internal(_root);
 	late final TranslationsDragHintEn dragHint = TranslationsDragHintEn.internal(_root);
 	late final TranslationsFileViewEn fileView = TranslationsFileViewEn.internal(_root);
@@ -149,8 +150,10 @@ class TranslationsPreferencesEn {
 	String get comingSoon => 'Coming soon';
 
 	late final TranslationsPreferencesCategoriesEn categories = TranslationsPreferencesCategoriesEn.internal(_root);
+	late final TranslationsPreferencesGeneralEn general = TranslationsPreferencesGeneralEn.internal(_root);
 	late final TranslationsPreferencesAppearanceEn appearance = TranslationsPreferencesAppearanceEn.internal(_root);
-	late final TranslationsPreferencesTerminalEn terminal = TranslationsPreferencesTerminalEn.internal(_root);
+	late final TranslationsPreferencesBookmarksEn bookmarks = TranslationsPreferencesBookmarksEn.internal(_root);
+	late final TranslationsPreferencesAboutEn about = TranslationsPreferencesAboutEn.internal(_root);
 }
 
 // Path: appMenu
@@ -220,6 +223,9 @@ class TranslationsKeybindingsEn {
 	/// en: 'Switch active pane'
 	String get switchPane => 'Switch active pane';
 
+	/// en: 'Toggle sidebar'
+	String get toggleSidebar => 'Toggle sidebar';
+
 	/// en: 'Copy'
 	String get copy => 'Copy';
 
@@ -261,6 +267,42 @@ class TranslationsKeybindingsEn {
 
 	/// en: 'Close search'
 	String get closeSearch => 'Close search';
+
+	/// en: 'Command palette'
+	String get commandPalette => 'Command palette';
+
+	/// en: 'Preferences'
+	String get preferences => 'Preferences';
+}
+
+// Path: commandPalette
+class TranslationsCommandPaletteEn {
+	TranslationsCommandPaletteEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Command Palette'
+	String get title => 'Command Palette';
+
+	/// en: 'Type a command or setting…'
+	String get placeholder => 'Type a command or setting…';
+
+	/// en: 'No matching commands'
+	String get empty => 'No matching commands';
+
+	/// en: 'Open Preferences'
+	String get openPreferences => 'Open Preferences';
+
+	/// en: 'Open the full settings dialog'
+	String get preferencesSubtitle => 'Open the full settings dialog';
+
+	/// en: 'Enabled'
+	String get enabled => 'Enabled';
+
+	/// en: 'Disabled'
+	String get disabled => 'Disabled';
 }
 
 // Path: toast
@@ -368,6 +410,12 @@ class TranslationsSidebarEn {
 
 	/// en: 'Drop folder to bookmark'
 	String get dropBookmark => 'Drop folder to bookmark';
+
+	/// en: 'Collapse sidebar'
+	String get collapse => 'Collapse sidebar';
+
+	/// en: 'Expand sidebar'
+	String get expand => 'Expand sidebar';
 }
 
 // Path: toolbar
@@ -674,20 +722,77 @@ class TranslationsPreferencesCategoriesEn {
 	/// en: 'Appearance'
 	String get appearance => 'Appearance';
 
-	/// en: 'Terminal'
-	String get terminal => 'Terminal';
-
-	/// en: 'Shortcuts'
-	String get shortcuts => 'Shortcuts';
-
-	/// en: 'File Associations'
-	String get fileAssociations => 'File Associations';
-
 	/// en: 'Bookmarks'
 	String get bookmarks => 'Bookmarks';
 
 	/// en: 'About'
 	String get about => 'About';
+}
+
+// Path: preferences.general
+class TranslationsPreferencesGeneralEn {
+	TranslationsPreferencesGeneralEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'General'
+	String get title => 'General';
+
+	/// en: 'Startup, file operations and terminal integration.'
+	String get subtitle => 'Startup, file operations and terminal integration.';
+
+	/// en: 'Startup'
+	String get startupSection => 'Startup';
+
+	/// en: 'Restore last session'
+	String get restoreSession => 'Restore last session';
+
+	/// en: 'Reopen previously open tabs and panes on launch.'
+	String get restoreSessionHint => 'Reopen previously open tabs and panes on launch.';
+
+	/// en: 'Default starting path'
+	String get defaultPath => 'Default starting path';
+
+	/// en: 'Used when session restore is disabled or empty.'
+	String get defaultPathHint => 'Used when session restore is disabled or empty.';
+
+	/// en: 'Browse…'
+	String get browse => 'Browse…';
+
+	/// en: 'File operations'
+	String get fileOpsSection => 'File operations';
+
+	/// en: 'Confirm before delete'
+	String get confirmDelete => 'Confirm before delete';
+
+	/// en: 'Show a dialog before removing files or folders.'
+	String get confirmDeleteHint => 'Show a dialog before removing files or folders.';
+
+	/// en: 'Terminal'
+	String get terminalSection => 'Terminal';
+
+	/// en: 'Default terminal'
+	String get terminalLabel => 'Default terminal';
+
+	/// en: 'Used by "Open in Terminal".'
+	String get terminalHint => 'Used by "Open in Terminal".';
+
+	/// en: 'Auto-detect'
+	String get terminalAuto => 'Auto-detect';
+
+	/// en: 'Custom command…'
+	String get terminalCustom => 'Custom command…';
+
+	/// en: 'Command'
+	String get terminalCustomLabel => 'Command';
+
+	/// en: 'e.g. kitty --working-directory={dir}'
+	String get terminalCustomHint => 'e.g. kitty --working-directory={dir}';
+
+	/// en: 'Use {dir} as a placeholder for the directory path.'
+	String get terminalCustomHelp => 'Use {dir} as a placeholder for the directory path.';
 }
 
 // Path: preferences.appearance
@@ -701,68 +806,95 @@ class TranslationsPreferencesAppearanceEn {
 	/// en: 'Appearance'
 	String get title => 'Appearance';
 
-	/// en: 'Adjust the visual scale of the interface.'
-	String get subtitle => 'Adjust the visual scale of the interface.';
+	/// en: 'Defaults for how files and the sidebar are displayed.'
+	String get subtitle => 'Defaults for how files and the sidebar are displayed.';
 
-	/// en: 'UI Scale'
-	String get scaleLabel => 'UI Scale';
+	/// en: 'Files'
+	String get filesSection => 'Files';
 
-	/// en: 'Auto (system)'
-	String get scaleAuto => 'Auto (system)';
+	/// en: 'Show hidden files by default'
+	String get showHidden => 'Show hidden files by default';
 
-	/// en: '50%'
-	String get scale50 => '50%';
+	/// en: 'Applies to new tabs. Existing tabs keep their setting.'
+	String get showHiddenHint => 'Applies to new tabs. Existing tabs keep their setting.';
 
-	/// en: '75%'
-	String get scale75 => '75%';
+	/// en: 'Row density'
+	String get rowDensity => 'Row density';
 
-	/// en: '100%'
-	String get scale100 => '100%';
+	/// en: 'Comfortable'
+	String get rowDensityComfortable => 'Comfortable';
 
-	/// en: '125%'
-	String get scale125 => '125%';
+	/// en: 'Compact'
+	String get rowDensityCompact => 'Compact';
 
-	/// en: '150%'
-	String get scale150 => '150%';
+	/// en: 'Date format'
+	String get dateFormat => 'Date format';
 
-	/// en: '175%'
-	String get scale175 => '175%';
+	/// en: 'ISO (2026-05-14 13:45)'
+	String get dateFormatIso => 'ISO (2026-05-14 13:45)';
 
-	/// en: '200%'
-	String get scale200 => '200%';
+	/// en: 'Locale short'
+	String get dateFormatLocale => 'Locale short';
+
+	/// en: 'Relative (2h ago)'
+	String get dateFormatRelative => 'Relative (2h ago)';
+
+	/// en: 'Sidebar'
+	String get sidebarSection => 'Sidebar';
+
+	/// en: 'Collapsed by default'
+	String get sidebarCollapsed => 'Collapsed by default';
 }
 
-// Path: preferences.terminal
-class TranslationsPreferencesTerminalEn {
-	TranslationsPreferencesTerminalEn.internal(this._root);
+// Path: preferences.bookmarks
+class TranslationsPreferencesBookmarksEn {
+	TranslationsPreferencesBookmarksEn.internal(this._root);
 
 	final Translations _root; // ignore: unused_field
 
 	// Translations
 
-	/// en: 'Terminal'
-	String get title => 'Terminal';
+	/// en: 'Bookmarks'
+	String get title => 'Bookmarks';
 
-	/// en: 'Choose the terminal emulator opened from "Open in Terminal".'
-	String get subtitle => 'Choose the terminal emulator opened from "Open in Terminal".';
+	/// en: 'Manage folders pinned to the sidebar.'
+	String get subtitle => 'Manage folders pinned to the sidebar.';
 
-	/// en: 'Default terminal'
-	String get label => 'Default terminal';
+	/// en: 'No bookmarks yet. Drop a folder onto the sidebar to add one.'
+	String get empty => 'No bookmarks yet. Drop a folder onto the sidebar to add one.';
 
-	/// en: 'Auto-detect'
-	String get auto => 'Auto-detect';
+	/// en: 'Rename'
+	String get rename => 'Rename';
 
-	/// en: 'Custom command…'
-	String get custom => 'Custom command…';
+	/// en: 'Remove'
+	String get remove => 'Remove';
+}
 
-	/// en: 'Command'
-	String get customLabel => 'Command';
+// Path: preferences.about
+class TranslationsPreferencesAboutEn {
+	TranslationsPreferencesAboutEn.internal(this._root);
 
-	/// en: 'e.g. kitty --working-directory={dir}'
-	String get customHint => 'e.g. kitty --working-directory={dir}';
+	final Translations _root; // ignore: unused_field
 
-	/// en: 'Use {dir} as a placeholder for the directory path.'
-	String get customHelp => 'Use {dir} as a placeholder for the directory path.';
+	// Translations
+
+	/// en: 'About'
+	String get title => 'About';
+
+	/// en: 'Version'
+	String get version => 'Version';
+
+	/// en: 'Build'
+	String get build => 'Build';
+
+	/// en: 'Repository'
+	String get repository => 'Repository';
+
+	/// en: 'License'
+	String get license => 'License';
+
+	/// en: 'Copy'
+	String get copy => 'Copy';
 }
 
 // Path: keybindings.categories
@@ -880,30 +1012,52 @@ extension on Translations {
 			'preferences.comingSoon' => 'Coming soon',
 			'preferences.categories.general' => 'General',
 			'preferences.categories.appearance' => 'Appearance',
-			'preferences.categories.terminal' => 'Terminal',
-			'preferences.categories.shortcuts' => 'Shortcuts',
-			'preferences.categories.fileAssociations' => 'File Associations',
 			'preferences.categories.bookmarks' => 'Bookmarks',
 			'preferences.categories.about' => 'About',
+			'preferences.general.title' => 'General',
+			'preferences.general.subtitle' => 'Startup, file operations and terminal integration.',
+			'preferences.general.startupSection' => 'Startup',
+			'preferences.general.restoreSession' => 'Restore last session',
+			'preferences.general.restoreSessionHint' => 'Reopen previously open tabs and panes on launch.',
+			'preferences.general.defaultPath' => 'Default starting path',
+			'preferences.general.defaultPathHint' => 'Used when session restore is disabled or empty.',
+			'preferences.general.browse' => 'Browse…',
+			'preferences.general.fileOpsSection' => 'File operations',
+			'preferences.general.confirmDelete' => 'Confirm before delete',
+			'preferences.general.confirmDeleteHint' => 'Show a dialog before removing files or folders.',
+			'preferences.general.terminalSection' => 'Terminal',
+			'preferences.general.terminalLabel' => 'Default terminal',
+			'preferences.general.terminalHint' => 'Used by "Open in Terminal".',
+			'preferences.general.terminalAuto' => 'Auto-detect',
+			'preferences.general.terminalCustom' => 'Custom command…',
+			'preferences.general.terminalCustomLabel' => 'Command',
+			'preferences.general.terminalCustomHint' => 'e.g. kitty --working-directory={dir}',
+			'preferences.general.terminalCustomHelp' => 'Use {dir} as a placeholder for the directory path.',
 			'preferences.appearance.title' => 'Appearance',
-			'preferences.appearance.subtitle' => 'Adjust the visual scale of the interface.',
-			'preferences.appearance.scaleLabel' => 'UI Scale',
-			'preferences.appearance.scaleAuto' => 'Auto (system)',
-			'preferences.appearance.scale50' => '50%',
-			'preferences.appearance.scale75' => '75%',
-			'preferences.appearance.scale100' => '100%',
-			'preferences.appearance.scale125' => '125%',
-			'preferences.appearance.scale150' => '150%',
-			'preferences.appearance.scale175' => '175%',
-			'preferences.appearance.scale200' => '200%',
-			'preferences.terminal.title' => 'Terminal',
-			'preferences.terminal.subtitle' => 'Choose the terminal emulator opened from "Open in Terminal".',
-			'preferences.terminal.label' => 'Default terminal',
-			'preferences.terminal.auto' => 'Auto-detect',
-			'preferences.terminal.custom' => 'Custom command…',
-			'preferences.terminal.customLabel' => 'Command',
-			'preferences.terminal.customHint' => 'e.g. kitty --working-directory={dir}',
-			'preferences.terminal.customHelp' => 'Use {dir} as a placeholder for the directory path.',
+			'preferences.appearance.subtitle' => 'Defaults for how files and the sidebar are displayed.',
+			'preferences.appearance.filesSection' => 'Files',
+			'preferences.appearance.showHidden' => 'Show hidden files by default',
+			'preferences.appearance.showHiddenHint' => 'Applies to new tabs. Existing tabs keep their setting.',
+			'preferences.appearance.rowDensity' => 'Row density',
+			'preferences.appearance.rowDensityComfortable' => 'Comfortable',
+			'preferences.appearance.rowDensityCompact' => 'Compact',
+			'preferences.appearance.dateFormat' => 'Date format',
+			'preferences.appearance.dateFormatIso' => 'ISO (2026-05-14 13:45)',
+			'preferences.appearance.dateFormatLocale' => 'Locale short',
+			'preferences.appearance.dateFormatRelative' => 'Relative (2h ago)',
+			'preferences.appearance.sidebarSection' => 'Sidebar',
+			'preferences.appearance.sidebarCollapsed' => 'Collapsed by default',
+			'preferences.bookmarks.title' => 'Bookmarks',
+			'preferences.bookmarks.subtitle' => 'Manage folders pinned to the sidebar.',
+			'preferences.bookmarks.empty' => 'No bookmarks yet. Drop a folder onto the sidebar to add one.',
+			'preferences.bookmarks.rename' => 'Rename',
+			'preferences.bookmarks.remove' => 'Remove',
+			'preferences.about.title' => 'About',
+			'preferences.about.version' => 'Version',
+			'preferences.about.build' => 'Build',
+			'preferences.about.repository' => 'Repository',
+			'preferences.about.license' => 'License',
+			'preferences.about.copy' => 'Copy',
 			'appMenu.quit' => 'Quit',
 			'keybindings.title' => 'Keyboard Shortcuts',
 			'keybindings.menuLabel' => 'Shortcuts',
@@ -926,6 +1080,7 @@ extension on Translations {
 			'keybindings.switchTab' => 'Switch to tab',
 			'keybindings.toggleDual' => 'Toggle dual pane',
 			'keybindings.switchPane' => 'Switch active pane',
+			'keybindings.toggleSidebar' => 'Toggle sidebar',
 			'keybindings.copy' => 'Copy',
 			'keybindings.cut' => 'Cut',
 			'keybindings.paste' => 'Paste',
@@ -940,6 +1095,15 @@ extension on Translations {
 			'keybindings.search' => 'Search',
 			'keybindings.recursiveSearch' => 'Recursive search',
 			'keybindings.closeSearch' => 'Close search',
+			'keybindings.commandPalette' => 'Command palette',
+			'keybindings.preferences' => 'Preferences',
+			'commandPalette.title' => 'Command Palette',
+			'commandPalette.placeholder' => 'Type a command or setting…',
+			'commandPalette.empty' => 'No matching commands',
+			'commandPalette.openPreferences' => 'Open Preferences',
+			'commandPalette.preferencesSubtitle' => 'Open the full settings dialog',
+			'commandPalette.enabled' => 'Enabled',
+			'commandPalette.disabled' => 'Disabled',
 			'toast.copiedItems' => ({required Object count}) => 'Copied ${count} items',
 			'toast.cutItems' => ({required Object count}) => 'Cut ${count} items',
 			'toast.taskErrors' => ({required Object label, required Object count}) => '${label} — ${count} errors',
@@ -967,6 +1131,8 @@ extension on Translations {
 			'sidebar.root' => 'Root',
 			'sidebar.bookmarks' => 'Bookmarks',
 			'sidebar.dropBookmark' => 'Drop folder to bookmark',
+			'sidebar.collapse' => 'Collapse sidebar',
+			'sidebar.expand' => 'Expand sidebar',
 			'toolbar.back' => 'Back',
 			'toolbar.forward' => 'Forward',
 			'toolbar.up' => 'Up',

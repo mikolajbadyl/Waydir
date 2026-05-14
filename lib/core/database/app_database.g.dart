@@ -83,6 +83,102 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _sidebarCollapsedMeta = const VerificationMeta(
+    'sidebarCollapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> sidebarCollapsed = GeneratedColumn<bool>(
+    'sidebar_collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sidebar_collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _restoreSessionMeta = const VerificationMeta(
+    'restoreSession',
+  );
+  @override
+  late final GeneratedColumn<bool> restoreSession = GeneratedColumn<bool>(
+    'restore_session',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("restore_session" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _defaultStartingPathMeta =
+      const VerificationMeta('defaultStartingPath');
+  @override
+  late final GeneratedColumn<String> defaultStartingPath =
+      GeneratedColumn<String>(
+        'default_starting_path',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(''),
+      );
+  static const VerificationMeta _confirmDeleteMeta = const VerificationMeta(
+    'confirmDelete',
+  );
+  @override
+  late final GeneratedColumn<bool> confirmDelete = GeneratedColumn<bool>(
+    'confirm_delete',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("confirm_delete" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _showHiddenDefaultMeta = const VerificationMeta(
+    'showHiddenDefault',
+  );
+  @override
+  late final GeneratedColumn<bool> showHiddenDefault = GeneratedColumn<bool>(
+    'show_hidden_default',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("show_hidden_default" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _rowDensityMeta = const VerificationMeta(
+    'rowDensity',
+  );
+  @override
+  late final GeneratedColumn<String> rowDensity = GeneratedColumn<String>(
+    'row_density',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('comfortable'),
+  );
+  static const VerificationMeta _dateFormatMeta = const VerificationMeta(
+    'dateFormat',
+  );
+  @override
+  late final GeneratedColumn<String> dateFormat = GeneratedColumn<String>(
+    'date_format',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('iso'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -91,6 +187,13 @@ class $AppSettingsTable extends AppSettings
     isDual,
     splitRatio,
     activePaneIndex,
+    sidebarCollapsed,
+    restoreSession,
+    defaultStartingPath,
+    confirmDelete,
+    showHiddenDefault,
+    rowDensity,
+    dateFormat,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -143,6 +246,63 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('sidebar_collapsed')) {
+      context.handle(
+        _sidebarCollapsedMeta,
+        sidebarCollapsed.isAcceptableOrUnknown(
+          data['sidebar_collapsed']!,
+          _sidebarCollapsedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('restore_session')) {
+      context.handle(
+        _restoreSessionMeta,
+        restoreSession.isAcceptableOrUnknown(
+          data['restore_session']!,
+          _restoreSessionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('default_starting_path')) {
+      context.handle(
+        _defaultStartingPathMeta,
+        defaultStartingPath.isAcceptableOrUnknown(
+          data['default_starting_path']!,
+          _defaultStartingPathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('confirm_delete')) {
+      context.handle(
+        _confirmDeleteMeta,
+        confirmDelete.isAcceptableOrUnknown(
+          data['confirm_delete']!,
+          _confirmDeleteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('show_hidden_default')) {
+      context.handle(
+        _showHiddenDefaultMeta,
+        showHiddenDefault.isAcceptableOrUnknown(
+          data['show_hidden_default']!,
+          _showHiddenDefaultMeta,
+        ),
+      );
+    }
+    if (data.containsKey('row_density')) {
+      context.handle(
+        _rowDensityMeta,
+        rowDensity.isAcceptableOrUnknown(data['row_density']!, _rowDensityMeta),
+      );
+    }
+    if (data.containsKey('date_format')) {
+      context.handle(
+        _dateFormatMeta,
+        dateFormat.isAcceptableOrUnknown(data['date_format']!, _dateFormatMeta),
+      );
+    }
     return context;
   }
 
@@ -176,6 +336,34 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.int,
         data['${effectivePrefix}active_pane_index'],
       )!,
+      sidebarCollapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sidebar_collapsed'],
+      )!,
+      restoreSession: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}restore_session'],
+      )!,
+      defaultStartingPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}default_starting_path'],
+      )!,
+      confirmDelete: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}confirm_delete'],
+      )!,
+      showHiddenDefault: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}show_hidden_default'],
+      )!,
+      rowDensity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}row_density'],
+      )!,
+      dateFormat: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date_format'],
+      )!,
     );
   }
 
@@ -192,6 +380,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   final bool isDual;
   final double splitRatio;
   final int activePaneIndex;
+  final bool sidebarCollapsed;
+  final bool restoreSession;
+  final String defaultStartingPath;
+  final bool confirmDelete;
+  final bool showHiddenDefault;
+  final String rowDensity;
+  final String dateFormat;
   const AppSetting({
     required this.id,
     required this.terminal,
@@ -199,6 +394,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     required this.isDual,
     required this.splitRatio,
     required this.activePaneIndex,
+    required this.sidebarCollapsed,
+    required this.restoreSession,
+    required this.defaultStartingPath,
+    required this.confirmDelete,
+    required this.showHiddenDefault,
+    required this.rowDensity,
+    required this.dateFormat,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -209,6 +411,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     map['is_dual'] = Variable<bool>(isDual);
     map['split_ratio'] = Variable<double>(splitRatio);
     map['active_pane_index'] = Variable<int>(activePaneIndex);
+    map['sidebar_collapsed'] = Variable<bool>(sidebarCollapsed);
+    map['restore_session'] = Variable<bool>(restoreSession);
+    map['default_starting_path'] = Variable<String>(defaultStartingPath);
+    map['confirm_delete'] = Variable<bool>(confirmDelete);
+    map['show_hidden_default'] = Variable<bool>(showHiddenDefault);
+    map['row_density'] = Variable<String>(rowDensity);
+    map['date_format'] = Variable<String>(dateFormat);
     return map;
   }
 
@@ -220,6 +429,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       isDual: Value(isDual),
       splitRatio: Value(splitRatio),
       activePaneIndex: Value(activePaneIndex),
+      sidebarCollapsed: Value(sidebarCollapsed),
+      restoreSession: Value(restoreSession),
+      defaultStartingPath: Value(defaultStartingPath),
+      confirmDelete: Value(confirmDelete),
+      showHiddenDefault: Value(showHiddenDefault),
+      rowDensity: Value(rowDensity),
+      dateFormat: Value(dateFormat),
     );
   }
 
@@ -237,6 +453,15 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       isDual: serializer.fromJson<bool>(json['isDual']),
       splitRatio: serializer.fromJson<double>(json['splitRatio']),
       activePaneIndex: serializer.fromJson<int>(json['activePaneIndex']),
+      sidebarCollapsed: serializer.fromJson<bool>(json['sidebarCollapsed']),
+      restoreSession: serializer.fromJson<bool>(json['restoreSession']),
+      defaultStartingPath: serializer.fromJson<String>(
+        json['defaultStartingPath'],
+      ),
+      confirmDelete: serializer.fromJson<bool>(json['confirmDelete']),
+      showHiddenDefault: serializer.fromJson<bool>(json['showHiddenDefault']),
+      rowDensity: serializer.fromJson<String>(json['rowDensity']),
+      dateFormat: serializer.fromJson<String>(json['dateFormat']),
     );
   }
   @override
@@ -249,6 +474,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       'isDual': serializer.toJson<bool>(isDual),
       'splitRatio': serializer.toJson<double>(splitRatio),
       'activePaneIndex': serializer.toJson<int>(activePaneIndex),
+      'sidebarCollapsed': serializer.toJson<bool>(sidebarCollapsed),
+      'restoreSession': serializer.toJson<bool>(restoreSession),
+      'defaultStartingPath': serializer.toJson<String>(defaultStartingPath),
+      'confirmDelete': serializer.toJson<bool>(confirmDelete),
+      'showHiddenDefault': serializer.toJson<bool>(showHiddenDefault),
+      'rowDensity': serializer.toJson<String>(rowDensity),
+      'dateFormat': serializer.toJson<String>(dateFormat),
     };
   }
 
@@ -259,6 +491,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     bool? isDual,
     double? splitRatio,
     int? activePaneIndex,
+    bool? sidebarCollapsed,
+    bool? restoreSession,
+    String? defaultStartingPath,
+    bool? confirmDelete,
+    bool? showHiddenDefault,
+    String? rowDensity,
+    String? dateFormat,
   }) => AppSetting(
     id: id ?? this.id,
     terminal: terminal ?? this.terminal,
@@ -266,6 +505,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     isDual: isDual ?? this.isDual,
     splitRatio: splitRatio ?? this.splitRatio,
     activePaneIndex: activePaneIndex ?? this.activePaneIndex,
+    sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
+    restoreSession: restoreSession ?? this.restoreSession,
+    defaultStartingPath: defaultStartingPath ?? this.defaultStartingPath,
+    confirmDelete: confirmDelete ?? this.confirmDelete,
+    showHiddenDefault: showHiddenDefault ?? this.showHiddenDefault,
+    rowDensity: rowDensity ?? this.rowDensity,
+    dateFormat: dateFormat ?? this.dateFormat,
   );
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
@@ -281,6 +527,27 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       activePaneIndex: data.activePaneIndex.present
           ? data.activePaneIndex.value
           : this.activePaneIndex,
+      sidebarCollapsed: data.sidebarCollapsed.present
+          ? data.sidebarCollapsed.value
+          : this.sidebarCollapsed,
+      restoreSession: data.restoreSession.present
+          ? data.restoreSession.value
+          : this.restoreSession,
+      defaultStartingPath: data.defaultStartingPath.present
+          ? data.defaultStartingPath.value
+          : this.defaultStartingPath,
+      confirmDelete: data.confirmDelete.present
+          ? data.confirmDelete.value
+          : this.confirmDelete,
+      showHiddenDefault: data.showHiddenDefault.present
+          ? data.showHiddenDefault.value
+          : this.showHiddenDefault,
+      rowDensity: data.rowDensity.present
+          ? data.rowDensity.value
+          : this.rowDensity,
+      dateFormat: data.dateFormat.present
+          ? data.dateFormat.value
+          : this.dateFormat,
     );
   }
 
@@ -292,7 +559,14 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ..write('terminalCustomCommand: $terminalCustomCommand, ')
           ..write('isDual: $isDual, ')
           ..write('splitRatio: $splitRatio, ')
-          ..write('activePaneIndex: $activePaneIndex')
+          ..write('activePaneIndex: $activePaneIndex, ')
+          ..write('sidebarCollapsed: $sidebarCollapsed, ')
+          ..write('restoreSession: $restoreSession, ')
+          ..write('defaultStartingPath: $defaultStartingPath, ')
+          ..write('confirmDelete: $confirmDelete, ')
+          ..write('showHiddenDefault: $showHiddenDefault, ')
+          ..write('rowDensity: $rowDensity, ')
+          ..write('dateFormat: $dateFormat')
           ..write(')'))
         .toString();
   }
@@ -305,6 +579,13 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     isDual,
     splitRatio,
     activePaneIndex,
+    sidebarCollapsed,
+    restoreSession,
+    defaultStartingPath,
+    confirmDelete,
+    showHiddenDefault,
+    rowDensity,
+    dateFormat,
   );
   @override
   bool operator ==(Object other) =>
@@ -315,7 +596,14 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           other.terminalCustomCommand == this.terminalCustomCommand &&
           other.isDual == this.isDual &&
           other.splitRatio == this.splitRatio &&
-          other.activePaneIndex == this.activePaneIndex);
+          other.activePaneIndex == this.activePaneIndex &&
+          other.sidebarCollapsed == this.sidebarCollapsed &&
+          other.restoreSession == this.restoreSession &&
+          other.defaultStartingPath == this.defaultStartingPath &&
+          other.confirmDelete == this.confirmDelete &&
+          other.showHiddenDefault == this.showHiddenDefault &&
+          other.rowDensity == this.rowDensity &&
+          other.dateFormat == this.dateFormat);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
@@ -325,6 +613,13 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<bool> isDual;
   final Value<double> splitRatio;
   final Value<int> activePaneIndex;
+  final Value<bool> sidebarCollapsed;
+  final Value<bool> restoreSession;
+  final Value<String> defaultStartingPath;
+  final Value<bool> confirmDelete;
+  final Value<bool> showHiddenDefault;
+  final Value<String> rowDensity;
+  final Value<String> dateFormat;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.terminal = const Value.absent(),
@@ -332,6 +627,13 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.isDual = const Value.absent(),
     this.splitRatio = const Value.absent(),
     this.activePaneIndex = const Value.absent(),
+    this.sidebarCollapsed = const Value.absent(),
+    this.restoreSession = const Value.absent(),
+    this.defaultStartingPath = const Value.absent(),
+    this.confirmDelete = const Value.absent(),
+    this.showHiddenDefault = const Value.absent(),
+    this.rowDensity = const Value.absent(),
+    this.dateFormat = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -340,6 +642,13 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.isDual = const Value.absent(),
     this.splitRatio = const Value.absent(),
     this.activePaneIndex = const Value.absent(),
+    this.sidebarCollapsed = const Value.absent(),
+    this.restoreSession = const Value.absent(),
+    this.defaultStartingPath = const Value.absent(),
+    this.confirmDelete = const Value.absent(),
+    this.showHiddenDefault = const Value.absent(),
+    this.rowDensity = const Value.absent(),
+    this.dateFormat = const Value.absent(),
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
@@ -348,6 +657,13 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Expression<bool>? isDual,
     Expression<double>? splitRatio,
     Expression<int>? activePaneIndex,
+    Expression<bool>? sidebarCollapsed,
+    Expression<bool>? restoreSession,
+    Expression<String>? defaultStartingPath,
+    Expression<bool>? confirmDelete,
+    Expression<bool>? showHiddenDefault,
+    Expression<String>? rowDensity,
+    Expression<String>? dateFormat,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -357,6 +673,14 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       if (isDual != null) 'is_dual': isDual,
       if (splitRatio != null) 'split_ratio': splitRatio,
       if (activePaneIndex != null) 'active_pane_index': activePaneIndex,
+      if (sidebarCollapsed != null) 'sidebar_collapsed': sidebarCollapsed,
+      if (restoreSession != null) 'restore_session': restoreSession,
+      if (defaultStartingPath != null)
+        'default_starting_path': defaultStartingPath,
+      if (confirmDelete != null) 'confirm_delete': confirmDelete,
+      if (showHiddenDefault != null) 'show_hidden_default': showHiddenDefault,
+      if (rowDensity != null) 'row_density': rowDensity,
+      if (dateFormat != null) 'date_format': dateFormat,
     });
   }
 
@@ -367,6 +691,13 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Value<bool>? isDual,
     Value<double>? splitRatio,
     Value<int>? activePaneIndex,
+    Value<bool>? sidebarCollapsed,
+    Value<bool>? restoreSession,
+    Value<String>? defaultStartingPath,
+    Value<bool>? confirmDelete,
+    Value<bool>? showHiddenDefault,
+    Value<String>? rowDensity,
+    Value<String>? dateFormat,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -376,6 +707,13 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       isDual: isDual ?? this.isDual,
       splitRatio: splitRatio ?? this.splitRatio,
       activePaneIndex: activePaneIndex ?? this.activePaneIndex,
+      sidebarCollapsed: sidebarCollapsed ?? this.sidebarCollapsed,
+      restoreSession: restoreSession ?? this.restoreSession,
+      defaultStartingPath: defaultStartingPath ?? this.defaultStartingPath,
+      confirmDelete: confirmDelete ?? this.confirmDelete,
+      showHiddenDefault: showHiddenDefault ?? this.showHiddenDefault,
+      rowDensity: rowDensity ?? this.rowDensity,
+      dateFormat: dateFormat ?? this.dateFormat,
     );
   }
 
@@ -402,6 +740,29 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     if (activePaneIndex.present) {
       map['active_pane_index'] = Variable<int>(activePaneIndex.value);
     }
+    if (sidebarCollapsed.present) {
+      map['sidebar_collapsed'] = Variable<bool>(sidebarCollapsed.value);
+    }
+    if (restoreSession.present) {
+      map['restore_session'] = Variable<bool>(restoreSession.value);
+    }
+    if (defaultStartingPath.present) {
+      map['default_starting_path'] = Variable<String>(
+        defaultStartingPath.value,
+      );
+    }
+    if (confirmDelete.present) {
+      map['confirm_delete'] = Variable<bool>(confirmDelete.value);
+    }
+    if (showHiddenDefault.present) {
+      map['show_hidden_default'] = Variable<bool>(showHiddenDefault.value);
+    }
+    if (rowDensity.present) {
+      map['row_density'] = Variable<String>(rowDensity.value);
+    }
+    if (dateFormat.present) {
+      map['date_format'] = Variable<String>(dateFormat.value);
+    }
     return map;
   }
 
@@ -413,7 +774,14 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           ..write('terminalCustomCommand: $terminalCustomCommand, ')
           ..write('isDual: $isDual, ')
           ..write('splitRatio: $splitRatio, ')
-          ..write('activePaneIndex: $activePaneIndex')
+          ..write('activePaneIndex: $activePaneIndex, ')
+          ..write('sidebarCollapsed: $sidebarCollapsed, ')
+          ..write('restoreSession: $restoreSession, ')
+          ..write('defaultStartingPath: $defaultStartingPath, ')
+          ..write('confirmDelete: $confirmDelete, ')
+          ..write('showHiddenDefault: $showHiddenDefault, ')
+          ..write('rowDensity: $rowDensity, ')
+          ..write('dateFormat: $dateFormat')
           ..write(')'))
         .toString();
   }
@@ -1090,6 +1458,13 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<bool> isDual,
       Value<double> splitRatio,
       Value<int> activePaneIndex,
+      Value<bool> sidebarCollapsed,
+      Value<bool> restoreSession,
+      Value<String> defaultStartingPath,
+      Value<bool> confirmDelete,
+      Value<bool> showHiddenDefault,
+      Value<String> rowDensity,
+      Value<String> dateFormat,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -1099,6 +1474,13 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<bool> isDual,
       Value<double> splitRatio,
       Value<int> activePaneIndex,
+      Value<bool> sidebarCollapsed,
+      Value<bool> restoreSession,
+      Value<String> defaultStartingPath,
+      Value<bool> confirmDelete,
+      Value<bool> showHiddenDefault,
+      Value<String> rowDensity,
+      Value<String> dateFormat,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -1137,6 +1519,41 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<int> get activePaneIndex => $composableBuilder(
     column: $table.activePaneIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sidebarCollapsed => $composableBuilder(
+    column: $table.sidebarCollapsed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get restoreSession => $composableBuilder(
+    column: $table.restoreSession,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get defaultStartingPath => $composableBuilder(
+    column: $table.defaultStartingPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get confirmDelete => $composableBuilder(
+    column: $table.confirmDelete,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get showHiddenDefault => $composableBuilder(
+    column: $table.showHiddenDefault,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rowDensity => $composableBuilder(
+    column: $table.rowDensity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dateFormat => $composableBuilder(
+    column: $table.dateFormat,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1179,6 +1596,41 @@ class $$AppSettingsTableOrderingComposer
     column: $table.activePaneIndex,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get sidebarCollapsed => $composableBuilder(
+    column: $table.sidebarCollapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get restoreSession => $composableBuilder(
+    column: $table.restoreSession,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get defaultStartingPath => $composableBuilder(
+    column: $table.defaultStartingPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get confirmDelete => $composableBuilder(
+    column: $table.confirmDelete,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get showHiddenDefault => $composableBuilder(
+    column: $table.showHiddenDefault,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rowDensity => $composableBuilder(
+    column: $table.rowDensity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dateFormat => $composableBuilder(
+    column: $table.dateFormat,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -1211,6 +1663,41 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<int> get activePaneIndex => $composableBuilder(
     column: $table.activePaneIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get sidebarCollapsed => $composableBuilder(
+    column: $table.sidebarCollapsed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get restoreSession => $composableBuilder(
+    column: $table.restoreSession,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get defaultStartingPath => $composableBuilder(
+    column: $table.defaultStartingPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get confirmDelete => $composableBuilder(
+    column: $table.confirmDelete,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get showHiddenDefault => $composableBuilder(
+    column: $table.showHiddenDefault,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get rowDensity => $composableBuilder(
+    column: $table.rowDensity,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get dateFormat => $composableBuilder(
+    column: $table.dateFormat,
     builder: (column) => column,
   );
 }
@@ -1252,6 +1739,13 @@ class $$AppSettingsTableTableManager
                 Value<bool> isDual = const Value.absent(),
                 Value<double> splitRatio = const Value.absent(),
                 Value<int> activePaneIndex = const Value.absent(),
+                Value<bool> sidebarCollapsed = const Value.absent(),
+                Value<bool> restoreSession = const Value.absent(),
+                Value<String> defaultStartingPath = const Value.absent(),
+                Value<bool> confirmDelete = const Value.absent(),
+                Value<bool> showHiddenDefault = const Value.absent(),
+                Value<String> rowDensity = const Value.absent(),
+                Value<String> dateFormat = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 terminal: terminal,
@@ -1259,6 +1753,13 @@ class $$AppSettingsTableTableManager
                 isDual: isDual,
                 splitRatio: splitRatio,
                 activePaneIndex: activePaneIndex,
+                sidebarCollapsed: sidebarCollapsed,
+                restoreSession: restoreSession,
+                defaultStartingPath: defaultStartingPath,
+                confirmDelete: confirmDelete,
+                showHiddenDefault: showHiddenDefault,
+                rowDensity: rowDensity,
+                dateFormat: dateFormat,
               ),
           createCompanionCallback:
               ({
@@ -1268,6 +1769,13 @@ class $$AppSettingsTableTableManager
                 Value<bool> isDual = const Value.absent(),
                 Value<double> splitRatio = const Value.absent(),
                 Value<int> activePaneIndex = const Value.absent(),
+                Value<bool> sidebarCollapsed = const Value.absent(),
+                Value<bool> restoreSession = const Value.absent(),
+                Value<String> defaultStartingPath = const Value.absent(),
+                Value<bool> confirmDelete = const Value.absent(),
+                Value<bool> showHiddenDefault = const Value.absent(),
+                Value<String> rowDensity = const Value.absent(),
+                Value<String> dateFormat = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 terminal: terminal,
@@ -1275,6 +1783,13 @@ class $$AppSettingsTableTableManager
                 isDual: isDual,
                 splitRatio: splitRatio,
                 activePaneIndex: activePaneIndex,
+                sidebarCollapsed: sidebarCollapsed,
+                restoreSession: restoreSession,
+                defaultStartingPath: defaultStartingPath,
+                confirmDelete: confirmDelete,
+                showHiddenDefault: showHiddenDefault,
+                rowDensity: rowDensity,
+                dateFormat: dateFormat,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

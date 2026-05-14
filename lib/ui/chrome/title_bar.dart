@@ -113,9 +113,9 @@ class _TitleBarRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const SizedBox(width: 9),
+            const SizedBox(width: 19),
             Image.asset(AppInfo.iconAsset, width: 13, height: 13),
-            const SizedBox(width: 7),
+            const SizedBox(width: 12),
             _MenuBar(trailing: menuTrailing),
             Expanded(child: MoveWindow()),
             const _WindowButtons(),

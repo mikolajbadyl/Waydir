@@ -180,6 +180,13 @@ class AppShortcuts {
       altShift: true,
     ),
     ShortcutDef(
+      id: 'toggle_sidebar',
+      label: () => '',
+      group: ShortcutGroup.panes,
+      key: LogicalKeyboardKey.keyB,
+      ctrl: true,
+    ),
+    ShortcutDef(
       id: 'switch_pane',
       label: () => '',
       group: ShortcutGroup.panes,
@@ -271,6 +278,20 @@ class AppShortcuts {
       key: LogicalKeyboardKey.keyF,
       ctrl: true,
       shift: true,
+    ),
+    ShortcutDef(
+      id: 'command_palette',
+      label: () => '',
+      group: ShortcutGroup.search,
+      key: LogicalKeyboardKey.keyP,
+      ctrl: true,
+    ),
+    ShortcutDef(
+      id: 'preferences',
+      label: () => '',
+      group: ShortcutGroup.search,
+      key: LogicalKeyboardKey.comma,
+      ctrl: true,
     ),
     ShortcutDef(
       id: 'close_search',

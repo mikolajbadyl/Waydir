@@ -39,4 +39,17 @@ class BookmarkStore {
     await _db.deleteBookmark(bookmark.id);
     await load();
   }
+
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final list = [...bookmarks.value];
+    if (oldIndex < 0 || oldIndex >= list.length) return;
+    var to = newIndex;
+    if (to > oldIndex) to -= 1;
+    if (to < 0) to = 0;
+    if (to >= list.length) to = list.length - 1;
+    final item = list.removeAt(oldIndex);
+    list.insert(to, item);
+    bookmarks.value = list;
+    await _db.reorderBookmarks(list.map((b) => b.id).toList());
+  }
 }

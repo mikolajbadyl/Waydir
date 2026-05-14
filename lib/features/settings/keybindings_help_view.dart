@@ -58,6 +58,7 @@ String _labelFor(ShortcutDef s) => switch (s.id) {
   'switch_tab' => t.keybindings.switchTab,
   'toggle_dual' => t.keybindings.toggleDual,
   'switch_pane' => t.keybindings.switchPane,
+  'toggle_sidebar' => t.keybindings.toggleSidebar,
   'copy' => t.keybindings.copy,
   'cut' => t.keybindings.cut,
   'paste' => t.keybindings.paste,
@@ -71,6 +72,8 @@ String _labelFor(ShortcutDef s) => switch (s.id) {
   'toggle_select' => t.keybindings.toggleSelect,
   'search' => t.keybindings.search,
   'recursive_search' => t.keybindings.recursiveSearch,
+  'command_palette' => t.keybindings.commandPalette,
+  'preferences' => t.keybindings.preferences,
   'close_search' => t.keybindings.closeSearch,
   _ => s.id,
 };

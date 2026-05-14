@@ -15,6 +15,18 @@ class AppSettings extends Table {
   BoolColumn get isDual => boolean().withDefault(const Constant(false))();
   RealColumn get splitRatio => real().withDefault(const Constant(0.5))();
   IntColumn get activePaneIndex => integer().withDefault(const Constant(0))();
+  BoolColumn get sidebarCollapsed =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get restoreSession =>
+      boolean().withDefault(const Constant(true))();
+  TextColumn get defaultStartingPath =>
+      text().withDefault(const Constant(''))();
+  BoolColumn get confirmDelete => boolean().withDefault(const Constant(true))();
+  BoolColumn get showHiddenDefault =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get rowDensity =>
+      text().withDefault(const Constant('comfortable'))();
+  TextColumn get dateFormat => text().withDefault(const Constant('iso'))();
 }
 
 class SessionTabs extends Table {
@@ -37,7 +49,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -45,6 +57,17 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(bookmarks);
+      }
+      if (from < 3) {
+        await m.addColumn(appSettings, appSettings.sidebarCollapsed);
+      }
+      if (from < 4) {
+        await m.addColumn(appSettings, appSettings.restoreSession);
+        await m.addColumn(appSettings, appSettings.defaultStartingPath);
+        await m.addColumn(appSettings, appSettings.confirmDelete);
+        await m.addColumn(appSettings, appSettings.showHiddenDefault);
+        await m.addColumn(appSettings, appSettings.rowDensity);
+        await m.addColumn(appSettings, appSettings.dateFormat);
       }
     },
   );
@@ -129,5 +152,17 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteBookmark(int id) {
     return (delete(bookmarks)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> reorderBookmarks(List<int> idsInOrder) async {
+    await batch((b) {
+      for (var i = 0; i < idsInOrder.length; i++) {
+        b.update(
+          bookmarks,
+          BookmarksCompanion(orderIndex: Value(i)),
+          where: (t) => t.id.equals(idsInOrder[i]),
+        );
+      }
+    });
   }
 }

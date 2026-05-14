@@ -15,6 +15,13 @@ class SettingsStore {
   final sessionIsDual = signal<bool>(false);
   final sessionSplitRatio = signal<double>(0.5);
   final sessionActivePaneIndex = signal<int>(0);
+  final sidebarCollapsed = signal<bool>(false);
+  final restoreSession = signal<bool>(true);
+  final defaultStartingPath = signal<String>('');
+  final confirmDelete = signal<bool>(true);
+  final showHiddenDefault = signal<bool>(false);
+  final rowDensity = signal<String>('comfortable');
+  final dateFormat = signal<String>('iso');
 
   late final AppDatabase _db;
   bool _loaded = false;
@@ -38,6 +45,13 @@ class SettingsStore {
     sessionIsDual.value = row.isDual;
     sessionSplitRatio.value = row.splitRatio;
     sessionActivePaneIndex.value = row.activePaneIndex;
+    sidebarCollapsed.value = row.sidebarCollapsed;
+    restoreSession.value = row.restoreSession;
+    defaultStartingPath.value = row.defaultStartingPath;
+    confirmDelete.value = row.confirmDelete;
+    showHiddenDefault.value = row.showHiddenDefault;
+    rowDensity.value = row.rowDensity;
+    dateFormat.value = row.dateFormat;
   }
 
   void _wireAutoSave() {
@@ -48,6 +62,13 @@ class SettingsStore {
         sessionIsDual.value;
         sessionSplitRatio.value;
         sessionActivePaneIndex.value;
+        sidebarCollapsed.value;
+        restoreSession.value;
+        defaultStartingPath.value;
+        confirmDelete.value;
+        showHiddenDefault.value;
+        rowDensity.value;
+        dateFormat.value;
         if (!_loaded) return;
         _scheduleSave();
       }),
@@ -68,6 +89,13 @@ class SettingsStore {
           isDual: Value(sessionIsDual.value),
           splitRatio: Value(sessionSplitRatio.value),
           activePaneIndex: Value(sessionActivePaneIndex.value),
+          sidebarCollapsed: Value(sidebarCollapsed.value),
+          restoreSession: Value(restoreSession.value),
+          defaultStartingPath: Value(defaultStartingPath.value),
+          confirmDelete: Value(confirmDelete.value),
+          showHiddenDefault: Value(showHiddenDefault.value),
+          rowDensity: Value(rowDensity.value),
+          dateFormat: Value(dateFormat.value),
         ),
       );
     } catch (_) {}
