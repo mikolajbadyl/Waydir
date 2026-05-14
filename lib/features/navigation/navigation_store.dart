@@ -9,6 +9,7 @@ import '../../core/fs/directory_watcher_service.dart';
 import '../../core/fs/recursive_search.dart';
 import '../../core/keyboard/keyboard_shortcuts.dart';
 import '../../core/platform/platform_paths.dart';
+import '../../core/settings/settings_store.dart';
 import '../../i18n/strings.g.dart';
 import '../operations/operation_store.dart';
 
@@ -91,6 +92,7 @@ class NavigationStore {
     final startPath = initialPath ?? PlatformPaths.homePath;
     currentPath.value = startPath;
     history.value = [startPath];
+    showHidden.value = SettingsStore.instance.showHiddenDefault.value;
     loadDirectory(startPath);
     _setupShowHiddenEffect();
   }

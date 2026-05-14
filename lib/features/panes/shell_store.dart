@@ -45,11 +45,24 @@ class ShellStore {
     final s = SettingsStore.instance;
     final db = s.db;
 
-    final savedTabs = await db.getTabs();
+    final savedTabs = s.restoreSession.value ? await db.getTabs() : const [];
+
+    String initialPathFor() {
+      final configured = s.defaultStartingPath.value.trim();
+      if (configured.isNotEmpty && Directory(configured).existsSync()) {
+        return configured;
+      }
+      return PlatformPaths.homePath;
+    }
 
     if (savedTabs.isEmpty) {
       batch(() {
-        panes.value = [PaneStore(operationStore: operationStore)];
+        panes.value = [
+          PaneStore(
+            operationStore: operationStore,
+            initialPath: initialPathFor(),
+          ),
+        ];
         ready.value = true;
       });
     } else {

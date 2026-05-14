@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Sidebar bookmarks.
+- Preferences dialog with General, Appearance, and About sections.
+- Command palette opened with Ctrl+P for quick app actions.
+- Keyboard shortcut for opening Preferences with Ctrl+,.
+
+### Changed
+- Show Hidden Files from the View menu now applies globally to all open panes and tabs.
+- Simplified the sidebar collapse button to an icon-only control.
 
 ## [0.2.0] - 2026-05-13
 

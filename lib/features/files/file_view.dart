@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart'
     show PhosphorIconsFill, PhosphorIconsRegular, PhosphorIcon;
+import 'package:signals/signals_flutter.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import '../../i18n/strings.g.dart';
 import '../../core/models/file_entry.dart';
+import '../../core/settings/settings_store.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
 import '../../utils/drag_drop.dart';
@@ -28,9 +30,10 @@ typedef RenameCancelCallback = void Function();
 typedef OpenInNewTabCallback = void Function(String path);
 
 const _kDoubleTapMs = 300;
-const _kRowHeight = 26.0;
-const _kRowGap = 6.0;
-const _kItemExtent = _kRowHeight + _kRowGap;
+const _kRowHeightComfortable = 26.0;
+const _kRowHeightCompact = 20.0;
+const _kRowGapComfortable = 6.0;
+const _kRowGapCompact = 2.0;
 
 class FileList extends StatefulWidget {
   final List<FileEntry> files;
@@ -84,6 +87,44 @@ class _FileListState extends State<FileList> {
   final _scrollController = ScrollController();
   bool _isDragOver = false;
   String? _hoveredFolderPath;
+  double _rowH = _kRowHeightComfortable;
+  double _rowG = _kRowGapComfortable;
+  double _itemExt = _kRowHeightComfortable + _kRowGapComfortable;
+  String _dateFmt = 'iso';
+
+  double _measureWidth(String text, TextStyle style) {
+    if (text.isEmpty) return 0;
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    return tp.width;
+  }
+
+  ({double size, double date}) _computeColumnWidths(BuildContext context) {
+    final muted = context.txt.muted;
+
+    String longestSize = '';
+    for (final e in widget.files) {
+      if (e.type == FileItemType.folder) continue;
+      final s = formatBytes(e.size);
+      if (s.length > longestSize.length) longestSize = s;
+    }
+    if (longestSize.isEmpty) longestSize = '--';
+
+    String longestDate = '';
+    for (final e in widget.files) {
+      final d = _formatDateBy(e.modified, _dateFmt);
+      if (d.length > longestDate.length) longestDate = d;
+    }
+
+    final sizeW = _measureWidth(longestSize, muted);
+    final dateW = _measureWidth(longestDate, muted);
+
+    return (size: sizeW.ceilToDouble() + 8, date: dateW.ceilToDouble() + 8);
+  }
 
   String? _relativeParent(String entryPath, String currentPath) {
     final rel = p.relative(p.dirname(entryPath), from: currentPath);
@@ -94,11 +135,11 @@ class _FileListState extends State<FileList> {
   int _rowAt(Offset localPosition) {
     if (localPosition.dy < 0) return -1;
     final adjustedY = localPosition.dy + _scrollController.offset;
-    final index = (adjustedY / _kItemExtent).floor();
+    final index = (adjustedY / _itemExt).floor();
     if (index < 0 || index >= widget.files.length) return -1;
 
-    final relativeY = adjustedY % _kItemExtent;
-    if (relativeY >= _kRowHeight) return -1;
+    final relativeY = adjustedY % _itemExt;
+    if (relativeY >= _rowH) return -1;
 
     return index;
   }
@@ -135,6 +176,12 @@ class _FileListState extends State<FileList> {
 
   @override
   Widget build(BuildContext context) {
+    final density = SettingsStore.instance.rowDensity.watch(context);
+    _dateFmt = SettingsStore.instance.dateFormat.watch(context);
+    _rowH = density == 'compact' ? _kRowHeightCompact : _kRowHeightComfortable;
+    _rowG = density == 'compact' ? _kRowGapCompact : _kRowGapComfortable;
+    _itemExt = _rowH + _rowG;
+
     if (widget.files.isEmpty) {
       return GestureDetector(
         onTap: widget.onBackgroundTap,
@@ -149,16 +196,24 @@ class _FileListState extends State<FileList> {
       );
     }
 
+    final columnWidths = widget.recursiveResults
+        ? (size: 0.0, date: 0.0)
+        : _computeColumnWidths(context);
+
     return Column(
       children: [
-        _ListHeader(recursive: widget.recursiveResults),
+        _ListHeader(
+          recursive: widget.recursiveResults,
+          sizeWidth: columnWidths.size,
+          dateWidth: columnWidths.date,
+        ),
         Divider(height: 1, thickness: 1, color: AppColors.bgDivider),
         Expanded(
           child: RubberBandLayer(
             scrollController: _scrollController,
             itemCount: widget.files.length,
-            itemExtent: _kItemExtent,
-            rowHeight: _kRowHeight,
+            itemExtent: _itemExt,
+            rowHeight: _rowH,
             pathAt: (i) => widget.files[i].path,
             rowAt: _rowAt,
             onSelectionChanged: widget.onRectSelect,
@@ -211,10 +266,12 @@ class _FileListState extends State<FileList> {
                       controller: _scrollController,
                       padding: EdgeInsets.zero,
                       itemCount: widget.files.length,
-                      itemExtent: _kItemExtent,
+                      itemExtent: _itemExt,
                       itemBuilder: (context, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: _kRowGap),
+                        padding: EdgeInsets.only(bottom: _rowG),
                         child: _ListRow(
+                          rowHeight: _rowH,
+                          dateFmt: _dateFmt,
                           entry: widget.files[i],
                           index: i,
                           selected: widget.selectedPaths.contains(
@@ -235,6 +292,8 @@ class _FileListState extends State<FileList> {
                           onContextMenu: widget.onContextMenu,
                           onMenuAction: widget.onMenuAction,
                           recursive: widget.recursiveResults,
+                          sizeWidth: columnWidths.size,
+                          dateWidth: columnWidths.date,
                           location: widget.recursiveResults
                               ? _relativeParent(
                                   widget.files[i].path,
@@ -272,7 +331,13 @@ class _FileListState extends State<FileList> {
 
 class _ListHeader extends StatelessWidget {
   final bool recursive;
-  const _ListHeader({this.recursive = false});
+  final double sizeWidth;
+  final double dateWidth;
+  const _ListHeader({
+    this.recursive = false,
+    this.sizeWidth = 0,
+    this.dateWidth = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -295,16 +360,25 @@ class _ListHeader extends StatelessWidget {
             ),
           ] else ...[
             SizedBox(
-              width: 80,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text(t.fileView.columns.size, style: headerStyle),
+              width: sizeWidth,
+              child: Text(
+                t.fileView.columns.size,
+                style: headerStyle,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.clip,
               ),
             ),
             const SizedBox(width: 16),
             SizedBox(
-              width: 170,
-              child: Text(t.fileView.columns.dateModified, style: headerStyle),
+              width: dateWidth,
+              child: Text(
+                t.fileView.columns.dateModified,
+                style: headerStyle,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.clip,
+              ),
             ),
           ],
         ],
@@ -330,6 +404,10 @@ class _ListRow extends StatefulWidget {
   final FileContextMenuCallback? onContextMenu;
   final FileMenuActionCallback? onMenuAction;
   final bool recursive;
+  final double sizeWidth;
+  final double dateWidth;
+  final double rowHeight;
+  final String dateFmt;
   final String? location;
   final OpenInNewTabCallback? onOpenInNewTab;
 
@@ -350,6 +428,10 @@ class _ListRow extends StatefulWidget {
     this.onContextMenu,
     this.onMenuAction,
     this.recursive = false,
+    this.sizeWidth = 0,
+    this.dateWidth = 0,
+    this.rowHeight = _kRowHeightComfortable,
+    this.dateFmt = 'iso',
     this.location,
     this.onOpenInNewTab,
   });
@@ -591,7 +673,7 @@ class _ListRowState extends State<_ListRow> {
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
         child: Container(
-          height: _kRowHeight,
+          height: widget.rowHeight,
           padding: const EdgeInsets.only(left: 12, right: 16),
           decoration: BoxDecoration(color: _bg, border: _border),
           child: Opacity(
@@ -667,18 +749,23 @@ class _ListRowState extends State<_ListRow> {
                   ),
                 ] else ...[
                   SizedBox(
-                    width: 80,
+                    width: widget.sizeWidth,
                     child: Text(
                       isFolder ? '--' : formatBytes(e.size),
-                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.clip,
                       style: context.txt.muted,
                     ),
                   ),
                   const SizedBox(width: 16),
                   SizedBox(
-                    width: 170,
+                    width: widget.dateWidth,
                     child: Text(
-                      _formatDate(e.modified),
+                      _formatDateBy(e.modified, widget.dateFmt),
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.clip,
                       style: context.txt.muted,
                     ),
                   ),
@@ -702,7 +789,7 @@ class _ListRowState extends State<_ListRow> {
           }
         },
         child: Container(
-          height: _kRowHeight,
+          height: widget.rowHeight,
           padding: const EdgeInsets.only(left: 12, right: 16),
           decoration: BoxDecoration(
             color: _bg,
@@ -752,18 +839,23 @@ class _ListRowState extends State<_ListRow> {
                   ),
                 ] else ...[
                   SizedBox(
-                    width: 80,
+                    width: widget.sizeWidth,
                     child: Text(
                       isFolder ? '--' : formatBytes(e.size),
-                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.clip,
                       style: context.txt.muted,
                     ),
                   ),
                   const SizedBox(width: 16),
                   SizedBox(
-                    width: 170,
+                    width: widget.dateWidth,
                     child: Text(
-                      _formatDate(e.modified),
+                      _formatDateBy(e.modified, widget.dateFmt),
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.clip,
                       style: context.txt.muted,
                     ),
                   ),
@@ -840,10 +932,44 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-String _formatDate(DateTime d) {
+String _formatDateBy(DateTime d, String mode) {
+  switch (mode) {
+    case 'locale':
+      return _formatLocale(d);
+    case 'relative':
+      return _formatRelative(d);
+    case 'iso':
+    default:
+      return _formatIso(d);
+  }
+}
+
+String _formatIso(DateTime d) {
   return '${d.year}-'
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')} '
       '${d.hour.toString().padLeft(2, '0')}:'
       '${d.minute.toString().padLeft(2, '0')}';
+}
+
+const _kMonths = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+String _formatLocale(DateTime d) {
+  final hh = d.hour.toString().padLeft(2, '0');
+  final mm = d.minute.toString().padLeft(2, '0');
+  return '${_kMonths[d.month - 1]} ${d.day}, ${d.year} $hh:$mm';
+}
+
+String _formatRelative(DateTime d) {
+  final diff = DateTime.now().difference(d);
+  if (diff.inSeconds < 60) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
+  if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo ago';
+  return '${(diff.inDays / 365).floor()}y ago';
 }
