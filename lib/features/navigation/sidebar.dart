@@ -32,12 +32,16 @@ class Sidebar extends StatefulWidget {
   final NavigationStore store;
   final OperationStore operationStore;
   final void Function(String path)? onOpenInNewTab;
+  final bool collapsed;
+  final VoidCallback? onToggleCollapsed;
 
   const Sidebar({
     super.key,
     required this.store,
     required this.operationStore,
     this.onOpenInNewTab,
+    this.collapsed = false,
+    this.onToggleCollapsed,
   });
 
   @override
@@ -168,6 +172,10 @@ class _SidebarState extends State<Sidebar> {
       color: AppColors.bgSidebar,
       child: Column(
         children: [
+          _SidebarHeader(
+            collapsed: widget.collapsed,
+            onToggle: widget.onToggleCollapsed,
+          ),
           Expanded(
             child: _SidebarDropTarget(
               onDropBookmark: _bookmarkStore.addPath,
@@ -189,14 +197,17 @@ class _SidebarState extends State<Sidebar> {
                   );
                 }
 
+                final collapsed = widget.collapsed;
                 return ListView(
                   padding: EdgeInsets.zero,
                   children: [
-                    _SectionHeader(title: t.sidebar.favorites),
+                    if (!collapsed) _SectionHeader(title: t.sidebar.favorites),
+                    if (collapsed) const SizedBox(height: 6),
                     ..._favorites.map(
                       (item) => _ItemRow(
                         item: item,
                         isSelected: currentPath == item.path,
+                        collapsed: collapsed,
                         onTap: widget.store.navigateTo,
                         onMiddleTap: widget.onOpenInNewTab != null
                             ? () => widget.onOpenInNewTab!(item.path)
@@ -206,8 +217,11 @@ class _SidebarState extends State<Sidebar> {
                             .dropFiles(paths, item.path, move: move),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    _SectionHeader(title: t.sidebar.devices),
+                    SizedBox(height: collapsed ? 12 : 8),
+                    if (!collapsed)
+                      _SectionHeader(title: t.sidebar.devices)
+                    else
+                      const _SectionRailDivider(),
                     ...devices.map((drive) {
                       final path = drive.mountPoint ?? drive.id;
                       final isSelected = currentPath == path;
@@ -223,6 +237,7 @@ class _SidebarState extends State<Sidebar> {
                         ),
                         isSelected: isSelected,
                         isMounted: isMounted,
+                        collapsed: collapsed,
                         onTap: (p) async {
                           if (isMounted) {
                             widget.store.navigateTo(p);
@@ -301,11 +316,12 @@ class _SidebarState extends State<Sidebar> {
                             : null,
                       );
                     }),
-                    const SizedBox(height: 8),
+                    SizedBox(height: collapsed ? 12 : 8),
                     Watch(
                       (context) => _BookmarksSection(
                         bookmarks: _bookmarkStore.bookmarks.value,
                         currentPath: widget.store.currentPath.value,
+                        collapsed: collapsed,
                         onNavigate: widget.store.navigateTo,
                         onOpenInNewTab: widget.onOpenInNewTab,
                         onDropFiles:
@@ -320,7 +336,10 @@ class _SidebarState extends State<Sidebar> {
               }),
             ),
           ),
-          _SidebarOperationsButton(operationStore: widget.operationStore),
+          _SidebarOperationsButton(
+            operationStore: widget.operationStore,
+            collapsed: widget.collapsed,
+          ),
         ],
       ),
     );
@@ -379,6 +398,7 @@ class _SidebarDropTargetState extends State<_SidebarDropTarget> {
 class _BookmarksSection extends StatelessWidget {
   final List<Bookmark> bookmarks;
   final String currentPath;
+  final bool collapsed;
   final ValueChanged<String> onNavigate;
   final void Function(String path)? onOpenInNewTab;
   final void Function(List<String> paths, String destination, {bool move})
@@ -388,6 +408,7 @@ class _BookmarksSection extends StatelessWidget {
   const _BookmarksSection({
     required this.bookmarks,
     required this.currentPath,
+    required this.collapsed,
     required this.onNavigate,
     required this.onOpenInNewTab,
     required this.onDropFiles,
@@ -400,16 +421,23 @@ class _BookmarksSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionHeader(title: t.sidebar.bookmarks),
+        if (!collapsed)
+          _SectionHeader(title: t.sidebar.bookmarks)
+        else
+          const _SectionRailDivider(),
         if (bookmarks.isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 2, 14, 10),
-            child: Text(
-              t.sidebar.dropBookmark,
-              overflow: TextOverflow.ellipsis,
-              style: context.txt.caption.copyWith(color: AppColors.fgMuted),
-            ),
-          )
+          collapsed
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 2, 14, 10),
+                  child: Text(
+                    t.sidebar.dropBookmark,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.txt.caption.copyWith(
+                      color: AppColors.fgMuted,
+                    ),
+                  ),
+                )
         else
           ...bookmarks.map(
             (bookmark) => _ItemRow(
@@ -420,6 +448,7 @@ class _BookmarksSection extends StatelessWidget {
               ),
               isSelected: currentPath == bookmark.path,
               isMounted: Directory(bookmark.path).existsSync(),
+              collapsed: collapsed,
               onTap: onNavigate,
               onMiddleTap: onOpenInNewTab != null
                   ? () => onOpenInNewTab!(bookmark.path)
@@ -435,10 +464,81 @@ class _BookmarksSection extends StatelessWidget {
   }
 }
 
+class _SidebarHeader extends StatefulWidget {
+  final bool collapsed;
+  final VoidCallback? onToggle;
+
+  const _SidebarHeader({required this.collapsed, required this.onToggle});
+
+  @override
+  State<_SidebarHeader> createState() => _SidebarHeaderState();
+}
+
+class _SidebarHeaderState extends State<_SidebarHeader> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final collapsed = widget.collapsed;
+    final icon = PhosphorIcon(
+      collapsed
+          ? PhosphorIconsRegular.sidebarSimple
+          : PhosphorIconsRegular.caretLeft,
+      size: 14,
+      color: _hovered ? AppColors.fg : AppColors.fgMuted,
+    );
+
+    return Container(
+      height: 32,
+      padding: EdgeInsets.symmetric(horizontal: collapsed ? 0 : 6),
+      alignment: collapsed ? Alignment.center : Alignment.centerRight,
+      child: Tooltip(
+        message: collapsed ? t.sidebar.expand : t.sidebar.collapse,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onToggle,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _hovered ? AppColors.bgHover : Colors.transparent,
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: SizedBox(
+                width: 26,
+                height: 26,
+                child: Center(child: icon),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionRailDivider extends StatelessWidget {
+  const _SectionRailDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Container(height: 1, color: AppColors.bgDivider),
+    );
+  }
+}
+
 class _SidebarOperationsButton extends StatefulWidget {
   final OperationStore operationStore;
+  final bool collapsed;
 
-  const _SidebarOperationsButton({required this.operationStore});
+  const _SidebarOperationsButton({
+    required this.operationStore,
+    this.collapsed = false,
+  });
 
   @override
   State<_SidebarOperationsButton> createState() =>
@@ -468,6 +568,63 @@ class _SidebarOperationsButtonState extends State<_SidebarOperationsButton> {
       final activeCount = widget.operationStore.activeCount.value;
       final progress = active.progress.clamp(0.0, 1.0).toDouble();
       final progressText = '${(progress * 100).round()}%';
+
+      if (widget.collapsed) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: AppColors.bgDivider)),
+          ),
+          alignment: Alignment.center,
+          child: Tooltip(
+            message: '${t.toolbar.operations} · $progressText',
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              onEnter: (_) => setState(() => _hovered = true),
+              onExit: (_) => setState(() => _hovered = false),
+              child: GestureDetector(
+                onTap: _openPanel,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(
+                      alpha: _hovered ? 0.22 : 0.14,
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.42),
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: CircularProgressIndicator(
+                          value: active.totalFiles > 0 ? progress : null,
+                          strokeWidth: 2,
+                          backgroundColor: AppColors.bgInput,
+                          valueColor: const AlwaysStoppedAnimation(
+                            AppColors.accent,
+                          ),
+                        ),
+                      ),
+                      PhosphorIcon(
+                        _operationIcon(active),
+                        size: 13,
+                        color: AppColors.fgAccent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
 
       return Container(
         padding: const EdgeInsets.fromLTRB(6, 7, 6, 7),
@@ -580,7 +737,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 4),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall,
@@ -593,6 +750,7 @@ class _ItemRow extends StatefulWidget {
   final _SidebarItem item;
   final bool isSelected;
   final bool isMounted;
+  final bool collapsed;
   final ValueChanged<String> onTap;
   final VoidCallback? onMiddleTap;
   final void Function(List<String> paths, {bool move}) onDropFiles;
@@ -603,6 +761,7 @@ class _ItemRow extends StatefulWidget {
     required this.item,
     required this.isSelected,
     this.isMounted = true,
+    this.collapsed = false,
     required this.onTap,
     this.onMiddleTap,
     required this.onDropFiles,
@@ -669,61 +828,94 @@ class _ItemRowState extends State<_ItemRow> {
           onSecondaryTapUp: widget.onContextMenu != null
               ? (details) => widget.onContextMenu!(details.globalPosition)
               : null,
-          child: Container(
-            height: 28,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(4),
-              border: _dragOver
-                  ? Border.all(color: AppColors.accent.withValues(alpha: 0.4))
-                  : null,
-            ),
-            child: Row(
-              children: [
-                PhosphorIcon(
-                  widget.item.icon,
-                  size: 16,
-                  color: widget.isSelected
-                      ? AppColors.fgAccent
-                      : AppColors.fgMuted,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.item.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.txt.body.copyWith(
+          child: widget.collapsed
+              ? Tooltip(
+                  message: widget.item.label,
+                  waitDuration: const Duration(milliseconds: 400),
+                  child: Container(
+                    height: 32,
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: bg,
+                      borderRadius: BorderRadius.circular(4),
+                      border: _dragOver
+                          ? Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.4),
+                            )
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: PhosphorIcon(
+                      widget.item.icon,
+                      size: 16,
                       color: widget.isSelected
-                          ? AppColors.fg
+                          ? AppColors.fgAccent
                           : (widget.isMounted
                                 ? AppColors.fg.withValues(alpha: 0.85)
                                 : AppColors.fgMuted),
-                      fontWeight: widget.isSelected
-                          ? FontWeight.w500
-                          : FontWeight.normal,
                     ),
+                  ),
+                )
+              : Container(
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: BorderRadius.circular(4),
+                    border: _dragOver
+                        ? Border.all(
+                            color: AppColors.accent.withValues(alpha: 0.4),
+                          )
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      PhosphorIcon(
+                        widget.item.icon,
+                        size: 16,
+                        color: widget.isSelected
+                            ? AppColors.fgAccent
+                            : AppColors.fgMuted,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.item.label,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.txt.body.copyWith(
+                            color: widget.isSelected
+                                ? AppColors.fg
+                                : (widget.isMounted
+                                      ? AppColors.fg.withValues(alpha: 0.85)
+                                      : AppColors.fgMuted),
+                            fontWeight: widget.isSelected
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      if (widget.onUnmount != null)
+                        IconButton(
+                          icon: const PhosphorIcon(
+                            PhosphorIconsRegular.eject,
+                            size: 14,
+                            color: AppColors.fgMuted,
+                          ),
+                          onPressed: widget.onUnmount,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          splashRadius: 12,
+                        ),
+                    ],
                   ),
                 ),
-                if (widget.onUnmount != null)
-                  IconButton(
-                    icon: const PhosphorIcon(
-                      PhosphorIconsRegular.eject,
-                      size: 14,
-                      color: AppColors.fgMuted,
-                    ),
-                    onPressed: widget.onUnmount,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 24,
-                      minHeight: 24,
-                    ),
-                    splashRadius: 12,
-                  ),
-              ],
-            ),
-          ),
         ),
       ),
     );

@@ -7,6 +7,7 @@ import '../core/fs/file_system_service.dart';
 import '../core/keyboard/keyboard_shortcuts.dart';
 import '../core/models/file_entry.dart';
 import '../core/models/file_operation.dart';
+import '../core/settings/settings_store.dart';
 import '../features/navigation/navigation_store.dart';
 import '../features/navigation/sidebar.dart';
 import '../features/navigation/status_bar.dart';
@@ -14,9 +15,11 @@ import '../features/operations/operation_store.dart';
 import '../features/panes/pane_view.dart';
 import '../features/panes/pane_divider.dart';
 import '../features/panes/shell_store.dart';
+import '../features/settings/preferences_view.dart';
 import '../i18n/strings.g.dart';
 import '../ui/chrome/title_bar.dart';
 import '../ui/dialogs/dialog.dart';
+import '../ui/overlays/command_palette.dart';
 import '../ui/overlays/context_menu.dart';
 import '../ui/overlays/notification_overlay.dart';
 import '../ui/overlays/notification_store.dart';
@@ -165,6 +168,10 @@ class _WaydirPageState extends State<WaydirPage> {
   Future<void> _confirmAndDelete() async {
     final entries = _active.selectedEntries;
     if (entries.isEmpty) return;
+    if (!SettingsStore.instance.confirmDelete.value) {
+      _active.deleteSelected();
+      return;
+    }
     final message = entries.length == 1
         ? t.dialog.confirmDeleteSingle(name: entries.first.name)
         : t.dialog.confirmDeleteMultiple(count: entries.length);
@@ -394,20 +401,79 @@ class _WaydirPageState extends State<WaydirPage> {
     return navigator != null && navigator.canPop();
   }
 
+  void _openPreferences() {
+    showPreferencesDialog(context).then((_) => _restoreFocus());
+  }
+
+  void _openCommandPalette() {
+    showCommandPalette(
+      context: context,
+      actions: [
+        CommandPaletteAction(
+          icon: PhosphorIconsRegular.gearSix,
+          title: t.commandPalette.openPreferences,
+          subtitle: t.commandPalette.preferencesSubtitle,
+          searchText: 'settings options preferences',
+          run: _openPreferences,
+        ),
+        CommandPaletteAction(
+          icon: PhosphorIconsRegular.columns,
+          title: t.menu.dualPaneMode,
+          subtitle: _shell.isDual.value
+              ? t.commandPalette.enabled
+              : t.commandPalette.disabled,
+          searchText: 'view split panes dual',
+          run: _shell.toggleDual,
+        ),
+        CommandPaletteAction(
+          icon: PhosphorIconsRegular.eye,
+          title: t.menu.showHidden,
+          subtitle: SettingsStore.instance.showHiddenDefault.value
+              ? t.commandPalette.enabled
+              : t.commandPalette.disabled,
+          searchText: 'view hidden dotfiles files',
+          run: _toggleShowHiddenGlobal,
+        ),
+      ],
+    ).then((_) => _restoreFocus());
+  }
+
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
-
-    if (_isEditableFocused() || _isModalRouteOnTop()) {
-      return KeyEventResult.ignored;
-    }
 
     final key = event.logicalKey;
     final ctrl = AppShortcuts.isControl;
     final shift = HardwareKeyboard.instance.isShiftPressed;
     final alt = HardwareKeyboard.instance.isAltPressed;
 
+    if (!_isModalRouteOnTop() &&
+        ctrl &&
+        !shift &&
+        AppShortcuts.isKey('command_palette', key)) {
+      _openCommandPalette();
+      return KeyEventResult.handled;
+    }
+
+    if (!_isModalRouteOnTop() &&
+        ctrl &&
+        !shift &&
+        AppShortcuts.isKey('preferences', key)) {
+      _openPreferences();
+      return KeyEventResult.handled;
+    }
+
+    if (_isEditableFocused() || _isModalRouteOnTop()) {
+      return KeyEventResult.ignored;
+    }
+
     if (AppShortcuts.isKey('toggle_dual', key)) {
       _shell.toggleDual();
+      return KeyEventResult.handled;
+    }
+
+    if (ctrl && !shift && AppShortcuts.isKey('toggle_sidebar', key)) {
+      final s = SettingsStore.instance.sidebarCollapsed;
+      s.value = !s.value;
       return KeyEventResult.handled;
     }
 
@@ -634,16 +700,22 @@ class _WaydirPageState extends State<WaydirPage> {
     };
   }
 
-  void _toggleShowHidden() {
+  void _setShowHiddenGlobal(bool value) {
+    SettingsStore.instance.showHiddenDefault.value = value;
     if (!_shell.ready.value) return;
-    final store = _active;
-    store.showHidden.value = !store.showHidden.value;
+    for (final store in _shell.allStores) {
+      store.showHidden.value = value;
+    }
+  }
+
+  void _toggleShowHiddenGlobal() {
+    if (!_shell.ready.value) return;
+    _setShowHiddenGlobal(!SettingsStore.instance.showHiddenDefault.value);
   }
 
   Widget _buildViewMenu() {
     return Watch((_) {
       if (!_shell.ready.value) return const SizedBox.shrink();
-      final store = _active;
       return TitleMenuButton(
         label: 'View',
         items: [
@@ -660,7 +732,7 @@ class _WaydirPageState extends State<WaydirPage> {
             label: t.menu.showHidden,
             action: 'toggle_hidden',
             isToggle: true,
-            toggleSignal: store.showHidden,
+            toggleSignal: SettingsStore.instance.showHiddenDefault,
           ),
         ],
         onSelect: (action) {
@@ -668,7 +740,7 @@ class _WaydirPageState extends State<WaydirPage> {
             case 'toggle_dual':
               _shell.toggleDual();
             case 'toggle_hidden':
-              _toggleShowHidden();
+              _toggleShowHiddenGlobal();
           }
         },
       );
@@ -688,7 +760,7 @@ class _WaydirPageState extends State<WaydirPage> {
           ),
           PlatformMenuItem(
             label: t.menu.showHidden,
-            onSelected: _toggleShowHidden,
+            onSelected: _toggleShowHiddenGlobal,
           ),
         ],
       ),
@@ -725,15 +797,10 @@ class _WaydirPageState extends State<WaydirPage> {
                     Expanded(
                       child: Row(
                         children: [
-                          SizedBox(
-                            width: 200,
-                            child: Watch(
-                              (context) => Sidebar(
-                                store: _active,
-                                operationStore: _operationStore,
-                                onOpenInNewTab: _openInNewTab,
-                              ),
-                            ),
+                          _SidebarHost(
+                            active: _active,
+                            operationStore: _operationStore,
+                            onOpenInNewTab: _openInNewTab,
                           ),
                           Container(width: 1, color: AppColors.bgDivider),
                           Expanded(
@@ -820,5 +887,53 @@ class _WaydirPageState extends State<WaydirPage> {
         ),
       ),
     );
+  }
+}
+
+class _SidebarHost extends StatefulWidget {
+  final NavigationStore active;
+  final OperationStore operationStore;
+  final void Function(String path) onOpenInNewTab;
+
+  const _SidebarHost({
+    required this.active,
+    required this.operationStore,
+    required this.onOpenInNewTab,
+  });
+
+  @override
+  State<_SidebarHost> createState() => _SidebarHostState();
+}
+
+class _SidebarHostState extends State<_SidebarHost> {
+  static const _railWidth = 52.0;
+  static const _expandedWidth = 200.0;
+  static const _animDuration = Duration(milliseconds: 140);
+
+  void _toggleUserCollapsed() {
+    final s = SettingsStore.instance.sidebarCollapsed;
+    s.value = !s.value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch((context) {
+      final collapsed = SettingsStore.instance.sidebarCollapsed.value;
+
+      return AnimatedContainer(
+        duration: _animDuration,
+        curve: Curves.easeOut,
+        width: collapsed ? _railWidth : _expandedWidth,
+        child: ClipRect(
+          child: Sidebar(
+            store: widget.active,
+            operationStore: widget.operationStore,
+            onOpenInNewTab: widget.onOpenInNewTab,
+            collapsed: collapsed,
+            onToggleCollapsed: _toggleUserCollapsed,
+          ),
+        ),
+      );
+    });
   }
 }
