@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:bitsdojo_window/bitsdojo_window.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'app/app_info.dart';
 import 'app/waydir_app.dart';
 import 'core/fs/fs_worker_pool.dart';
@@ -11,6 +12,9 @@ void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   LocaleSettings.useDeviceLocale();
+  try {
+    await initializeDateFormatting();
+  } catch (_) {}
   unawaited(FsWorkerPool.instance.ensureStarted());
   await SettingsStore.instance.load();
   await AppInfo.init();

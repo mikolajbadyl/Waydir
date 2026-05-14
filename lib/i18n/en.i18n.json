@@ -65,8 +65,10 @@
       "rowDensityCompact": "Compact",
       "dateFormat": "Date format",
       "dateFormatIso": "ISO (2026-05-14 13:45)",
-      "dateFormatLocale": "Locale short",
+      "dateFormatLocale": "System locale",
       "dateFormatRelative": "Relative (2h ago)",
+      "recentDatesRelative": "Use relative dates for recent files",
+      "recentDatesRelativeHint": "When System locale is selected, files modified in the last 24 hours show as relative.",
       "sidebarSection": "Sidebar",
       "sidebarCollapsed": "Collapsed by default"
     },

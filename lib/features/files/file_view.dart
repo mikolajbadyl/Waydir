@@ -1,5 +1,8 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:phosphor_flutter/phosphor_flutter.dart'
     show PhosphorIconsFill, PhosphorIconsRegular, PhosphorIcon;
 import 'package:signals/signals_flutter.dart';
@@ -90,7 +93,8 @@ class _FileListState extends State<FileList> {
   double _rowH = _kRowHeightComfortable;
   double _rowG = _kRowGapComfortable;
   double _itemExt = _kRowHeightComfortable + _kRowGapComfortable;
-  String _dateFmt = 'iso';
+  String _dateFmt = 'locale';
+  bool _recentDatesRelative = true;
 
   double _measureWidth(String text, TextStyle style) {
     if (text.isEmpty) return 0;
@@ -116,7 +120,11 @@ class _FileListState extends State<FileList> {
 
     String longestDate = '';
     for (final e in widget.files) {
-      final d = _formatDateBy(e.modified, _dateFmt);
+      final d = _formatDateBy(
+        e.modified,
+        _dateFmt,
+        recentDatesRelative: _recentDatesRelative,
+      );
       if (d.length > longestDate.length) longestDate = d;
     }
 
@@ -178,6 +186,9 @@ class _FileListState extends State<FileList> {
   Widget build(BuildContext context) {
     final density = SettingsStore.instance.rowDensity.watch(context);
     _dateFmt = SettingsStore.instance.dateFormat.watch(context);
+    _recentDatesRelative = SettingsStore.instance.recentDatesRelative.watch(
+      context,
+    );
     _rowH = density == 'compact' ? _kRowHeightCompact : _kRowHeightComfortable;
     _rowG = density == 'compact' ? _kRowGapCompact : _kRowGapComfortable;
     _itemExt = _rowH + _rowG;
@@ -272,6 +283,7 @@ class _FileListState extends State<FileList> {
                         child: _ListRow(
                           rowHeight: _rowH,
                           dateFmt: _dateFmt,
+                          recentDatesRelative: _recentDatesRelative,
                           entry: widget.files[i],
                           index: i,
                           selected: widget.selectedPaths.contains(
@@ -408,6 +420,7 @@ class _ListRow extends StatefulWidget {
   final double dateWidth;
   final double rowHeight;
   final String dateFmt;
+  final bool recentDatesRelative;
   final String? location;
   final OpenInNewTabCallback? onOpenInNewTab;
 
@@ -431,7 +444,8 @@ class _ListRow extends StatefulWidget {
     this.sizeWidth = 0,
     this.dateWidth = 0,
     this.rowHeight = _kRowHeightComfortable,
-    this.dateFmt = 'iso',
+    this.dateFmt = 'locale',
+    this.recentDatesRelative = true,
     this.location,
     this.onOpenInNewTab,
   });
@@ -762,7 +776,11 @@ class _ListRowState extends State<_ListRow> {
                   SizedBox(
                     width: widget.dateWidth,
                     child: Text(
-                      _formatDateBy(e.modified, widget.dateFmt),
+                      _formatDateBy(
+                        e.modified,
+                        widget.dateFmt,
+                        recentDatesRelative: widget.recentDatesRelative,
+                      ),
                       maxLines: 1,
                       softWrap: false,
                       overflow: TextOverflow.clip,
@@ -852,7 +870,11 @@ class _ListRowState extends State<_ListRow> {
                   SizedBox(
                     width: widget.dateWidth,
                     child: Text(
-                      _formatDateBy(e.modified, widget.dateFmt),
+                      _formatDateBy(
+                        e.modified,
+                        widget.dateFmt,
+                        recentDatesRelative: widget.recentDatesRelative,
+                      ),
                       maxLines: 1,
                       softWrap: false,
                       overflow: TextOverflow.clip,
@@ -932,9 +954,14 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-String _formatDateBy(DateTime d, String mode) {
+String _formatDateBy(
+  DateTime d,
+  String mode, {
+  required bool recentDatesRelative,
+}) {
   switch (mode) {
     case 'locale':
+      if (recentDatesRelative && _isRecentDate(d)) return _formatRelative(d);
       return _formatLocale(d);
     case 'relative':
       return _formatRelative(d);
@@ -942,6 +969,11 @@ String _formatDateBy(DateTime d, String mode) {
     default:
       return _formatIso(d);
   }
+}
+
+bool _isRecentDate(DateTime d) {
+  final diff = DateTime.now().difference(d);
+  return !diff.isNegative && diff.inHours < 24;
 }
 
 String _formatIso(DateTime d) {
@@ -952,25 +984,15 @@ String _formatIso(DateTime d) {
       '${d.minute.toString().padLeft(2, '0')}';
 }
 
-const _kMonths = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
 String _formatLocale(DateTime d) {
-  final hh = d.hour.toString().padLeft(2, '0');
-  final mm = d.minute.toString().padLeft(2, '0');
-  return '${_kMonths[d.month - 1]} ${d.day}, ${d.year} $hh:$mm';
+  final locale = intl.Intl.canonicalizedLocale(
+    ui.PlatformDispatcher.instance.locale.toLanguageTag(),
+  );
+  try {
+    return intl.DateFormat.yMd(locale).add_jm().format(d);
+  } catch (_) {
+    return _formatIso(d);
+  }
 }
 
 String _formatRelative(DateTime d) {

@@ -215,6 +215,14 @@ class SettingsRegistry {
         ),
       ],
     ),
+    ToggleSetting(
+      id: 'appearance.recentDatesRelative',
+      category: SettingsCategory.appearance,
+      label: () => t.preferences.appearance.recentDatesRelative,
+      hint: () => t.preferences.appearance.recentDatesRelativeHint,
+      searchTerms: const ['date', 'time', 'recent', 'relative'],
+      signal: SettingsStore.instance.recentDatesRelative,
+    ),
   ];
 
   List<AppSetting<dynamic>> byCategory(SettingsCategory category) {
