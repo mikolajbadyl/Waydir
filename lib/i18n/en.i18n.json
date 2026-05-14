@@ -30,34 +30,60 @@
     "categories": {
       "general": "General",
       "appearance": "Appearance",
-      "terminal": "Terminal",
-      "shortcuts": "Shortcuts",
-      "fileAssociations": "File Associations",
       "bookmarks": "Bookmarks",
       "about": "About"
     },
+    "general": {
+      "title": "General",
+      "subtitle": "Startup, file operations and terminal integration.",
+      "startupSection": "Startup",
+      "restoreSession": "Restore last session",
+      "restoreSessionHint": "Reopen previously open tabs and panes on launch.",
+      "defaultPath": "Default starting path",
+      "defaultPathHint": "Used when session restore is disabled or empty.",
+      "browse": "Browse…",
+      "fileOpsSection": "File operations",
+      "confirmDelete": "Confirm before delete",
+      "confirmDeleteHint": "Show a dialog before removing files or folders.",
+      "terminalSection": "Terminal",
+      "terminalLabel": "Default terminal",
+      "terminalHint": "Used by \"Open in Terminal\".",
+      "terminalAuto": "Auto-detect",
+      "terminalCustom": "Custom command…",
+      "terminalCustomLabel": "Command",
+      "terminalCustomHint": "e.g. kitty --working-directory={dir}",
+      "terminalCustomHelp": "Use {dir} as a placeholder for the directory path."
+    },
     "appearance": {
       "title": "Appearance",
-      "subtitle": "Adjust the visual scale of the interface.",
-      "scaleLabel": "UI Scale",
-      "scaleAuto": "Auto (system)",
-      "scale50": "50%",
-      "scale75": "75%",
-      "scale100": "100%",
-      "scale125": "125%",
-      "scale150": "150%",
-      "scale175": "175%",
-      "scale200": "200%"
+      "subtitle": "Defaults for how files and the sidebar are displayed.",
+      "filesSection": "Files",
+      "showHidden": "Show hidden files by default",
+      "showHiddenHint": "Applies to new tabs. Existing tabs keep their setting.",
+      "rowDensity": "Row density",
+      "rowDensityComfortable": "Comfortable",
+      "rowDensityCompact": "Compact",
+      "dateFormat": "Date format",
+      "dateFormatIso": "ISO (2026-05-14 13:45)",
+      "dateFormatLocale": "Locale short",
+      "dateFormatRelative": "Relative (2h ago)",
+      "sidebarSection": "Sidebar",
+      "sidebarCollapsed": "Collapsed by default"
     },
-    "terminal": {
-      "title": "Terminal",
-      "subtitle": "Choose the terminal emulator opened from \"Open in Terminal\".",
-      "label": "Default terminal",
-      "auto": "Auto-detect",
-      "custom": "Custom command…",
-      "customLabel": "Command",
-      "customHint": "e.g. kitty --working-directory={dir}",
-      "customHelp": "Use {dir} as a placeholder for the directory path."
+    "bookmarks": {
+      "title": "Bookmarks",
+      "subtitle": "Manage folders pinned to the sidebar.",
+      "empty": "No bookmarks yet. Drop a folder onto the sidebar to add one.",
+      "rename": "Rename",
+      "remove": "Remove"
+    },
+    "about": {
+      "title": "About",
+      "version": "Version",
+      "build": "Build",
+      "repository": "Repository",
+      "license": "License",
+      "copy": "Copy"
     }
   },
   "appMenu": {
@@ -87,6 +113,7 @@
     "switchTab": "Switch to tab",
     "toggleDual": "Toggle dual pane",
     "switchPane": "Switch active pane",
+    "toggleSidebar": "Toggle sidebar",
     "copy": "Copy",
     "cut": "Cut",
     "paste": "Paste",
@@ -100,7 +127,18 @@
     "toggleSelect": "Toggle select",
     "search": "Search",
     "recursiveSearch": "Recursive search",
-    "closeSearch": "Close search"
+    "closeSearch": "Close search",
+    "commandPalette": "Command palette",
+    "preferences": "Preferences"
+  },
+  "commandPalette": {
+    "title": "Command Palette",
+    "placeholder": "Type a command or setting…",
+    "empty": "No matching commands",
+    "openPreferences": "Open Preferences",
+    "preferencesSubtitle": "Open the full settings dialog",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
   },
   "toast": {
     "copiedItems(one)": "Copied 1 item",
@@ -141,7 +179,9 @@
     "videos": "Videos",
     "root": "Root",
     "bookmarks": "Bookmarks",
-    "dropBookmark": "Drop folder to bookmark"
+    "dropBookmark": "Drop folder to bookmark",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   },
   "toolbar": {
     "back": "Back",

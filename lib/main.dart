@@ -7,8 +7,9 @@ import 'core/fs/fs_worker_pool.dart';
 import 'core/settings/settings_store.dart';
 import 'i18n/strings.g.dart';
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
   LocaleSettings.useDeviceLocale();
   unawaited(FsWorkerPool.instance.ensureStarted());
   await SettingsStore.instance.load();
