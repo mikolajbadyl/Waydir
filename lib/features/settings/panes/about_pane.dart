@@ -28,8 +28,11 @@ class AboutPane extends StatelessWidget {
     } else if (Platform.isMacOS) {
       await Process.start('open', [url], mode: ProcessStartMode.detached);
     } else if (Platform.isWindows) {
-      await Process.start('cmd', ['/c', 'start', url],
-          mode: ProcessStartMode.detached);
+      await Process.start('cmd', [
+        '/c',
+        'start',
+        url,
+      ], mode: ProcessStartMode.detached);
     }
   }
 
