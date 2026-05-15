@@ -243,6 +243,46 @@ class SettingsRegistry {
       searchTerms: const ['date', 'time', 'recent', 'relative'],
       signal: SettingsStore.instance.recentDatesRelative,
     ),
+    ToggleSetting(
+      id: 'appearance.foldersFirst',
+      category: SettingsCategory.appearance,
+      label: () => t.preferences.appearance.foldersFirst,
+      hint: () => t.preferences.appearance.foldersFirstHint,
+      searchTerms: const ['sort', 'folders', 'order'],
+      signal: SettingsStore.instance.foldersFirst,
+    ),
+    ChoiceSetting<String>(
+      id: 'appearance.sortKey',
+      category: SettingsCategory.appearance,
+      label: () => t.preferences.appearance.sortKey,
+      searchTerms: const ['sort', 'order', 'name', 'size', 'date'],
+      signal: SettingsStore.instance.sortKey,
+      choices: [
+        SettingChoice(
+          value: 'name',
+          label: () => t.preferences.appearance.sortKeyName,
+          icon: PhosphorIconsRegular.textAa,
+        ),
+        SettingChoice(
+          value: 'size',
+          label: () => t.preferences.appearance.sortKeySize,
+          icon: PhosphorIconsRegular.ruler,
+        ),
+        SettingChoice(
+          value: 'date',
+          label: () => t.preferences.appearance.sortKeyDate,
+          icon: PhosphorIconsRegular.calendar,
+        ),
+      ],
+    ),
+    ToggleSetting(
+      id: 'appearance.sortAscending',
+      category: SettingsCategory.appearance,
+      label: () => t.preferences.appearance.sortAscending,
+      hint: () => t.preferences.appearance.sortDirection,
+      searchTerms: const ['sort', 'ascending', 'descending', 'order'],
+      signal: SettingsStore.instance.sortAscending,
+    ),
   ];
 
   List<AppSetting<dynamic>> byCategory(SettingsCategory category) {

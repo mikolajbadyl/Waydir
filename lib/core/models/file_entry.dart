@@ -18,13 +18,20 @@ class FileEntry {
   final int size;
   final DateTime modified;
 
+  /// Real on-disk path, used when [path] is a virtual location (e.g. an item
+  /// shown inside the trash). Falls back to [path] for ordinary entries.
+  final String? _realPath;
+
+  String get realPath => _realPath ?? path;
+
   const FileEntry({
     required this.name,
     required this.path,
     required this.type,
     required this.size,
     required this.modified,
-  });
+    String? realPath,
+  }) : _realPath = realPath;
 
   factory FileEntry.fromFileSystemEntity(FileSystemEntity entity) {
     final stat = entity.statSync();

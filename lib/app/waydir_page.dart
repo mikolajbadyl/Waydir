@@ -169,11 +169,12 @@ class _WaydirPageState extends State<WaydirPage> {
   Future<void> _confirmAndDelete({bool forcePermanent = false}) async {
     final entries = _active.selectedEntries;
     if (entries.isEmpty) return;
-    if (_active.isRecycleBinView) {
-      _active.deletePermanentlySelectedFromRecycleBin();
+    if (_active.isTrashView) {
+      _active.deletePermanentlySelectedFromTrash();
       return;
     }
-    final useTrash = !forcePermanent &&
+    final useTrash =
+        !forcePermanent &&
         SettingsStore.instance.deleteKeyBehavior.value == 'trash';
     if (!SettingsStore.instance.confirmDelete.value) {
       _active.deleteSelected(toTrash: useTrash);
@@ -194,8 +195,12 @@ class _WaydirPageState extends State<WaydirPage> {
     final actionLabel = useTrash ? t.dialog.moveToTrash : t.dialog.delete;
     final result = await showCustomDialog<String>(
       context: context,
-      title: useTrash ? t.dialog.confirmTrashTitle : t.dialog.confirmDeleteTitle,
-      icon: useTrash ? PhosphorIconsRegular.trashSimple : PhosphorIconsRegular.trash,
+      title: useTrash
+          ? t.dialog.confirmTrashTitle
+          : t.dialog.confirmDeleteTitle,
+      icon: useTrash
+          ? PhosphorIconsRegular.trashSimple
+          : PhosphorIconsRegular.trash,
       iconColor: AppColors.danger,
       body: Text(message, style: context.txt.body.copyWith(height: 1.4)),
       actions: [
@@ -210,7 +215,7 @@ class _WaydirPageState extends State<WaydirPage> {
 
   void _handleBackgroundContextMenu(Offset position) {
     final store = _active;
-    if (store.isRecycleBinView) {
+    if (store.isTrashView) {
       showContextMenu(
         context: context,
         position: position,
@@ -296,15 +301,16 @@ class _WaydirPageState extends State<WaydirPage> {
         count == 1 && entries.first.type == FileItemType.folder;
     final isRecursive = store.searchActive.value && store.searchRecursive.value;
 
-    if (store.isRecycleBinView) {
+    if (store.isTrashView) {
       final binItems = <ContextMenuItem>[
-        ContextMenuItem(
-          icon: PhosphorIconsRegular.arrowCounterClockwise,
-          label: count == 1
-              ? t.menu.restore
-              : t.menu.restoreItems(count: count),
-          action: 'restore',
-        ),
+        if (store.canRestoreFromTrash)
+          ContextMenuItem(
+            icon: PhosphorIconsRegular.arrowCounterClockwise,
+            label: count == 1
+                ? t.menu.restore
+                : t.menu.restoreItems(count: count),
+            action: 'restore',
+          ),
         ContextMenuItem(
           icon: PhosphorIconsRegular.trash,
           label: count == 1
@@ -437,9 +443,9 @@ class _WaydirPageState extends State<WaydirPage> {
       case 'delete_permanent':
         _confirmAndDelete(forcePermanent: true);
       case 'restore':
-        store.restoreSelectedFromRecycleBin();
+        store.restoreSelectedFromTrash();
       case 'delete_permanent_bin':
-        store.deletePermanentlySelectedFromRecycleBin();
+        store.deletePermanentlySelectedFromTrash();
       case 'open_in_terminal':
         final entries = store.selectedEntries;
         if (entries.length == 1 && entries.first.type == FileItemType.folder) {

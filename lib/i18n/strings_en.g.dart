@@ -896,6 +896,33 @@ class TranslationsPreferencesAppearanceEn {
 	/// en: 'When System locale is selected, files modified in the last 24 hours show as relative.'
 	String get recentDatesRelativeHint => 'When System locale is selected, files modified in the last 24 hours show as relative.';
 
+	/// en: 'Show folders before files'
+	String get foldersFirst => 'Show folders before files';
+
+	/// en: 'Group folders ahead of files regardless of the sort order.'
+	String get foldersFirstHint => 'Group folders ahead of files regardless of the sort order.';
+
+	/// en: 'Sort files by'
+	String get sortKey => 'Sort files by';
+
+	/// en: 'Name'
+	String get sortKeyName => 'Name';
+
+	/// en: 'Size'
+	String get sortKeySize => 'Size';
+
+	/// en: 'Date modified'
+	String get sortKeyDate => 'Date modified';
+
+	/// en: 'Sort direction'
+	String get sortDirection => 'Sort direction';
+
+	/// en: 'Ascending'
+	String get sortAscending => 'Ascending';
+
+	/// en: 'Descending'
+	String get sortDescending => 'Descending';
+
 	/// en: 'Sidebar'
 	String get sidebarSection => 'Sidebar';
 
@@ -1114,6 +1141,15 @@ extension on Translations {
 			'preferences.appearance.dateFormatRelative' => 'Relative (2h ago)',
 			'preferences.appearance.recentDatesRelative' => 'Use relative dates for recent files',
 			'preferences.appearance.recentDatesRelativeHint' => 'When System locale is selected, files modified in the last 24 hours show as relative.',
+			'preferences.appearance.foldersFirst' => 'Show folders before files',
+			'preferences.appearance.foldersFirstHint' => 'Group folders ahead of files regardless of the sort order.',
+			'preferences.appearance.sortKey' => 'Sort files by',
+			'preferences.appearance.sortKeyName' => 'Name',
+			'preferences.appearance.sortKeySize' => 'Size',
+			'preferences.appearance.sortKeyDate' => 'Date modified',
+			'preferences.appearance.sortDirection' => 'Sort direction',
+			'preferences.appearance.sortAscending' => 'Ascending',
+			'preferences.appearance.sortDescending' => 'Descending',
 			'preferences.appearance.sidebarSection' => 'Sidebar',
 			'preferences.appearance.sidebarCollapsed' => 'Collapsed by default',
 			'preferences.bookmarks.title' => 'Bookmarks',

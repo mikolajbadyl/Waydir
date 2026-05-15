@@ -14,7 +14,7 @@ import '../../ui/dialogs/dialog.dart';
 import '../../ui/dialogs/password_dialog.dart';
 import '../../ui/overlays/context_menu.dart';
 import '../../core/platform/platform_paths.dart';
-import '../../core/platform/recycle_bin.dart';
+import '../../core/platform/trash_location.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/drag_drop.dart';
 import '../operations/drag_hint.dart';
@@ -93,7 +93,7 @@ class _SidebarState extends State<Sidebar> {
         _SidebarItem(
           t.sidebar.trash,
           PhosphorIconsRegular.trashSimple,
-          PlatformPaths.trashPath ?? kRecycleBinPath,
+          kTrashPath,
         ),
     ];
     final trashDir = PlatformPaths.trashPath;
@@ -217,10 +217,12 @@ class _SidebarState extends State<Sidebar> {
                     if (!collapsed) _SectionHeader(title: t.sidebar.favorites),
                     if (collapsed) const SizedBox(height: 6),
                     ..._favorites.map((item) {
-                      final isRecycleBin = item.path == kRecycleBinPath;
+                      final isRecycleBin = isTrashPath(item.path);
                       return _ItemRow(
                         item: item,
-                        isSelected: currentPath == item.path,
+                        isSelected: isRecycleBin
+                            ? isTrashPath(currentPath)
+                            : currentPath == item.path,
                         isMounted: !isRecycleBin,
                         collapsed: collapsed,
                         onTap: widget.store.navigateTo,
@@ -230,8 +232,7 @@ class _SidebarState extends State<Sidebar> {
                             : null,
                         onDropFiles: (paths, {bool move = false}) {
                           if (isRecycleBin) return;
-                          widget.store
-                              .dropFiles(paths, item.path, move: move);
+                          widget.store.dropFiles(paths, item.path, move: move);
                         },
                       );
                     }),

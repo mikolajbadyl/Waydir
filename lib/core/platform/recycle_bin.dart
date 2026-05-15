@@ -3,8 +3,6 @@ import 'dart:typed_data';
 
 import 'platform_paths.dart';
 
-const String kRecycleBinPath = '::recycle-bin';
-
 class RecycleBinEntry {
   final String dataPath;
   final String infoPath;

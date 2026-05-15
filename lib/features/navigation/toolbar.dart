@@ -6,7 +6,7 @@ import 'navigation_store.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
 import '../../core/platform/platform_paths.dart';
-import '../../core/platform/recycle_bin.dart';
+import '../../core/platform/trash_location.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/overlays/context_menu.dart';
 
@@ -276,16 +276,45 @@ class _PathBarState extends State<_PathBar> {
   }
 
   Widget _buildBreadcrumbs(String path) {
-    if (path == kRecycleBinPath) {
+    if (isTrashPath(path)) {
+      final subs = path == kTrashPath
+          ? const <String>[]
+          : path.substring(kTrashPath.length + 1).split('/');
+      final atRoot = subs.isEmpty;
       return Row(
         children: [
-          const PhosphorIcon(
-            PhosphorIconsRegular.trashSimple,
-            size: 13,
-            color: AppColors.fgAccent,
+          MouseRegion(
+            cursor: atRoot
+                ? SystemMouseCursors.basic
+                : SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: atRoot ? null : () => widget.store.navigateTo(kTrashPath),
+              child: Row(
+                children: [
+                  const PhosphorIcon(
+                    PhosphorIconsRegular.trashSimple,
+                    size: 13,
+                    color: AppColors.fgAccent,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    t.sidebar.trash,
+                    style: atRoot ? context.txt.bodyEmphasis : context.txt.body,
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: 6),
-          Text(t.sidebar.trash, style: context.txt.bodyEmphasis),
+          for (int i = 0; i < subs.length; i++)
+            ..._segmentRow(
+              ['', kTrashPath, ...subs],
+              i + 2,
+              isWindows: false,
+              isLast: i == subs.length - 1,
+              flexibleLast: i == subs.length - 1,
+              partialOverride:
+                  '$kTrashPath/${subs.sublist(0, i + 1).join('/')}',
+            ),
         ],
       );
     }
@@ -405,8 +434,10 @@ class _PathBarState extends State<_PathBar> {
     required bool isWindows,
     required bool isLast,
     required bool flexibleLast,
+    String? partialOverride,
   }) {
-    final partial = PlatformPaths.buildPartialPath(segments, i);
+    final partial =
+        partialOverride ?? PlatformPaths.buildPartialPath(segments, i);
     final segment = _BreadcrumbSegment(
       label: segments[i],
       onTap: isLast ? null : () => widget.store.navigateTo(partial),

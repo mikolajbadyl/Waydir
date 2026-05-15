@@ -1,6 +1,6 @@
 import 'package:path/path.dart' as p;
 import 'package:signals/signals.dart';
-import '../../core/platform/recycle_bin.dart';
+import '../../core/platform/trash_location.dart';
 import '../../i18n/strings.g.dart';
 import '../navigation/navigation_store.dart';
 
@@ -12,7 +12,7 @@ class TabState {
   TabState({required this.id, required this.store}) {
     title = computed(() {
       final path = store.currentPath.value;
-      if (path == kRecycleBinPath) return t.sidebar.trash;
+      if (path == kTrashPath) return t.sidebar.trash;
       final name = p.basename(path);
       if (name.isEmpty) return '/';
       return name;
