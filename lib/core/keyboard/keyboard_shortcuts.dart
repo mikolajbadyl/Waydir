@@ -134,6 +134,13 @@ class AppShortcuts {
       key: LogicalKeyboardKey.arrowDown,
     ),
     ShortcutDef(
+      id: 'quick_look',
+      label: () => '',
+      group: ShortcutGroup.navigation,
+      key: LogicalKeyboardKey.space,
+      customKeyDisplay: 'Space',
+    ),
+    ShortcutDef(
       id: 'new_tab',
       label: () => '',
       group: ShortcutGroup.tabs,
