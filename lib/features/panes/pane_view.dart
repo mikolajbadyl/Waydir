@@ -149,6 +149,9 @@ class _TabContent extends StatelessWidget {
           onCloseSearch: store.closeSearch,
           onOpenInNewTab: onOpenInNewTab,
           onRectSelect: onRectSelect,
+          sortColumn: store.sortKey.value,
+          sortAscending: store.sortAscending.value,
+          onSortColumn: store.cycleSortColumn,
         );
       });
     });

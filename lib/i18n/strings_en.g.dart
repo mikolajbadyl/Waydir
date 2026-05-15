@@ -104,6 +104,24 @@ class TranslationsMenuEn {
 	/// en: 'Delete $count Items'
 	String deleteItems({required Object count}) => 'Delete ${count} Items';
 
+	/// en: 'Move to Trash'
+	String get moveToTrash => 'Move to Trash';
+
+	/// en: 'Move $count Items to Trash'
+	String moveToTrashItems({required Object count}) => 'Move ${count} Items to Trash';
+
+	/// en: 'Delete Permanently'
+	String get deletePermanently => 'Delete Permanently';
+
+	/// en: 'Delete $count Items Permanently'
+	String deletePermanentlyItems({required Object count}) => 'Delete ${count} Items Permanently';
+
+	/// en: 'Restore'
+	String get restore => 'Restore';
+
+	/// en: 'Restore $count Items'
+	String restoreItems({required Object count}) => 'Restore ${count} Items';
+
 	/// en: 'Show Hidden Files'
 	String get showHidden => 'Show Hidden Files';
 
@@ -402,6 +420,9 @@ class TranslationsSidebarEn {
 	/// en: 'Videos'
 	String get videos => 'Videos';
 
+	/// en: 'Trash'
+	String get trash => 'Trash';
+
 	/// en: 'Root'
 	String get root => 'Root';
 
@@ -555,14 +576,26 @@ class TranslationsDialogEn {
 	/// en: 'Delete'
 	String get delete => 'Delete';
 
-	/// en: 'Delete?'
-	String get confirmDeleteTitle => 'Delete?';
+	/// en: 'Move to Trash'
+	String get moveToTrash => 'Move to Trash';
+
+	/// en: 'Delete permanently?'
+	String get confirmDeleteTitle => 'Delete permanently?';
 
 	/// en: 'Delete "$name"? This cannot be undone.'
 	String confirmDeleteSingle({required Object name}) => 'Delete "${name}"? This cannot be undone.';
 
 	/// en: 'Delete $count items? This cannot be undone.'
 	String confirmDeleteMultiple({required Object count}) => 'Delete ${count} items? This cannot be undone.';
+
+	/// en: 'Move to Trash?'
+	String get confirmTrashTitle => 'Move to Trash?';
+
+	/// en: 'Move "$name" to Trash?'
+	String confirmTrashSingle({required Object name}) => 'Move "${name}" to Trash?';
+
+	/// en: 'Move $count items to Trash?'
+	String confirmTrashMultiple({required Object count}) => 'Move ${count} items to Trash?';
 }
 
 // Path: operations
@@ -705,6 +738,12 @@ class TranslationsTasksEn {
 	/// en: 'Deleting $count items'
 	String deletingMultiple({required Object count}) => 'Deleting ${count} items';
 
+	/// en: 'Moving $name to Trash'
+	String trashingSingle({required Object name}) => 'Moving ${name} to Trash';
+
+	/// en: 'Moving $count items to Trash'
+	String trashingMultiple({required Object count}) => 'Moving ${count} items to Trash';
+
 	late final TranslationsTasksStatusEn status = TranslationsTasksStatusEn.internal(_root);
 }
 
@@ -769,6 +808,18 @@ class TranslationsPreferencesGeneralEn {
 
 	/// en: 'Show a dialog before removing files or folders.'
 	String get confirmDeleteHint => 'Show a dialog before removing files or folders.';
+
+	/// en: 'Delete key behavior'
+	String get deleteKeyBehavior => 'Delete key behavior';
+
+	/// en: 'What the Delete key does by default. Shift+Delete always deletes permanently.'
+	String get deleteKeyBehaviorHint => 'What the Delete key does by default. Shift+Delete always deletes permanently.';
+
+	/// en: 'Move to Trash'
+	String get deleteKeyTrash => 'Move to Trash';
+
+	/// en: 'Delete Permanently'
+	String get deleteKeyPermanent => 'Delete Permanently';
 
 	/// en: 'Terminal'
 	String get terminalSection => 'Terminal';
@@ -844,6 +895,33 @@ class TranslationsPreferencesAppearanceEn {
 
 	/// en: 'When System locale is selected, files modified in the last 24 hours show as relative.'
 	String get recentDatesRelativeHint => 'When System locale is selected, files modified in the last 24 hours show as relative.';
+
+	/// en: 'Show folders before files'
+	String get foldersFirst => 'Show folders before files';
+
+	/// en: 'Group folders ahead of files regardless of the sort order.'
+	String get foldersFirstHint => 'Group folders ahead of files regardless of the sort order.';
+
+	/// en: 'Sort files by'
+	String get sortKey => 'Sort files by';
+
+	/// en: 'Name'
+	String get sortKeyName => 'Name';
+
+	/// en: 'Size'
+	String get sortKeySize => 'Size';
+
+	/// en: 'Date modified'
+	String get sortKeyDate => 'Date modified';
+
+	/// en: 'Sort direction'
+	String get sortDirection => 'Sort direction';
+
+	/// en: 'Ascending'
+	String get sortAscending => 'Ascending';
+
+	/// en: 'Descending'
+	String get sortDescending => 'Descending';
 
 	/// en: 'Sidebar'
 	String get sidebarSection => 'Sidebar';
@@ -1004,6 +1082,12 @@ extension on Translations {
 			'menu.copyPath' => 'Copy Path',
 			'menu.delete' => 'Delete',
 			'menu.deleteItems' => ({required Object count}) => 'Delete ${count} Items',
+			'menu.moveToTrash' => 'Move to Trash',
+			'menu.moveToTrashItems' => ({required Object count}) => 'Move ${count} Items to Trash',
+			'menu.deletePermanently' => 'Delete Permanently',
+			'menu.deletePermanentlyItems' => ({required Object count}) => 'Delete ${count} Items Permanently',
+			'menu.restore' => 'Restore',
+			'menu.restoreItems' => ({required Object count}) => 'Restore ${count} Items',
 			'menu.showHidden' => 'Show Hidden Files',
 			'menu.selectAll' => 'Select All',
 			'menu.openInTerminal' => 'Open in Terminal',
@@ -1031,6 +1115,10 @@ extension on Translations {
 			'preferences.general.fileOpsSection' => 'File operations',
 			'preferences.general.confirmDelete' => 'Confirm before delete',
 			'preferences.general.confirmDeleteHint' => 'Show a dialog before removing files or folders.',
+			'preferences.general.deleteKeyBehavior' => 'Delete key behavior',
+			'preferences.general.deleteKeyBehaviorHint' => 'What the Delete key does by default. Shift+Delete always deletes permanently.',
+			'preferences.general.deleteKeyTrash' => 'Move to Trash',
+			'preferences.general.deleteKeyPermanent' => 'Delete Permanently',
 			'preferences.general.terminalSection' => 'Terminal',
 			'preferences.general.terminalLabel' => 'Default terminal',
 			'preferences.general.terminalHint' => 'Used by "Open in Terminal".',
@@ -1053,6 +1141,15 @@ extension on Translations {
 			'preferences.appearance.dateFormatRelative' => 'Relative (2h ago)',
 			'preferences.appearance.recentDatesRelative' => 'Use relative dates for recent files',
 			'preferences.appearance.recentDatesRelativeHint' => 'When System locale is selected, files modified in the last 24 hours show as relative.',
+			'preferences.appearance.foldersFirst' => 'Show folders before files',
+			'preferences.appearance.foldersFirstHint' => 'Group folders ahead of files regardless of the sort order.',
+			'preferences.appearance.sortKey' => 'Sort files by',
+			'preferences.appearance.sortKeyName' => 'Name',
+			'preferences.appearance.sortKeySize' => 'Size',
+			'preferences.appearance.sortKeyDate' => 'Date modified',
+			'preferences.appearance.sortDirection' => 'Sort direction',
+			'preferences.appearance.sortAscending' => 'Ascending',
+			'preferences.appearance.sortDescending' => 'Descending',
 			'preferences.appearance.sidebarSection' => 'Sidebar',
 			'preferences.appearance.sidebarCollapsed' => 'Collapsed by default',
 			'preferences.bookmarks.title' => 'Bookmarks',
@@ -1136,6 +1233,7 @@ extension on Translations {
 			'sidebar.pictures' => 'Pictures',
 			'sidebar.music' => 'Music',
 			'sidebar.videos' => 'Videos',
+			'sidebar.trash' => 'Trash',
 			'sidebar.root' => 'Root',
 			'sidebar.bookmarks' => 'Bookmarks',
 			'sidebar.dropBookmark' => 'Drop folder to bookmark',
@@ -1172,9 +1270,13 @@ extension on Translations {
 			'dialog.folderNameHint' => 'Folder name',
 			'dialog.close' => 'Close',
 			'dialog.delete' => 'Delete',
-			'dialog.confirmDeleteTitle' => 'Delete?',
+			'dialog.moveToTrash' => 'Move to Trash',
+			'dialog.confirmDeleteTitle' => 'Delete permanently?',
 			'dialog.confirmDeleteSingle' => ({required Object name}) => 'Delete "${name}"? This cannot be undone.',
 			'dialog.confirmDeleteMultiple' => ({required Object count}) => 'Delete ${count} items? This cannot be undone.',
+			'dialog.confirmTrashTitle' => 'Move to Trash?',
+			'dialog.confirmTrashSingle' => ({required Object name}) => 'Move "${name}" to Trash?',
+			'dialog.confirmTrashMultiple' => ({required Object count}) => 'Move ${count} items to Trash?',
 			'operations.title' => 'Operations',
 			'operations.clear' => 'Clear',
 			'operations.noActive' => 'No active operations',
@@ -1213,6 +1315,8 @@ extension on Translations {
 			'tasks.movingMultiple' => ({required Object count}) => 'Moving ${count} items',
 			'tasks.deletingSingle' => ({required Object name}) => 'Deleting ${name}',
 			'tasks.deletingMultiple' => ({required Object count}) => 'Deleting ${count} items',
+			'tasks.trashingSingle' => ({required Object name}) => 'Moving ${name} to Trash',
+			'tasks.trashingMultiple' => ({required Object count}) => 'Moving ${count} items to Trash',
 			'tasks.status.waiting' => 'Waiting...',
 			'tasks.status.scanning' => 'Scanning files...',
 			'tasks.status.conflicts' => ({required Object count}) => '${count} conflicts',

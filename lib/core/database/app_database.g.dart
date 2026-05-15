@@ -193,6 +193,61 @@ class $AppSettingsTable extends AppSettings
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _deleteKeyBehaviorMeta = const VerificationMeta(
+    'deleteKeyBehavior',
+  );
+  @override
+  late final GeneratedColumn<String> deleteKeyBehavior =
+      GeneratedColumn<String>(
+        'delete_key_behavior',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('trash'),
+      );
+  static const VerificationMeta _sortKeyMeta = const VerificationMeta(
+    'sortKey',
+  );
+  @override
+  late final GeneratedColumn<String> sortKey = GeneratedColumn<String>(
+    'sort_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('name'),
+  );
+  static const VerificationMeta _sortAscendingMeta = const VerificationMeta(
+    'sortAscending',
+  );
+  @override
+  late final GeneratedColumn<bool> sortAscending = GeneratedColumn<bool>(
+    'sort_ascending',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sort_ascending" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _foldersFirstMeta = const VerificationMeta(
+    'foldersFirst',
+  );
+  @override
+  late final GeneratedColumn<bool> foldersFirst = GeneratedColumn<bool>(
+    'folders_first',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("folders_first" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -209,6 +264,10 @@ class $AppSettingsTable extends AppSettings
     rowDensity,
     dateFormat,
     recentDatesRelative,
+    deleteKeyBehavior,
+    sortKey,
+    sortAscending,
+    foldersFirst,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -327,6 +386,39 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('delete_key_behavior')) {
+      context.handle(
+        _deleteKeyBehaviorMeta,
+        deleteKeyBehavior.isAcceptableOrUnknown(
+          data['delete_key_behavior']!,
+          _deleteKeyBehaviorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sort_key')) {
+      context.handle(
+        _sortKeyMeta,
+        sortKey.isAcceptableOrUnknown(data['sort_key']!, _sortKeyMeta),
+      );
+    }
+    if (data.containsKey('sort_ascending')) {
+      context.handle(
+        _sortAscendingMeta,
+        sortAscending.isAcceptableOrUnknown(
+          data['sort_ascending']!,
+          _sortAscendingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folders_first')) {
+      context.handle(
+        _foldersFirstMeta,
+        foldersFirst.isAcceptableOrUnknown(
+          data['folders_first']!,
+          _foldersFirstMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -392,6 +484,22 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.bool,
         data['${effectivePrefix}recent_dates_relative'],
       )!,
+      deleteKeyBehavior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}delete_key_behavior'],
+      )!,
+      sortKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sort_key'],
+      )!,
+      sortAscending: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sort_ascending'],
+      )!,
+      foldersFirst: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}folders_first'],
+      )!,
     );
   }
 
@@ -416,6 +524,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   final String rowDensity;
   final String dateFormat;
   final bool recentDatesRelative;
+  final String deleteKeyBehavior;
+  final String sortKey;
+  final bool sortAscending;
+  final bool foldersFirst;
   const AppSetting({
     required this.id,
     required this.terminal,
@@ -431,6 +543,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     required this.rowDensity,
     required this.dateFormat,
     required this.recentDatesRelative,
+    required this.deleteKeyBehavior,
+    required this.sortKey,
+    required this.sortAscending,
+    required this.foldersFirst,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -449,6 +565,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     map['row_density'] = Variable<String>(rowDensity);
     map['date_format'] = Variable<String>(dateFormat);
     map['recent_dates_relative'] = Variable<bool>(recentDatesRelative);
+    map['delete_key_behavior'] = Variable<String>(deleteKeyBehavior);
+    map['sort_key'] = Variable<String>(sortKey);
+    map['sort_ascending'] = Variable<bool>(sortAscending);
+    map['folders_first'] = Variable<bool>(foldersFirst);
     return map;
   }
 
@@ -468,6 +588,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       rowDensity: Value(rowDensity),
       dateFormat: Value(dateFormat),
       recentDatesRelative: Value(recentDatesRelative),
+      deleteKeyBehavior: Value(deleteKeyBehavior),
+      sortKey: Value(sortKey),
+      sortAscending: Value(sortAscending),
+      foldersFirst: Value(foldersFirst),
     );
   }
 
@@ -497,6 +621,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       recentDatesRelative: serializer.fromJson<bool>(
         json['recentDatesRelative'],
       ),
+      deleteKeyBehavior: serializer.fromJson<String>(json['deleteKeyBehavior']),
+      sortKey: serializer.fromJson<String>(json['sortKey']),
+      sortAscending: serializer.fromJson<bool>(json['sortAscending']),
+      foldersFirst: serializer.fromJson<bool>(json['foldersFirst']),
     );
   }
   @override
@@ -517,6 +645,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       'rowDensity': serializer.toJson<String>(rowDensity),
       'dateFormat': serializer.toJson<String>(dateFormat),
       'recentDatesRelative': serializer.toJson<bool>(recentDatesRelative),
+      'deleteKeyBehavior': serializer.toJson<String>(deleteKeyBehavior),
+      'sortKey': serializer.toJson<String>(sortKey),
+      'sortAscending': serializer.toJson<bool>(sortAscending),
+      'foldersFirst': serializer.toJson<bool>(foldersFirst),
     };
   }
 
@@ -535,6 +667,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     String? rowDensity,
     String? dateFormat,
     bool? recentDatesRelative,
+    String? deleteKeyBehavior,
+    String? sortKey,
+    bool? sortAscending,
+    bool? foldersFirst,
   }) => AppSetting(
     id: id ?? this.id,
     terminal: terminal ?? this.terminal,
@@ -550,6 +686,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     rowDensity: rowDensity ?? this.rowDensity,
     dateFormat: dateFormat ?? this.dateFormat,
     recentDatesRelative: recentDatesRelative ?? this.recentDatesRelative,
+    deleteKeyBehavior: deleteKeyBehavior ?? this.deleteKeyBehavior,
+    sortKey: sortKey ?? this.sortKey,
+    sortAscending: sortAscending ?? this.sortAscending,
+    foldersFirst: foldersFirst ?? this.foldersFirst,
   );
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
@@ -589,6 +729,16 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       recentDatesRelative: data.recentDatesRelative.present
           ? data.recentDatesRelative.value
           : this.recentDatesRelative,
+      deleteKeyBehavior: data.deleteKeyBehavior.present
+          ? data.deleteKeyBehavior.value
+          : this.deleteKeyBehavior,
+      sortKey: data.sortKey.present ? data.sortKey.value : this.sortKey,
+      sortAscending: data.sortAscending.present
+          ? data.sortAscending.value
+          : this.sortAscending,
+      foldersFirst: data.foldersFirst.present
+          ? data.foldersFirst.value
+          : this.foldersFirst,
     );
   }
 
@@ -608,7 +758,11 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ..write('showHiddenDefault: $showHiddenDefault, ')
           ..write('rowDensity: $rowDensity, ')
           ..write('dateFormat: $dateFormat, ')
-          ..write('recentDatesRelative: $recentDatesRelative')
+          ..write('recentDatesRelative: $recentDatesRelative, ')
+          ..write('deleteKeyBehavior: $deleteKeyBehavior, ')
+          ..write('sortKey: $sortKey, ')
+          ..write('sortAscending: $sortAscending, ')
+          ..write('foldersFirst: $foldersFirst')
           ..write(')'))
         .toString();
   }
@@ -629,6 +783,10 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     rowDensity,
     dateFormat,
     recentDatesRelative,
+    deleteKeyBehavior,
+    sortKey,
+    sortAscending,
+    foldersFirst,
   );
   @override
   bool operator ==(Object other) =>
@@ -647,7 +805,11 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           other.showHiddenDefault == this.showHiddenDefault &&
           other.rowDensity == this.rowDensity &&
           other.dateFormat == this.dateFormat &&
-          other.recentDatesRelative == this.recentDatesRelative);
+          other.recentDatesRelative == this.recentDatesRelative &&
+          other.deleteKeyBehavior == this.deleteKeyBehavior &&
+          other.sortKey == this.sortKey &&
+          other.sortAscending == this.sortAscending &&
+          other.foldersFirst == this.foldersFirst);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
@@ -665,6 +827,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<String> rowDensity;
   final Value<String> dateFormat;
   final Value<bool> recentDatesRelative;
+  final Value<String> deleteKeyBehavior;
+  final Value<String> sortKey;
+  final Value<bool> sortAscending;
+  final Value<bool> foldersFirst;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.terminal = const Value.absent(),
@@ -680,6 +846,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.rowDensity = const Value.absent(),
     this.dateFormat = const Value.absent(),
     this.recentDatesRelative = const Value.absent(),
+    this.deleteKeyBehavior = const Value.absent(),
+    this.sortKey = const Value.absent(),
+    this.sortAscending = const Value.absent(),
+    this.foldersFirst = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -696,6 +866,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.rowDensity = const Value.absent(),
     this.dateFormat = const Value.absent(),
     this.recentDatesRelative = const Value.absent(),
+    this.deleteKeyBehavior = const Value.absent(),
+    this.sortKey = const Value.absent(),
+    this.sortAscending = const Value.absent(),
+    this.foldersFirst = const Value.absent(),
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
@@ -712,6 +886,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Expression<String>? rowDensity,
     Expression<String>? dateFormat,
     Expression<bool>? recentDatesRelative,
+    Expression<String>? deleteKeyBehavior,
+    Expression<String>? sortKey,
+    Expression<bool>? sortAscending,
+    Expression<bool>? foldersFirst,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -731,6 +909,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       if (dateFormat != null) 'date_format': dateFormat,
       if (recentDatesRelative != null)
         'recent_dates_relative': recentDatesRelative,
+      if (deleteKeyBehavior != null) 'delete_key_behavior': deleteKeyBehavior,
+      if (sortKey != null) 'sort_key': sortKey,
+      if (sortAscending != null) 'sort_ascending': sortAscending,
+      if (foldersFirst != null) 'folders_first': foldersFirst,
     });
   }
 
@@ -749,6 +931,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Value<String>? rowDensity,
     Value<String>? dateFormat,
     Value<bool>? recentDatesRelative,
+    Value<String>? deleteKeyBehavior,
+    Value<String>? sortKey,
+    Value<bool>? sortAscending,
+    Value<bool>? foldersFirst,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -766,6 +952,10 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       rowDensity: rowDensity ?? this.rowDensity,
       dateFormat: dateFormat ?? this.dateFormat,
       recentDatesRelative: recentDatesRelative ?? this.recentDatesRelative,
+      deleteKeyBehavior: deleteKeyBehavior ?? this.deleteKeyBehavior,
+      sortKey: sortKey ?? this.sortKey,
+      sortAscending: sortAscending ?? this.sortAscending,
+      foldersFirst: foldersFirst ?? this.foldersFirst,
     );
   }
 
@@ -818,6 +1008,18 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     if (recentDatesRelative.present) {
       map['recent_dates_relative'] = Variable<bool>(recentDatesRelative.value);
     }
+    if (deleteKeyBehavior.present) {
+      map['delete_key_behavior'] = Variable<String>(deleteKeyBehavior.value);
+    }
+    if (sortKey.present) {
+      map['sort_key'] = Variable<String>(sortKey.value);
+    }
+    if (sortAscending.present) {
+      map['sort_ascending'] = Variable<bool>(sortAscending.value);
+    }
+    if (foldersFirst.present) {
+      map['folders_first'] = Variable<bool>(foldersFirst.value);
+    }
     return map;
   }
 
@@ -837,7 +1039,11 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           ..write('showHiddenDefault: $showHiddenDefault, ')
           ..write('rowDensity: $rowDensity, ')
           ..write('dateFormat: $dateFormat, ')
-          ..write('recentDatesRelative: $recentDatesRelative')
+          ..write('recentDatesRelative: $recentDatesRelative, ')
+          ..write('deleteKeyBehavior: $deleteKeyBehavior, ')
+          ..write('sortKey: $sortKey, ')
+          ..write('sortAscending: $sortAscending, ')
+          ..write('foldersFirst: $foldersFirst')
           ..write(')'))
         .toString();
   }
@@ -1489,12 +1695,387 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
   }
 }
 
+class $FolderPrefsTable extends FolderPrefs
+    with TableInfo<$FolderPrefsTable, FolderPref> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FolderPrefsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortKeyMeta = const VerificationMeta(
+    'sortKey',
+  );
+  @override
+  late final GeneratedColumn<String> sortKey = GeneratedColumn<String>(
+    'sort_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('name'),
+  );
+  static const VerificationMeta _sortAscendingMeta = const VerificationMeta(
+    'sortAscending',
+  );
+  @override
+  late final GeneratedColumn<bool> sortAscending = GeneratedColumn<bool>(
+    'sort_ascending',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sort_ascending" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _foldersFirstMeta = const VerificationMeta(
+    'foldersFirst',
+  );
+  @override
+  late final GeneratedColumn<bool> foldersFirst = GeneratedColumn<bool>(
+    'folders_first',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("folders_first" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    path,
+    sortKey,
+    sortAscending,
+    foldersFirst,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'folder_prefs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FolderPref> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('sort_key')) {
+      context.handle(
+        _sortKeyMeta,
+        sortKey.isAcceptableOrUnknown(data['sort_key']!, _sortKeyMeta),
+      );
+    }
+    if (data.containsKey('sort_ascending')) {
+      context.handle(
+        _sortAscendingMeta,
+        sortAscending.isAcceptableOrUnknown(
+          data['sort_ascending']!,
+          _sortAscendingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('folders_first')) {
+      context.handle(
+        _foldersFirstMeta,
+        foldersFirst.isAcceptableOrUnknown(
+          data['folders_first']!,
+          _foldersFirstMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {path};
+  @override
+  FolderPref map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FolderPref(
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      sortKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sort_key'],
+      )!,
+      sortAscending: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sort_ascending'],
+      )!,
+      foldersFirst: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}folders_first'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $FolderPrefsTable createAlias(String alias) {
+    return $FolderPrefsTable(attachedDatabase, alias);
+  }
+}
+
+class FolderPref extends DataClass implements Insertable<FolderPref> {
+  final String path;
+  final String sortKey;
+  final bool sortAscending;
+  final bool foldersFirst;
+  final int updatedAt;
+  const FolderPref({
+    required this.path,
+    required this.sortKey,
+    required this.sortAscending,
+    required this.foldersFirst,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['path'] = Variable<String>(path);
+    map['sort_key'] = Variable<String>(sortKey);
+    map['sort_ascending'] = Variable<bool>(sortAscending);
+    map['folders_first'] = Variable<bool>(foldersFirst);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  FolderPrefsCompanion toCompanion(bool nullToAbsent) {
+    return FolderPrefsCompanion(
+      path: Value(path),
+      sortKey: Value(sortKey),
+      sortAscending: Value(sortAscending),
+      foldersFirst: Value(foldersFirst),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory FolderPref.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FolderPref(
+      path: serializer.fromJson<String>(json['path']),
+      sortKey: serializer.fromJson<String>(json['sortKey']),
+      sortAscending: serializer.fromJson<bool>(json['sortAscending']),
+      foldersFirst: serializer.fromJson<bool>(json['foldersFirst']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'path': serializer.toJson<String>(path),
+      'sortKey': serializer.toJson<String>(sortKey),
+      'sortAscending': serializer.toJson<bool>(sortAscending),
+      'foldersFirst': serializer.toJson<bool>(foldersFirst),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  FolderPref copyWith({
+    String? path,
+    String? sortKey,
+    bool? sortAscending,
+    bool? foldersFirst,
+    int? updatedAt,
+  }) => FolderPref(
+    path: path ?? this.path,
+    sortKey: sortKey ?? this.sortKey,
+    sortAscending: sortAscending ?? this.sortAscending,
+    foldersFirst: foldersFirst ?? this.foldersFirst,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  FolderPref copyWithCompanion(FolderPrefsCompanion data) {
+    return FolderPref(
+      path: data.path.present ? data.path.value : this.path,
+      sortKey: data.sortKey.present ? data.sortKey.value : this.sortKey,
+      sortAscending: data.sortAscending.present
+          ? data.sortAscending.value
+          : this.sortAscending,
+      foldersFirst: data.foldersFirst.present
+          ? data.foldersFirst.value
+          : this.foldersFirst,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FolderPref(')
+          ..write('path: $path, ')
+          ..write('sortKey: $sortKey, ')
+          ..write('sortAscending: $sortAscending, ')
+          ..write('foldersFirst: $foldersFirst, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(path, sortKey, sortAscending, foldersFirst, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FolderPref &&
+          other.path == this.path &&
+          other.sortKey == this.sortKey &&
+          other.sortAscending == this.sortAscending &&
+          other.foldersFirst == this.foldersFirst &&
+          other.updatedAt == this.updatedAt);
+}
+
+class FolderPrefsCompanion extends UpdateCompanion<FolderPref> {
+  final Value<String> path;
+  final Value<String> sortKey;
+  final Value<bool> sortAscending;
+  final Value<bool> foldersFirst;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const FolderPrefsCompanion({
+    this.path = const Value.absent(),
+    this.sortKey = const Value.absent(),
+    this.sortAscending = const Value.absent(),
+    this.foldersFirst = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FolderPrefsCompanion.insert({
+    required String path,
+    this.sortKey = const Value.absent(),
+    this.sortAscending = const Value.absent(),
+    this.foldersFirst = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : path = Value(path);
+  static Insertable<FolderPref> custom({
+    Expression<String>? path,
+    Expression<String>? sortKey,
+    Expression<bool>? sortAscending,
+    Expression<bool>? foldersFirst,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (path != null) 'path': path,
+      if (sortKey != null) 'sort_key': sortKey,
+      if (sortAscending != null) 'sort_ascending': sortAscending,
+      if (foldersFirst != null) 'folders_first': foldersFirst,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FolderPrefsCompanion copyWith({
+    Value<String>? path,
+    Value<String>? sortKey,
+    Value<bool>? sortAscending,
+    Value<bool>? foldersFirst,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return FolderPrefsCompanion(
+      path: path ?? this.path,
+      sortKey: sortKey ?? this.sortKey,
+      sortAscending: sortAscending ?? this.sortAscending,
+      foldersFirst: foldersFirst ?? this.foldersFirst,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (sortKey.present) {
+      map['sort_key'] = Variable<String>(sortKey.value);
+    }
+    if (sortAscending.present) {
+      map['sort_ascending'] = Variable<bool>(sortAscending.value);
+    }
+    if (foldersFirst.present) {
+      map['folders_first'] = Variable<bool>(foldersFirst.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FolderPrefsCompanion(')
+          ..write('path: $path, ')
+          ..write('sortKey: $sortKey, ')
+          ..write('sortAscending: $sortAscending, ')
+          ..write('foldersFirst: $foldersFirst, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $SessionTabsTable sessionTabs = $SessionTabsTable(this);
   late final $BookmarksTable bookmarks = $BookmarksTable(this);
+  late final $FolderPrefsTable folderPrefs = $FolderPrefsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1503,6 +2084,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSettings,
     sessionTabs,
     bookmarks,
+    folderPrefs,
   ];
 }
 
@@ -1522,6 +2104,10 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<String> rowDensity,
       Value<String> dateFormat,
       Value<bool> recentDatesRelative,
+      Value<String> deleteKeyBehavior,
+      Value<String> sortKey,
+      Value<bool> sortAscending,
+      Value<bool> foldersFirst,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -1539,6 +2125,10 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<String> rowDensity,
       Value<String> dateFormat,
       Value<bool> recentDatesRelative,
+      Value<String> deleteKeyBehavior,
+      Value<String> sortKey,
+      Value<bool> sortAscending,
+      Value<bool> foldersFirst,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -1617,6 +2207,26 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<bool> get recentDatesRelative => $composableBuilder(
     column: $table.recentDatesRelative,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deleteKeyBehavior => $composableBuilder(
+    column: $table.deleteKeyBehavior,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sortAscending => $composableBuilder(
+    column: $table.sortAscending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get foldersFirst => $composableBuilder(
+    column: $table.foldersFirst,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1699,6 +2309,26 @@ class $$AppSettingsTableOrderingComposer
     column: $table.recentDatesRelative,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get deleteKeyBehavior => $composableBuilder(
+    column: $table.deleteKeyBehavior,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sortAscending => $composableBuilder(
+    column: $table.sortAscending,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get foldersFirst => $composableBuilder(
+    column: $table.foldersFirst,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -1773,6 +2403,24 @@ class $$AppSettingsTableAnnotationComposer
     column: $table.recentDatesRelative,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get deleteKeyBehavior => $composableBuilder(
+    column: $table.deleteKeyBehavior,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sortKey =>
+      $composableBuilder(column: $table.sortKey, builder: (column) => column);
+
+  GeneratedColumn<bool> get sortAscending => $composableBuilder(
+    column: $table.sortAscending,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get foldersFirst => $composableBuilder(
+    column: $table.foldersFirst,
+    builder: (column) => column,
+  );
 }
 
 class $$AppSettingsTableTableManager
@@ -1820,6 +2468,10 @@ class $$AppSettingsTableTableManager
                 Value<String> rowDensity = const Value.absent(),
                 Value<String> dateFormat = const Value.absent(),
                 Value<bool> recentDatesRelative = const Value.absent(),
+                Value<String> deleteKeyBehavior = const Value.absent(),
+                Value<String> sortKey = const Value.absent(),
+                Value<bool> sortAscending = const Value.absent(),
+                Value<bool> foldersFirst = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 terminal: terminal,
@@ -1835,6 +2487,10 @@ class $$AppSettingsTableTableManager
                 rowDensity: rowDensity,
                 dateFormat: dateFormat,
                 recentDatesRelative: recentDatesRelative,
+                deleteKeyBehavior: deleteKeyBehavior,
+                sortKey: sortKey,
+                sortAscending: sortAscending,
+                foldersFirst: foldersFirst,
               ),
           createCompanionCallback:
               ({
@@ -1852,6 +2508,10 @@ class $$AppSettingsTableTableManager
                 Value<String> rowDensity = const Value.absent(),
                 Value<String> dateFormat = const Value.absent(),
                 Value<bool> recentDatesRelative = const Value.absent(),
+                Value<String> deleteKeyBehavior = const Value.absent(),
+                Value<String> sortKey = const Value.absent(),
+                Value<bool> sortAscending = const Value.absent(),
+                Value<bool> foldersFirst = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 terminal: terminal,
@@ -1867,6 +2527,10 @@ class $$AppSettingsTableTableManager
                 rowDensity: rowDensity,
                 dateFormat: dateFormat,
                 recentDatesRelative: recentDatesRelative,
+                deleteKeyBehavior: deleteKeyBehavior,
+                sortKey: sortKey,
+                sortAscending: sortAscending,
+                foldersFirst: foldersFirst,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -2258,6 +2922,210 @@ typedef $$BookmarksTableProcessedTableManager =
       Bookmark,
       PrefetchHooks Function()
     >;
+typedef $$FolderPrefsTableCreateCompanionBuilder =
+    FolderPrefsCompanion Function({
+      required String path,
+      Value<String> sortKey,
+      Value<bool> sortAscending,
+      Value<bool> foldersFirst,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$FolderPrefsTableUpdateCompanionBuilder =
+    FolderPrefsCompanion Function({
+      Value<String> path,
+      Value<String> sortKey,
+      Value<bool> sortAscending,
+      Value<bool> foldersFirst,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$FolderPrefsTableFilterComposer
+    extends Composer<_$AppDatabase, $FolderPrefsTable> {
+  $$FolderPrefsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get sortAscending => $composableBuilder(
+    column: $table.sortAscending,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get foldersFirst => $composableBuilder(
+    column: $table.foldersFirst,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FolderPrefsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FolderPrefsTable> {
+  $$FolderPrefsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sortKey => $composableBuilder(
+    column: $table.sortKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get sortAscending => $composableBuilder(
+    column: $table.sortAscending,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get foldersFirst => $composableBuilder(
+    column: $table.foldersFirst,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FolderPrefsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FolderPrefsTable> {
+  $$FolderPrefsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<String> get sortKey =>
+      $composableBuilder(column: $table.sortKey, builder: (column) => column);
+
+  GeneratedColumn<bool> get sortAscending => $composableBuilder(
+    column: $table.sortAscending,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get foldersFirst => $composableBuilder(
+    column: $table.foldersFirst,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$FolderPrefsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FolderPrefsTable,
+          FolderPref,
+          $$FolderPrefsTableFilterComposer,
+          $$FolderPrefsTableOrderingComposer,
+          $$FolderPrefsTableAnnotationComposer,
+          $$FolderPrefsTableCreateCompanionBuilder,
+          $$FolderPrefsTableUpdateCompanionBuilder,
+          (
+            FolderPref,
+            BaseReferences<_$AppDatabase, $FolderPrefsTable, FolderPref>,
+          ),
+          FolderPref,
+          PrefetchHooks Function()
+        > {
+  $$FolderPrefsTableTableManager(_$AppDatabase db, $FolderPrefsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FolderPrefsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FolderPrefsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FolderPrefsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> path = const Value.absent(),
+                Value<String> sortKey = const Value.absent(),
+                Value<bool> sortAscending = const Value.absent(),
+                Value<bool> foldersFirst = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FolderPrefsCompanion(
+                path: path,
+                sortKey: sortKey,
+                sortAscending: sortAscending,
+                foldersFirst: foldersFirst,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String path,
+                Value<String> sortKey = const Value.absent(),
+                Value<bool> sortAscending = const Value.absent(),
+                Value<bool> foldersFirst = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FolderPrefsCompanion.insert(
+                path: path,
+                sortKey: sortKey,
+                sortAscending: sortAscending,
+                foldersFirst: foldersFirst,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FolderPrefsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FolderPrefsTable,
+      FolderPref,
+      $$FolderPrefsTableFilterComposer,
+      $$FolderPrefsTableOrderingComposer,
+      $$FolderPrefsTableAnnotationComposer,
+      $$FolderPrefsTableCreateCompanionBuilder,
+      $$FolderPrefsTableUpdateCompanionBuilder,
+      (
+        FolderPref,
+        BaseReferences<_$AppDatabase, $FolderPrefsTable, FolderPref>,
+      ),
+      FolderPref,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2268,4 +3136,6 @@ class $AppDatabaseManager {
       $$SessionTabsTableTableManager(_db, _db.sessionTabs);
   $$BookmarksTableTableManager get bookmarks =>
       $$BookmarksTableTableManager(_db, _db.bookmarks);
+  $$FolderPrefsTableTableManager get folderPrefs =>
+      $$FolderPrefsTableTableManager(_db, _db.folderPrefs);
 }

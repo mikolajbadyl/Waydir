@@ -29,6 +29,11 @@ class AppSettings extends Table {
   TextColumn get dateFormat => text().withDefault(const Constant('locale'))();
   BoolColumn get recentDatesRelative =>
       boolean().withDefault(const Constant(true))();
+  TextColumn get deleteKeyBehavior =>
+      text().withDefault(const Constant('trash'))();
+  TextColumn get sortKey => text().withDefault(const Constant('name'))();
+  BoolColumn get sortAscending => boolean().withDefault(const Constant(true))();
+  BoolColumn get foldersFirst => boolean().withDefault(const Constant(true))();
 }
 
 class SessionTabs extends Table {
@@ -46,12 +51,23 @@ class Bookmarks extends Table {
   TextColumn get path => text().unique()();
 }
 
-@DriftDatabase(tables: [AppSettings, SessionTabs, Bookmarks])
+class FolderPrefs extends Table {
+  TextColumn get path => text()();
+  TextColumn get sortKey => text().withDefault(const Constant('name'))();
+  BoolColumn get sortAscending => boolean().withDefault(const Constant(true))();
+  BoolColumn get foldersFirst => boolean().withDefault(const Constant(true))();
+  IntColumn get updatedAt => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {path};
+}
+
+@DriftDatabase(tables: [AppSettings, SessionTabs, Bookmarks, FolderPrefs])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -73,6 +89,17 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await m.addColumn(appSettings, appSettings.recentDatesRelative);
+      }
+      if (from < 6) {
+        await m.addColumn(appSettings, appSettings.deleteKeyBehavior);
+      }
+      if (from < 7) {
+        await m.addColumn(appSettings, appSettings.sortKey);
+        await m.addColumn(appSettings, appSettings.sortAscending);
+        await m.addColumn(appSettings, appSettings.foldersFirst);
+      }
+      if (from < 8) {
+        await m.createTable(folderPrefs);
       }
     },
   );
@@ -169,5 +196,53 @@ class AppDatabase extends _$AppDatabase {
         );
       }
     });
+  }
+
+  /// Keep at most this many remembered per-folder sort preferences.
+  static const int _maxFolderPrefs = 500;
+
+  Future<FolderPref?> getFolderPref(String path) {
+    return (select(
+      folderPrefs,
+    )..where((t) => t.path.equals(path))).getSingleOrNull();
+  }
+
+  Future<void> setFolderPref(
+    String path, {
+    required String sortKey,
+    required bool sortAscending,
+    required bool foldersFirst,
+  }) async {
+    await into(folderPrefs).insertOnConflictUpdate(
+      FolderPrefsCompanion.insert(
+        path: path,
+        sortKey: Value(sortKey),
+        sortAscending: Value(sortAscending),
+        foldersFirst: Value(foldersFirst),
+        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
+    await _pruneFolderPrefs();
+  }
+
+  Future<void> deleteFolderPref(String path) {
+    return (delete(folderPrefs)..where((t) => t.path.equals(path))).go();
+  }
+
+  Future<void> _pruneFolderPrefs() async {
+    final countExp = folderPrefs.path.count();
+    final row = await (selectOnly(
+      folderPrefs,
+    )..addColumns([countExp])).getSingle();
+    final total = row.read(countExp) ?? 0;
+    if (total <= _maxFolderPrefs) return;
+    final cutoff =
+        await (select(folderPrefs)
+              ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])
+              ..limit(1, offset: _maxFolderPrefs - 1))
+            .getSingle();
+    await (delete(
+      folderPrefs,
+    )..where((t) => t.updatedAt.isSmallerThanValue(cutoff.updatedAt))).go();
   }
 }

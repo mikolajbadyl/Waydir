@@ -14,6 +14,7 @@ class GeneralPane extends StatelessWidget {
     final restoreSession = registry.byId('general.restoreSession');
     final defaultPath = registry.byId('general.defaultStartingPath');
     final confirmDelete = registry.byId('general.confirmDelete');
+    final deleteKeyBehavior = registry.byId('general.deleteKeyBehavior');
     final terminal = registry.byId('general.terminal');
     final terminalCustom = registry.byId('general.terminalCustomCommand');
 
@@ -28,7 +29,10 @@ class GeneralPane extends StatelessWidget {
         ),
         SettingsSection(
           title: t.preferences.general.fileOpsSection,
-          children: [RegistrySettingRow(setting: confirmDelete)],
+          children: [
+            RegistrySettingRow(setting: deleteKeyBehavior),
+            RegistrySettingRow(setting: confirmDelete),
+          ],
         ),
         SettingsSection(
           title: t.preferences.general.terminalSection,

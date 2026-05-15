@@ -136,6 +136,26 @@ class SettingsRegistry {
       signal: SettingsStore.instance.confirmDelete,
     ),
     ChoiceSetting<String>(
+      id: 'general.deleteKeyBehavior',
+      category: SettingsCategory.general,
+      label: () => t.preferences.general.deleteKeyBehavior,
+      hint: () => t.preferences.general.deleteKeyBehaviorHint,
+      searchTerms: const ['delete', 'trash', 'recycle'],
+      signal: SettingsStore.instance.deleteKeyBehavior,
+      choices: [
+        SettingChoice(
+          value: 'trash',
+          label: () => t.preferences.general.deleteKeyTrash,
+          icon: PhosphorIconsRegular.trashSimple,
+        ),
+        SettingChoice(
+          value: 'permanent',
+          label: () => t.preferences.general.deleteKeyPermanent,
+          icon: PhosphorIconsRegular.trash,
+        ),
+      ],
+    ),
+    ChoiceSetting<String>(
       id: 'general.terminal',
       category: SettingsCategory.general,
       label: () => t.preferences.general.terminalLabel,
@@ -222,6 +242,46 @@ class SettingsRegistry {
       hint: () => t.preferences.appearance.recentDatesRelativeHint,
       searchTerms: const ['date', 'time', 'recent', 'relative'],
       signal: SettingsStore.instance.recentDatesRelative,
+    ),
+    ToggleSetting(
+      id: 'appearance.foldersFirst',
+      category: SettingsCategory.appearance,
+      label: () => t.preferences.appearance.foldersFirst,
+      hint: () => t.preferences.appearance.foldersFirstHint,
+      searchTerms: const ['sort', 'folders', 'order'],
+      signal: SettingsStore.instance.foldersFirst,
+    ),
+    ChoiceSetting<String>(
+      id: 'appearance.sortKey',
+      category: SettingsCategory.appearance,
+      label: () => t.preferences.appearance.sortKey,
+      searchTerms: const ['sort', 'order', 'name', 'size', 'date'],
+      signal: SettingsStore.instance.sortKey,
+      choices: [
+        SettingChoice(
+          value: 'name',
+          label: () => t.preferences.appearance.sortKeyName,
+          icon: PhosphorIconsRegular.textAa,
+        ),
+        SettingChoice(
+          value: 'size',
+          label: () => t.preferences.appearance.sortKeySize,
+          icon: PhosphorIconsRegular.ruler,
+        ),
+        SettingChoice(
+          value: 'date',
+          label: () => t.preferences.appearance.sortKeyDate,
+          icon: PhosphorIconsRegular.calendar,
+        ),
+      ],
+    ),
+    ToggleSetting(
+      id: 'appearance.sortAscending',
+      category: SettingsCategory.appearance,
+      label: () => t.preferences.appearance.sortAscending,
+      hint: () => t.preferences.appearance.sortDirection,
+      searchTerms: const ['sort', 'ascending', 'descending', 'order'],
+      signal: SettingsStore.instance.sortAscending,
     ),
   ];
 

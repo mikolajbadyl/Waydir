@@ -11,6 +11,7 @@ import '../terminal/terminal.dart';
 import '../../i18n/strings.g.dart';
 import 'fs_worker_pool.dart';
 import 'safe_file_replace.dart';
+import 'trash_service.dart';
 
 sealed class RenameResult {
   const RenameResult();
@@ -856,6 +857,94 @@ class FileSystemService {
           );
         } else if (msg is ExecuteCommand) {
           executeDelete().catchError((e, st) {
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
+            workerReceivePort.close();
+          });
+        } else if (msg is CancelCommand) {
+          cancelled = true;
+        }
+      } catch (e) {
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
+        workerReceivePort.close();
+      }
+    });
+  }
+
+  static void trashWorker(List<dynamic> args) {
+    final mainSendPort = args[0] as SendPort;
+    final workerReceivePort = ReceivePort();
+    mainSendPort.send(workerReceivePort.sendPort);
+
+    bool cancelled = false;
+    List<String> sources = const [];
+    final errors = <TaskError>[];
+    int processedFiles = 0;
+    var lastReport = DateTime.now();
+
+    void maybeReport(String currentFile) {
+      final now = DateTime.now();
+      if (now.difference(lastReport).inMilliseconds > 50 ||
+          processedFiles % 50 == 0) {
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
+        lastReport = now;
+      }
+    }
+
+    Future<void> executeTrash() async {
+      final service = TrashService.instance;
+      for (final src in sources) {
+        if (cancelled) break;
+        try {
+          await service.trash(src);
+        } catch (e) {
+          errors.add(TaskError(path: src, message: _friendlyError(e)));
+          mainSendPort.send(
+            ErrorMessage(path: src, message: _friendlyError(e)),
+          );
+        }
+        processedFiles++;
+        maybeReport(src.split(Platform.pathSeparator).last);
+      }
+      mainSendPort.send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+      workerReceivePort.close();
+    }
+
+    workerReceivePort.listen((msg) {
+      try {
+        if (msg is StartCommand) {
+          sources = msg.sources;
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: sources.length,
+              totalBytes: null,
+              allPaths: sources,
+              conflicts: const [],
+            ),
+          );
+        } else if (msg is ExecuteCommand) {
+          executeTrash().catchError((e, st) {
             mainSendPort.send(
               TaskDoneMessage(
                 cancelled: cancelled,

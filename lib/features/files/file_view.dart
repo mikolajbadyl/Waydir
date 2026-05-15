@@ -8,6 +8,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart'
 import 'package:signals/signals_flutter.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import '../../i18n/strings.g.dart';
+import '../../core/fs/file_sort.dart';
 import '../../core/models/file_entry.dart';
 import '../../core/settings/settings_store.dart';
 import '../../ui/theme/app_theme.dart';
@@ -58,6 +59,9 @@ class FileList extends StatefulWidget {
   final VoidCallback? onCloseSearch;
   final OpenInNewTabCallback? onOpenInNewTab;
   final RubberBandSelectCallback? onRectSelect;
+  final SortKey sortColumn;
+  final bool sortAscending;
+  final void Function(SortKey key)? onSortColumn;
 
   const FileList({
     super.key,
@@ -65,6 +69,9 @@ class FileList extends StatefulWidget {
     required this.currentPath,
     required this.onSelect,
     required this.onOpen,
+    this.sortColumn = SortKey.name,
+    this.sortAscending = true,
+    this.onSortColumn,
     this.onBackgroundTap,
     this.onBackgroundContextMenu,
     this.onContextMenu,
@@ -217,6 +224,9 @@ class _FileListState extends State<FileList> {
           recursive: widget.recursiveResults,
           sizeWidth: columnWidths.size,
           dateWidth: columnWidths.date,
+          sortColumn: widget.sortColumn,
+          sortAscending: widget.sortAscending,
+          onSortColumn: widget.onSortColumn,
         ),
         Divider(height: 1, thickness: 1, color: AppColors.bgDivider),
         Expanded(
@@ -345,11 +355,58 @@ class _ListHeader extends StatelessWidget {
   final bool recursive;
   final double sizeWidth;
   final double dateWidth;
+  final SortKey sortColumn;
+  final bool sortAscending;
+  final void Function(SortKey key)? onSortColumn;
   const _ListHeader({
     this.recursive = false,
     this.sizeWidth = 0,
     this.dateWidth = 0,
+    this.sortColumn = SortKey.name,
+    this.sortAscending = true,
+    this.onSortColumn,
   });
+
+  Widget _sortable(
+    BuildContext context,
+    String label,
+    SortKey key,
+    TextStyle style,
+  ) {
+    final active = sortColumn == key;
+    final ascending = sortAscending;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onSortColumn == null ? null : () => onSortColumn!(key),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                style: active ? style.copyWith(color: AppColors.fg) : style,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.clip,
+              ),
+            ),
+            if (active) ...[
+              const SizedBox(width: 3),
+              PhosphorIcon(
+                ascending
+                    ? PhosphorIconsRegular.caretUp
+                    : PhosphorIconsRegular.caretDown,
+                size: 10,
+                color: AppColors.fgAccent,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -363,7 +420,12 @@ class _ListHeader extends StatelessWidget {
           const SizedBox(width: 22),
           Expanded(
             flex: 3,
-            child: Text(t.fileView.columns.name, style: headerStyle),
+            child: _sortable(
+              context,
+              t.fileView.columns.name,
+              SortKey.name,
+              headerStyle,
+            ),
           ),
           if (recursive) ...[
             Expanded(
@@ -373,23 +435,21 @@ class _ListHeader extends StatelessWidget {
           ] else ...[
             SizedBox(
               width: sizeWidth,
-              child: Text(
+              child: _sortable(
+                context,
                 t.fileView.columns.size,
-                style: headerStyle,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.clip,
+                SortKey.size,
+                headerStyle,
               ),
             ),
             const SizedBox(width: 16),
             SizedBox(
               width: dateWidth,
-              child: Text(
+              child: _sortable(
+                context,
                 t.fileView.columns.dateModified,
-                style: headerStyle,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.clip,
+                SortKey.date,
+                headerStyle,
               ),
             ),
           ],

@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:signals/signals.dart';
 import '../../core/models/file_entry.dart';
 import '../../core/clipboard/file_clipboard.dart';
+import '../../core/fs/file_sort.dart';
 import '../../core/fs/file_system_service.dart';
 import '../../core/fs/directory_watcher_service.dart';
 import '../../core/fs/recursive_search.dart';
 import '../../core/keyboard/keyboard_shortcuts.dart';
 import '../../core/platform/platform_paths.dart';
+import '../../core/platform/trash_location.dart';
 import '../../core/settings/settings_store.dart';
 import '../../i18n/strings.g.dart';
 import '../operations/operation_store.dart';
@@ -34,7 +36,19 @@ class NavigationStore {
   final renamingPath = signal<String?>(null);
   final renameError = signal<String?>(null);
   final pendingCreate = signal<FileEntry?>(null);
+  final _trashEntries = <String, TrashEntry>{};
   int _loadToken = 0;
+
+  /// Effective sort for the current folder (per-folder, falls back to the
+  /// global defaults in [SettingsStore]).
+  final sortKey = signal<SortKey>(SortKey.name);
+  final sortAscending = signal<bool>(true);
+  final foldersFirst = signal<bool>(true);
+  int _sortLoadToken = 0;
+  void Function()? _sortDefaultsDisposer;
+
+  bool get isTrashView => isTrashPath(currentPath.value);
+  bool get isTrashRoot => currentPath.value == kTrashPath;
   final DirectoryWatcherService _watcher = DirectoryWatcherService();
 
   final searchActive = signal(false);
@@ -74,6 +88,12 @@ class NavigationStore {
     if (searchActive.value && q.isNotEmpty) {
       list = list.where((f) => f.name.toLowerCase().contains(q)).toList();
     }
+    list = sortEntries(
+      list,
+      key: sortKey.value,
+      ascending: sortAscending.value,
+      foldersFirst: foldersFirst.value,
+    );
     return pending != null ? [pending, ...list] : list;
   });
   late final folderCount = computed(
@@ -93,8 +113,84 @@ class NavigationStore {
     currentPath.value = startPath;
     history.value = [startPath];
     showHidden.value = SettingsStore.instance.showHiddenDefault.value;
+    _loadSortFor(startPath);
     loadDirectory(startPath);
     _setupShowHiddenEffect();
+    _setupSortDefaultsEffect();
+  }
+
+  void _setupSortDefaultsEffect() {
+    var first = true;
+    _sortDefaultsDisposer = effect(() {
+      final s = SettingsStore.instance;
+      // Track the global sort defaults.
+      s.sortKey.value;
+      s.sortAscending.value;
+      s.foldersFirst.value;
+      if (first) {
+        first = false;
+        return;
+      }
+      // Defaults changed in Preferences: reapply for the current folder
+      // (only matters when it has no stored per-folder override).
+      _loadSortFor(currentPath.value);
+    });
+  }
+
+  void _applySort(SortKey key, bool ascending, bool foldersFirstValue) {
+    batch(() {
+      sortKey.value = key;
+      sortAscending.value = ascending;
+      foldersFirst.value = foldersFirstValue;
+    });
+  }
+
+  Future<void> _loadSortFor(String path) async {
+    final token = ++_sortLoadToken;
+    final s = SettingsStore.instance;
+    _applySort(
+      sortKeyFromString(s.sortKey.value),
+      s.sortAscending.value,
+      s.foldersFirst.value,
+    );
+    try {
+      final pref = await s.db.getFolderPref(path);
+      if (token != _sortLoadToken) return;
+      if (pref != null) {
+        _applySort(
+          sortKeyFromString(pref.sortKey),
+          pref.sortAscending,
+          pref.foldersFirst,
+        );
+      }
+    } catch (_) {}
+  }
+
+  void _persistSort() {
+    final path = currentPath.value;
+    if (path.isEmpty) return;
+    SettingsStore.instance.db
+        .setFolderPref(
+          path,
+          sortKey: sortKeyToString(sortKey.value),
+          sortAscending: sortAscending.value,
+          foldersFirst: foldersFirst.value,
+        )
+        .catchError((_) {});
+  }
+
+  /// Toggles direction when [key] is already active, otherwise switches to
+  /// [key] ascending. Persists the choice for the current folder.
+  void cycleSortColumn(SortKey key) {
+    batch(() {
+      if (sortKey.value == key) {
+        sortAscending.value = !sortAscending.value;
+      } else {
+        sortKey.value = key;
+        sortAscending.value = true;
+      }
+    });
+    _persistSort();
   }
 
   void _setupShowHiddenEffect() {
@@ -246,7 +342,7 @@ class NavigationStore {
   }
 
   void navigateTo(String path, {bool addToHistory = true}) {
-    final normalized = PlatformPaths.normalize(path);
+    final normalized = isTrashPath(path) ? path : PlatformPaths.normalize(path);
     closeSearch();
     if (addToHistory) {
       history.value = history.value.sublist(0, historyIndex.value + 1)
@@ -259,6 +355,7 @@ class NavigationStore {
       anchorIndex.value = -1;
       currentPath.value = normalized;
     });
+    _loadSortFor(normalized);
     loadDirectory(normalized);
   }
 
@@ -275,6 +372,11 @@ class NavigationStore {
   }
 
   void goUp() async {
+    if (isTrashView) {
+      if (isTrashRoot) return;
+      navigateTo(trashParentOf(currentPath.value));
+      return;
+    }
     final parent = PlatformPaths.parentOf(currentPath.value);
     if (parent != currentPath.value &&
         await FileSystemService.directoryExists(parent)) {
@@ -288,14 +390,20 @@ class NavigationStore {
     final token = ++_loadToken;
     isLoading.value = true;
     try {
-      final entries = await FileSystemService.listDirectory(path);
+      final entries = isTrashPath(path)
+          ? await _loadTrash(path)
+          : await FileSystemService.listDirectory(path);
       if (token != _loadToken) return;
       batch(() {
         files.value = entries;
         loadError.value = null;
         isLoading.value = false;
       });
-      _watcher.watch(path, () => _onExternalChange(path));
+      if (isTrashPath(path)) {
+        _watcher.stop();
+      } else {
+        _watcher.watch(path, () => _onExternalChange(path));
+      }
     } catch (e) {
       if (token != _loadToken) return;
       batch(() {
@@ -307,6 +415,67 @@ class NavigationStore {
       });
       _watcher.stop();
     }
+  }
+
+  Future<List<FileEntry>> _loadTrash(String path) async {
+    if (path == kTrashPath) {
+      final entries = await TrashRepository.instance.listRoot();
+      _trashEntries.clear();
+      final out = <FileEntry>[];
+      for (final e in entries) {
+        _trashEntries[e.virtualPath] = e;
+        out.add(
+          FileEntry(
+            name: e.displayName,
+            path: e.virtualPath,
+            realPath: e.realDataPath,
+            type: e.isDirectory ? FileItemType.folder : FileItemType.file,
+            size: e.size,
+            modified: e.deletedAt,
+          ),
+        );
+      }
+      return out;
+    }
+    final children = await TrashRepository.instance.listSub(path);
+    return [
+      for (final c in children)
+        FileEntry(
+          name: c.displayName,
+          path: c.virtualPath,
+          realPath: c.realPath,
+          type: c.isDirectory ? FileItemType.folder : FileItemType.file,
+          size: c.size,
+          modified: c.modified,
+        ),
+    ];
+  }
+
+  bool get canRestoreFromTrash => TrashRepository.instance.canRestore;
+
+  Future<void> restoreSelectedFromTrash() =>
+      _applyToSelectedTrashEntries(TrashRepository.instance.restore);
+
+  Future<void> deletePermanentlySelectedFromTrash() =>
+      _applyToSelectedTrashEntries(TrashRepository.instance.deletePermanently);
+
+  Future<void> _applyToSelectedTrashEntries(
+    Future<void> Function(TrashEntry) op,
+  ) async {
+    if (!isTrashView) return;
+    for (final p in selectedPaths.value.toList()) {
+      final e = _trashEntries[p];
+      if (e == null) continue;
+      try {
+        await op(e);
+      } catch (_) {}
+    }
+    batch(() {
+      selectedPaths.value = {};
+      cursorIndex.value = -1;
+      anchorIndex.value = -1;
+    });
+    refresh();
   }
 
   void _onExternalChange(String path) async {
@@ -348,12 +517,14 @@ class NavigationStore {
   }
 
   void startRename() {
+    if (isTrashView) return;
     final entries = selectedEntries;
     if (entries.length != 1) return;
     renamingPath.value = entries.first.path;
   }
 
   void startCreate({FileItemType type = FileItemType.folder}) {
+    if (isTrashView) return;
     batch(() {
       pendingCreate.value = FileEntry(
         name: '',
@@ -486,6 +657,8 @@ class NavigationStore {
   void dispose() {
     _showHiddenDisposer?.call();
     _showHiddenDisposer = null;
+    _sortDefaultsDisposer?.call();
+    _sortDefaultsDisposer = null;
     _searchDebounce?.cancel();
     _searchUiFlush?.cancel();
     _searchHandle?.cancel();
@@ -562,7 +735,7 @@ class NavigationStore {
     if (entry.type == FileItemType.folder) {
       navigateTo(entry.path);
     } else {
-      FileSystemService.openWithDefaultApp(entry.path);
+      FileSystemService.openWithDefaultApp(entry.realPath);
     }
   }
 
@@ -582,7 +755,7 @@ class NavigationStore {
     if (entry.type == FileItemType.folder) {
       navigateTo(entry.path);
     } else {
-      FileSystemService.openWithDefaultApp(entry.path);
+      FileSystemService.openWithDefaultApp(entry.realPath);
     }
   }
 
@@ -640,7 +813,8 @@ class NavigationStore {
     return _vf.where((f) => paths.contains(f.path)).toList();
   }
 
-  void deleteSelected() {
+  void deleteSelected({bool? toTrash}) {
+    if (isTrashView) return;
     final entries = selectedEntries;
     if (entries.isEmpty) return;
     final paths = entries.map((e) => e.path).toList();
@@ -649,7 +823,13 @@ class NavigationStore {
       cursorIndex.value = -1;
       anchorIndex.value = -1;
     });
-    operationStore.enqueueDelete(paths);
+    final useTrash =
+        toTrash ?? SettingsStore.instance.deleteKeyBehavior.value == 'trash';
+    if (useTrash) {
+      operationStore.enqueueTrash(paths);
+    } else {
+      operationStore.enqueueDelete(paths);
+    }
   }
 
   void copySelectedPaths() {
@@ -670,6 +850,7 @@ class NavigationStore {
   }
 
   void copySelected() async {
+    if (isTrashView) return;
     if (selectedPaths.value.isEmpty) return;
     final paths = selectedPaths.value.toList();
     batch(() {
@@ -680,6 +861,7 @@ class NavigationStore {
   }
 
   void cutSelected() async {
+    if (isTrashView) return;
     if (selectedPaths.value.isEmpty) return;
     final paths = selectedPaths.value.toList();
     batch(() {
@@ -694,6 +876,7 @@ class NavigationStore {
     String destination, {
     bool move = false,
   }) {
+    if (isTrashPath(destination)) return;
     final sep = PlatformPaths.separator;
     final filtered = sourcePaths.where((s) {
       final parent = PlatformPaths.parentOf(s);
@@ -711,6 +894,7 @@ class NavigationStore {
   }
 
   void paste() async {
+    if (isTrashView) return;
     final internalPaths = Set<String>.from(clipboardPaths.value);
     final internalCut = clipboardMode.value == ClipboardMode.cut;
 

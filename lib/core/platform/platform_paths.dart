@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:xdg_directories/xdg_directories.dart' as xdg;
 
 class PlatformPaths {
   PlatformPaths._();
@@ -76,12 +77,40 @@ class PlatformPaths {
     return '/${segments.sublist(0, upToIndex + 1).join('/')}';
   }
 
-  static String get desktopPath => join(homePath, 'Desktop');
-  static String get documentsPath => join(homePath, 'Documents');
-  static String get downloadsPath => join(homePath, 'Downloads');
-  static String get picturesPath => join(homePath, 'Pictures');
-  static String get musicPath => join(homePath, 'Music');
-  static String get videosPath => join(homePath, 'Videos');
+  static String? _xdgDir(String key) {
+    if (!Platform.isLinux) return null;
+    try {
+      final dir = xdg.getUserDirectory(key);
+      return dir?.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String get desktopPath =>
+      _xdgDir('DESKTOP') ?? join(homePath, 'Desktop');
+  static String get documentsPath =>
+      _xdgDir('DOCUMENTS') ?? join(homePath, 'Documents');
+  static String get downloadsPath =>
+      _xdgDir('DOWNLOAD') ?? join(homePath, 'Downloads');
+  static String get picturesPath =>
+      _xdgDir('PICTURES') ?? join(homePath, 'Pictures');
+  static String get musicPath => _xdgDir('MUSIC') ?? join(homePath, 'Music');
+  static String get videosPath => _xdgDir('VIDEOS') ?? join(homePath, 'Videos');
+
+  static String? get trashPath {
+    if (Platform.isLinux) {
+      final xdgData = Platform.environment['XDG_DATA_HOME'];
+      final base = (xdgData == null || xdgData.isEmpty)
+          ? join(homePath, '.local', 'share')
+          : xdgData;
+      return p.join(base, 'Trash', 'files');
+    }
+    if (Platform.isMacOS) return join(homePath, '.Trash');
+    return null;
+  }
+
+  static bool get canOpenTrash => isLinux || isMacOS || isWindows;
 
   static bool isValidFileName(String name) {
     if (name.isEmpty || name == '.' || name == '..') return false;

@@ -2,7 +2,7 @@ import 'package:path/path.dart' as p;
 import '../../i18n/strings.g.dart';
 import '../../utils/format.dart';
 
-enum TaskType { copy, move, delete }
+enum TaskType { copy, move, delete, trash }
 
 enum TaskStatus {
   queued,
@@ -107,6 +107,10 @@ class TaskLabel {
         name: p.basename(task.sources.first),
       ),
       TaskType.delete => t.tasks.deletingMultiple(count: count),
+      TaskType.trash when count == 1 => t.tasks.trashingSingle(
+        name: p.basename(task.sources.first),
+      ),
+      TaskType.trash => t.tasks.trashingMultiple(count: count),
     };
   }
 
