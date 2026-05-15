@@ -109,9 +109,7 @@ class RecycleBinService {
     try {
       final r = await Process.run('whoami', ['/user', '/fo', 'csv', '/nh']);
       if (r.exitCode != 0) return null;
-      final match = RegExp(
-        r'"(S-1-[0-9-]+)"',
-      ).firstMatch(r.stdout.toString());
+      final match = RegExp(r'"(S-1-[0-9-]+)"').firstMatch(r.stdout.toString());
       return match?.group(1);
     } catch (_) {
       return null;
@@ -143,11 +141,7 @@ class RecycleBinService {
       if (bytes.length < 28 + pathBytes) return null;
       originalPath = _utf16(bytes, 28, pathBytes);
     }
-    return _Info(
-      originalPath: originalPath,
-      deletedAt: deletedAt,
-      size: size,
-    );
+    return _Info(originalPath: originalPath, deletedAt: deletedAt, size: size);
   }
 
   static String _utf16(Uint8List bytes, int offset, int length) {

@@ -32,8 +32,11 @@ Future<void> _runOrThrow(
 
 class _LinuxTrashService implements TrashService {
   @override
-  Future<void> trash(String path) =>
-      _runOrThrow('gio', ['trash', '--', path], fallbackError: 'gio trash failed');
+  Future<void> trash(String path) => _runOrThrow('gio', [
+    'trash',
+    '--',
+    path,
+  ], fallbackError: 'gio trash failed');
 }
 
 class _MacTrashService implements TrashService {
