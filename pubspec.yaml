@@ -54,15 +54,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
-  fonts:
-    # JetBrains Mono — SIL Open Font License 1.1, see assets/fonts/OFL.txt
-    - family: JetBrains Mono
-      fonts:
-        - asset: assets/fonts/JetBrainsMono-Regular.ttf
-        - asset: assets/fonts/JetBrainsMono-Italic.ttf
-          style: italic
-        - asset: assets/fonts/JetBrainsMono-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/JetBrainsMono-BoldItalic.ttf
-          weight: 700
-          style: italic

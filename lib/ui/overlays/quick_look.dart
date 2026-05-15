@@ -399,7 +399,6 @@ Future<_Section?> _extraInfo(FileEntry e) async {
       if (rows.isEmpty) return null;
       return (title: t.quickLook.sectionImage, rows: rows);
     }
-    // Text-ish: count lines and characters (bounded read).
     final res = await _readText(e);
     if (res.error == null && res.text.isNotEmpty) {
       final lines = '\n'.allMatches(res.text).length + 1;
@@ -408,7 +407,7 @@ Future<_Section?> _extraInfo(FileEntry e) async {
       return (title: t.quickLook.sectionText, rows: rows);
     }
   } catch (_) {
-    // Best-effort: omit extra info on any failure.
+    // Metadata is best-effort.
   }
   return null;
 }
@@ -488,13 +487,10 @@ class _ImagePreviewState extends State<_ImagePreview> {
                   minScale: 1,
                   clipBehavior: Clip.hardEdge,
                   child: SizedBox.expand(
-                    // BoxFit.contain keeps the whole image visible from the
-                    // start while still filling the available width.
                     child: Image.file(
                       File(widget.path),
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.medium,
-                      // Spinner until the (possibly large) image is decoded.
                       frameBuilder: (context, child, frame, wasSyncLoaded) {
                         if (wasSyncLoaded || frame != null) return child;
                         return const _Centered.spinner();
@@ -699,9 +695,8 @@ class _TextScrollerState extends State<_TextScroller> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 24, 24),
                     child: SelectableText(
                       widget.text,
-                      // No soft wrap so long lines scroll horizontally.
                       style: const TextStyle(
-                        fontFamily: 'JetBrains Mono',
+                        fontFamily: 'monospace',
                         fontSize: 12.5,
                         height: 1.45,
                         color: AppColors.fg,
