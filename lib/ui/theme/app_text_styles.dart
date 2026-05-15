@@ -79,7 +79,7 @@ class AppTextStyles extends ThemeExtension<AppTextStyles> {
       height: 1.2,
       fontWeight: FontWeight.w500,
       color: AppColors.fg,
-      fontFamily: 'monospace',
+      fontFamily: 'JetBrains Mono',
     ),
     row: TextStyle(
       fontSize: 13,

@@ -46,6 +46,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final TranslationsAppMenuEn appMenu = TranslationsAppMenuEn.internal(_root);
 	late final TranslationsKeybindingsEn keybindings = TranslationsKeybindingsEn.internal(_root);
 	late final TranslationsCommandPaletteEn commandPalette = TranslationsCommandPaletteEn.internal(_root);
+	late final TranslationsQuickLookEn quickLook = TranslationsQuickLookEn.internal(_root);
 	late final TranslationsToastEn toast = TranslationsToastEn.internal(_root);
 	late final TranslationsDragHintEn dragHint = TranslationsDragHintEn.internal(_root);
 	late final TranslationsFileViewEn fileView = TranslationsFileViewEn.internal(_root);
@@ -321,6 +322,96 @@ class TranslationsCommandPaletteEn {
 
 	/// en: 'Disabled'
 	String get disabled => 'Disabled';
+}
+
+// Path: quickLook
+class TranslationsQuickLookEn {
+	TranslationsQuickLookEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'No file selected'
+	String get noSelection => 'No file selected';
+
+	/// en: 'Folder'
+	String get folder => 'Folder';
+
+	/// en: 'No preview available'
+	String get noPreview => 'No preview available';
+
+	/// en: 'Binary file — no preview'
+	String get binaryFile => 'Binary file — no preview';
+
+	/// en: 'File too large to preview'
+	String get tooLarge => 'File too large to preview';
+
+	/// en: 'Could not read file'
+	String get readError => 'Could not read file';
+
+	/// en: 'Information'
+	String get info => 'Information';
+
+	/// en: 'Name'
+	String get name => 'Name';
+
+	/// en: 'Type'
+	String get type => 'Type';
+
+	/// en: 'Size'
+	String get size => 'Size';
+
+	/// en: 'Location'
+	String get location => 'Location';
+
+	/// en: 'Modified'
+	String get modified => 'Modified';
+
+	/// en: 'Folder'
+	String get typeFolder => 'Folder';
+
+	/// en: 'File'
+	String get typeFile => 'File';
+
+	/// en: 'Dimensions'
+	String get dimensions => 'Dimensions';
+
+	/// en: 'Camera'
+	String get camera => 'Camera';
+
+	/// en: 'Lens'
+	String get lens => 'Lens';
+
+	/// en: 'Exposure'
+	String get exposure => 'Exposure';
+
+	/// en: 'Aperture'
+	String get aperture => 'Aperture';
+
+	/// en: 'ISO'
+	String get iso => 'ISO';
+
+	/// en: 'Focal length'
+	String get focalLength => 'Focal length';
+
+	/// en: 'Date taken'
+	String get dateTaken => 'Date taken';
+
+	/// en: 'Lines'
+	String get lines => 'Lines';
+
+	/// en: 'Characters'
+	String get characters => 'Characters';
+
+	/// en: 'General'
+	String get sectionGeneral => 'General';
+
+	/// en: 'Image'
+	String get sectionImage => 'Image';
+
+	/// en: 'Text'
+	String get sectionText => 'Text';
 }
 
 // Path: toast
@@ -1209,6 +1300,33 @@ extension on Translations {
 			'commandPalette.preferencesSubtitle' => 'Open the full settings dialog',
 			'commandPalette.enabled' => 'Enabled',
 			'commandPalette.disabled' => 'Disabled',
+			'quickLook.noSelection' => 'No file selected',
+			'quickLook.folder' => 'Folder',
+			'quickLook.noPreview' => 'No preview available',
+			'quickLook.binaryFile' => 'Binary file — no preview',
+			'quickLook.tooLarge' => 'File too large to preview',
+			'quickLook.readError' => 'Could not read file',
+			'quickLook.info' => 'Information',
+			'quickLook.name' => 'Name',
+			'quickLook.type' => 'Type',
+			'quickLook.size' => 'Size',
+			'quickLook.location' => 'Location',
+			'quickLook.modified' => 'Modified',
+			'quickLook.typeFolder' => 'Folder',
+			'quickLook.typeFile' => 'File',
+			'quickLook.dimensions' => 'Dimensions',
+			'quickLook.camera' => 'Camera',
+			'quickLook.lens' => 'Lens',
+			'quickLook.exposure' => 'Exposure',
+			'quickLook.aperture' => 'Aperture',
+			'quickLook.iso' => 'ISO',
+			'quickLook.focalLength' => 'Focal length',
+			'quickLook.dateTaken' => 'Date taken',
+			'quickLook.lines' => 'Lines',
+			'quickLook.characters' => 'Characters',
+			'quickLook.sectionGeneral' => 'General',
+			'quickLook.sectionImage' => 'Image',
+			'quickLook.sectionText' => 'Text',
 			'toast.copiedItems' => ({required Object count}) => 'Copied ${count} items',
 			'toast.cutItems' => ({required Object count}) => 'Cut ${count} items',
 			'toast.taskErrors' => ({required Object label, required Object count}) => '${label} — ${count} errors',

@@ -22,6 +22,7 @@ import '../ui/dialogs/dialog.dart';
 import '../ui/overlays/command_palette.dart';
 import '../ui/overlays/context_menu.dart';
 import '../ui/overlays/notification_overlay.dart';
+import '../ui/overlays/quick_look.dart';
 import '../ui/overlays/notification_store.dart';
 import '../ui/overlays/toast.dart';
 import '../ui/theme/app_theme.dart';
@@ -490,6 +491,14 @@ class _WaydirPageState extends State<WaydirPage> {
     showPreferencesDialog(context).then((_) => _restoreFocus());
   }
 
+  void _openQuickLook() {
+    if (_isModalRouteOnTop()) return;
+    showQuickLook(
+      context: context,
+      store: _active,
+    ).then((_) => _restoreFocus());
+  }
+
   void _openCommandPalette() {
     showCommandPalette(
       context: context,
@@ -622,6 +631,11 @@ class _WaydirPageState extends State<WaydirPage> {
     }
 
     final store = _active;
+
+    if (!ctrl && !shift && !alt && AppShortcuts.isKey('quick_look', key)) {
+      _openQuickLook();
+      return KeyEventResult.handled;
+    }
 
     if (ctrl && shift && AppShortcuts.isKey('recursive_search', key)) {
       store.openSearch(recursive: true);

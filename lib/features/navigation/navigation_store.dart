@@ -103,6 +103,18 @@ class NavigationStore {
     () => visibleFiles.value.where((f) => f.type == FileItemType.file).length,
   );
   late final totalItems = computed(() => visibleFiles.value.length);
+  late final cursorEntry = computed<FileEntry?>(() {
+    final files = visibleFiles.value;
+    final idx = cursorIndex.value;
+    if (idx >= 0 && idx < files.length) return files[idx];
+    final sel = selectedPaths.value;
+    if (sel.length == 1) {
+      for (final f in files) {
+        if (f.path == sel.first) return f;
+      }
+    }
+    return null;
+  });
   late final selectedCount = computed(() => selectedPaths.value.length);
   late final canPaste = computed(
     () => clipboardPaths.value.isNotEmpty && clipboardMode.value != null,
