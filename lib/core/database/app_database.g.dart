@@ -193,6 +193,19 @@ class $AppSettingsTable extends AppSettings
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _deleteKeyBehaviorMeta = const VerificationMeta(
+    'deleteKeyBehavior',
+  );
+  @override
+  late final GeneratedColumn<String> deleteKeyBehavior =
+      GeneratedColumn<String>(
+        'delete_key_behavior',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('trash'),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -209,6 +222,7 @@ class $AppSettingsTable extends AppSettings
     rowDensity,
     dateFormat,
     recentDatesRelative,
+    deleteKeyBehavior,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -327,6 +341,15 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('delete_key_behavior')) {
+      context.handle(
+        _deleteKeyBehaviorMeta,
+        deleteKeyBehavior.isAcceptableOrUnknown(
+          data['delete_key_behavior']!,
+          _deleteKeyBehaviorMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -392,6 +415,10 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.bool,
         data['${effectivePrefix}recent_dates_relative'],
       )!,
+      deleteKeyBehavior: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}delete_key_behavior'],
+      )!,
     );
   }
 
@@ -416,6 +443,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
   final String rowDensity;
   final String dateFormat;
   final bool recentDatesRelative;
+  final String deleteKeyBehavior;
   const AppSetting({
     required this.id,
     required this.terminal,
@@ -431,6 +459,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     required this.rowDensity,
     required this.dateFormat,
     required this.recentDatesRelative,
+    required this.deleteKeyBehavior,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -449,6 +478,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     map['row_density'] = Variable<String>(rowDensity);
     map['date_format'] = Variable<String>(dateFormat);
     map['recent_dates_relative'] = Variable<bool>(recentDatesRelative);
+    map['delete_key_behavior'] = Variable<String>(deleteKeyBehavior);
     return map;
   }
 
@@ -468,6 +498,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       rowDensity: Value(rowDensity),
       dateFormat: Value(dateFormat),
       recentDatesRelative: Value(recentDatesRelative),
+      deleteKeyBehavior: Value(deleteKeyBehavior),
     );
   }
 
@@ -497,6 +528,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       recentDatesRelative: serializer.fromJson<bool>(
         json['recentDatesRelative'],
       ),
+      deleteKeyBehavior: serializer.fromJson<String>(json['deleteKeyBehavior']),
     );
   }
   @override
@@ -517,6 +549,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       'rowDensity': serializer.toJson<String>(rowDensity),
       'dateFormat': serializer.toJson<String>(dateFormat),
       'recentDatesRelative': serializer.toJson<bool>(recentDatesRelative),
+      'deleteKeyBehavior': serializer.toJson<String>(deleteKeyBehavior),
     };
   }
 
@@ -535,6 +568,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     String? rowDensity,
     String? dateFormat,
     bool? recentDatesRelative,
+    String? deleteKeyBehavior,
   }) => AppSetting(
     id: id ?? this.id,
     terminal: terminal ?? this.terminal,
@@ -550,6 +584,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     rowDensity: rowDensity ?? this.rowDensity,
     dateFormat: dateFormat ?? this.dateFormat,
     recentDatesRelative: recentDatesRelative ?? this.recentDatesRelative,
+    deleteKeyBehavior: deleteKeyBehavior ?? this.deleteKeyBehavior,
   );
   AppSetting copyWithCompanion(AppSettingsCompanion data) {
     return AppSetting(
@@ -589,6 +624,9 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
       recentDatesRelative: data.recentDatesRelative.present
           ? data.recentDatesRelative.value
           : this.recentDatesRelative,
+      deleteKeyBehavior: data.deleteKeyBehavior.present
+          ? data.deleteKeyBehavior.value
+          : this.deleteKeyBehavior,
     );
   }
 
@@ -608,7 +646,8 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           ..write('showHiddenDefault: $showHiddenDefault, ')
           ..write('rowDensity: $rowDensity, ')
           ..write('dateFormat: $dateFormat, ')
-          ..write('recentDatesRelative: $recentDatesRelative')
+          ..write('recentDatesRelative: $recentDatesRelative, ')
+          ..write('deleteKeyBehavior: $deleteKeyBehavior')
           ..write(')'))
         .toString();
   }
@@ -629,6 +668,7 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
     rowDensity,
     dateFormat,
     recentDatesRelative,
+    deleteKeyBehavior,
   );
   @override
   bool operator ==(Object other) =>
@@ -647,7 +687,8 @@ class AppSetting extends DataClass implements Insertable<AppSetting> {
           other.showHiddenDefault == this.showHiddenDefault &&
           other.rowDensity == this.rowDensity &&
           other.dateFormat == this.dateFormat &&
-          other.recentDatesRelative == this.recentDatesRelative);
+          other.recentDatesRelative == this.recentDatesRelative &&
+          other.deleteKeyBehavior == this.deleteKeyBehavior);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
@@ -665,6 +706,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   final Value<String> rowDensity;
   final Value<String> dateFormat;
   final Value<bool> recentDatesRelative;
+  final Value<String> deleteKeyBehavior;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.terminal = const Value.absent(),
@@ -680,6 +722,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.rowDensity = const Value.absent(),
     this.dateFormat = const Value.absent(),
     this.recentDatesRelative = const Value.absent(),
+    this.deleteKeyBehavior = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -696,6 +739,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     this.rowDensity = const Value.absent(),
     this.dateFormat = const Value.absent(),
     this.recentDatesRelative = const Value.absent(),
+    this.deleteKeyBehavior = const Value.absent(),
   });
   static Insertable<AppSetting> custom({
     Expression<int>? id,
@@ -712,6 +756,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Expression<String>? rowDensity,
     Expression<String>? dateFormat,
     Expression<bool>? recentDatesRelative,
+    Expression<String>? deleteKeyBehavior,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -731,6 +776,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       if (dateFormat != null) 'date_format': dateFormat,
       if (recentDatesRelative != null)
         'recent_dates_relative': recentDatesRelative,
+      if (deleteKeyBehavior != null) 'delete_key_behavior': deleteKeyBehavior,
     });
   }
 
@@ -749,6 +795,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     Value<String>? rowDensity,
     Value<String>? dateFormat,
     Value<bool>? recentDatesRelative,
+    Value<String>? deleteKeyBehavior,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -766,6 +813,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
       rowDensity: rowDensity ?? this.rowDensity,
       dateFormat: dateFormat ?? this.dateFormat,
       recentDatesRelative: recentDatesRelative ?? this.recentDatesRelative,
+      deleteKeyBehavior: deleteKeyBehavior ?? this.deleteKeyBehavior,
     );
   }
 
@@ -818,6 +866,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
     if (recentDatesRelative.present) {
       map['recent_dates_relative'] = Variable<bool>(recentDatesRelative.value);
     }
+    if (deleteKeyBehavior.present) {
+      map['delete_key_behavior'] = Variable<String>(deleteKeyBehavior.value);
+    }
     return map;
   }
 
@@ -837,7 +888,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
           ..write('showHiddenDefault: $showHiddenDefault, ')
           ..write('rowDensity: $rowDensity, ')
           ..write('dateFormat: $dateFormat, ')
-          ..write('recentDatesRelative: $recentDatesRelative')
+          ..write('recentDatesRelative: $recentDatesRelative, ')
+          ..write('deleteKeyBehavior: $deleteKeyBehavior')
           ..write(')'))
         .toString();
   }
@@ -1522,6 +1574,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<String> rowDensity,
       Value<String> dateFormat,
       Value<bool> recentDatesRelative,
+      Value<String> deleteKeyBehavior,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -1539,6 +1592,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<String> rowDensity,
       Value<String> dateFormat,
       Value<bool> recentDatesRelative,
+      Value<String> deleteKeyBehavior,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -1617,6 +1671,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<bool> get recentDatesRelative => $composableBuilder(
     column: $table.recentDatesRelative,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deleteKeyBehavior => $composableBuilder(
+    column: $table.deleteKeyBehavior,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1699,6 +1758,11 @@ class $$AppSettingsTableOrderingComposer
     column: $table.recentDatesRelative,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get deleteKeyBehavior => $composableBuilder(
+    column: $table.deleteKeyBehavior,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -1773,6 +1837,11 @@ class $$AppSettingsTableAnnotationComposer
     column: $table.recentDatesRelative,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get deleteKeyBehavior => $composableBuilder(
+    column: $table.deleteKeyBehavior,
+    builder: (column) => column,
+  );
 }
 
 class $$AppSettingsTableTableManager
@@ -1820,6 +1889,7 @@ class $$AppSettingsTableTableManager
                 Value<String> rowDensity = const Value.absent(),
                 Value<String> dateFormat = const Value.absent(),
                 Value<bool> recentDatesRelative = const Value.absent(),
+                Value<String> deleteKeyBehavior = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 terminal: terminal,
@@ -1835,6 +1905,7 @@ class $$AppSettingsTableTableManager
                 rowDensity: rowDensity,
                 dateFormat: dateFormat,
                 recentDatesRelative: recentDatesRelative,
+                deleteKeyBehavior: deleteKeyBehavior,
               ),
           createCompanionCallback:
               ({
@@ -1852,6 +1923,7 @@ class $$AppSettingsTableTableManager
                 Value<String> rowDensity = const Value.absent(),
                 Value<String> dateFormat = const Value.absent(),
                 Value<bool> recentDatesRelative = const Value.absent(),
+                Value<String> deleteKeyBehavior = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 terminal: terminal,
@@ -1867,6 +1939,7 @@ class $$AppSettingsTableTableManager
                 rowDensity: rowDensity,
                 dateFormat: dateFormat,
                 recentDatesRelative: recentDatesRelative,
+                deleteKeyBehavior: deleteKeyBehavior,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

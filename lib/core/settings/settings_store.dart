@@ -23,6 +23,7 @@ class SettingsStore {
   final rowDensity = signal<String>('comfortable');
   final dateFormat = signal<String>('locale');
   final recentDatesRelative = signal<bool>(true);
+  final deleteKeyBehavior = signal<String>('trash');
 
   late final AppDatabase _db;
   bool _loaded = false;
@@ -54,6 +55,7 @@ class SettingsStore {
     rowDensity.value = row.rowDensity;
     dateFormat.value = row.dateFormat;
     recentDatesRelative.value = row.recentDatesRelative;
+    deleteKeyBehavior.value = row.deleteKeyBehavior;
   }
 
   void _wireAutoSave() {
@@ -72,6 +74,7 @@ class SettingsStore {
         rowDensity.value;
         dateFormat.value;
         recentDatesRelative.value;
+        deleteKeyBehavior.value;
         if (!_loaded) return;
         _scheduleSave();
       }),
@@ -100,6 +103,7 @@ class SettingsStore {
           rowDensity: Value(rowDensity.value),
           dateFormat: Value(dateFormat.value),
           recentDatesRelative: Value(recentDatesRelative.value),
+          deleteKeyBehavior: Value(deleteKeyBehavior.value),
         ),
       );
     } catch (_) {}

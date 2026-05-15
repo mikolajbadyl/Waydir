@@ -6,6 +6,7 @@ import 'navigation_store.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/theme/app_text_styles.dart';
 import '../../core/platform/platform_paths.dart';
+import '../../core/platform/recycle_bin.dart';
 import '../../i18n/strings.g.dart';
 import '../../ui/overlays/context_menu.dart';
 
@@ -275,6 +276,19 @@ class _PathBarState extends State<_PathBar> {
   }
 
   Widget _buildBreadcrumbs(String path) {
+    if (path == kRecycleBinPath) {
+      return Row(
+        children: [
+          const PhosphorIcon(
+            PhosphorIconsRegular.trashSimple,
+            size: 13,
+            color: AppColors.fgAccent,
+          ),
+          const SizedBox(width: 6),
+          Text(t.sidebar.trash, style: context.txt.bodyEmphasis),
+        ],
+      );
+    }
     final segments = PlatformPaths.segments(path);
     final isWindows = PlatformPaths.isWindows;
 

@@ -14,6 +14,7 @@ import '../../ui/dialogs/dialog.dart';
 import '../../ui/dialogs/password_dialog.dart';
 import '../../ui/overlays/context_menu.dart';
 import '../../core/platform/platform_paths.dart';
+import '../../core/platform/recycle_bin.dart';
 import '../../i18n/strings.g.dart';
 import '../../utils/drag_drop.dart';
 import '../operations/drag_hint.dart';
@@ -88,7 +89,19 @@ class _SidebarState extends State<Sidebar> {
         PhosphorIconsRegular.videoCamera,
         PlatformPaths.videosPath,
       ),
+      if (PlatformPaths.canOpenTrash)
+        _SidebarItem(
+          t.sidebar.trash,
+          PhosphorIconsRegular.trashSimple,
+          PlatformPaths.trashPath ?? kRecycleBinPath,
+        ),
     ];
+    final trashDir = PlatformPaths.trashPath;
+    if (trashDir != null) {
+      try {
+        Directory(trashDir).createSync(recursive: true);
+      } catch (_) {}
+    }
     _bookmarkStore.load();
   }
 
@@ -203,20 +216,25 @@ class _SidebarState extends State<Sidebar> {
                   children: [
                     if (!collapsed) _SectionHeader(title: t.sidebar.favorites),
                     if (collapsed) const SizedBox(height: 6),
-                    ..._favorites.map(
-                      (item) => _ItemRow(
+                    ..._favorites.map((item) {
+                      final isRecycleBin = item.path == kRecycleBinPath;
+                      return _ItemRow(
                         item: item,
                         isSelected: currentPath == item.path,
+                        isMounted: !isRecycleBin,
                         collapsed: collapsed,
                         onTap: widget.store.navigateTo,
-                        onMiddleTap: widget.onOpenInNewTab != null
+                        onMiddleTap:
+                            widget.onOpenInNewTab != null && !isRecycleBin
                             ? () => widget.onOpenInNewTab!(item.path)
                             : null,
-                        onDropFiles: (paths, {bool move = false}) => widget
-                            .store
-                            .dropFiles(paths, item.path, move: move),
-                      ),
-                    ),
+                        onDropFiles: (paths, {bool move = false}) {
+                          if (isRecycleBin) return;
+                          widget.store
+                              .dropFiles(paths, item.path, move: move);
+                        },
+                      );
+                    }),
                     SizedBox(height: collapsed ? 12 : 8),
                     if (!collapsed)
                       _SectionHeader(title: t.sidebar.devices)
@@ -726,6 +744,7 @@ class _SidebarOperationsButtonState extends State<_SidebarOperationsButton> {
       TaskType.copy => PhosphorIconsRegular.copy,
       TaskType.move => PhosphorIconsRegular.arrowRight,
       TaskType.delete => PhosphorIconsRegular.trash,
+      TaskType.trash => PhosphorIconsRegular.trashSimple,
     };
   }
 }

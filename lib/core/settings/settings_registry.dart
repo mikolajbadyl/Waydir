@@ -136,6 +136,26 @@ class SettingsRegistry {
       signal: SettingsStore.instance.confirmDelete,
     ),
     ChoiceSetting<String>(
+      id: 'general.deleteKeyBehavior',
+      category: SettingsCategory.general,
+      label: () => t.preferences.general.deleteKeyBehavior,
+      hint: () => t.preferences.general.deleteKeyBehaviorHint,
+      searchTerms: const ['delete', 'trash', 'recycle'],
+      signal: SettingsStore.instance.deleteKeyBehavior,
+      choices: [
+        SettingChoice(
+          value: 'trash',
+          label: () => t.preferences.general.deleteKeyTrash,
+          icon: PhosphorIconsRegular.trashSimple,
+        ),
+        SettingChoice(
+          value: 'permanent',
+          label: () => t.preferences.general.deleteKeyPermanent,
+          icon: PhosphorIconsRegular.trash,
+        ),
+      ],
+    ),
+    ChoiceSetting<String>(
       id: 'general.terminal',
       category: SettingsCategory.general,
       label: () => t.preferences.general.terminalLabel,

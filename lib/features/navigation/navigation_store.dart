@@ -9,6 +9,7 @@ import '../../core/fs/directory_watcher_service.dart';
 import '../../core/fs/recursive_search.dart';
 import '../../core/keyboard/keyboard_shortcuts.dart';
 import '../../core/platform/platform_paths.dart';
+import '../../core/platform/recycle_bin.dart';
 import '../../core/settings/settings_store.dart';
 import '../../i18n/strings.g.dart';
 import '../operations/operation_store.dart';
@@ -34,7 +35,10 @@ class NavigationStore {
   final renamingPath = signal<String?>(null);
   final renameError = signal<String?>(null);
   final pendingCreate = signal<FileEntry?>(null);
+  final _recycleBinEntries = <String, RecycleBinEntry>{};
   int _loadToken = 0;
+
+  bool get isRecycleBinView => currentPath.value == kRecycleBinPath;
   final DirectoryWatcherService _watcher = DirectoryWatcherService();
 
   final searchActive = signal(false);
@@ -246,7 +250,9 @@ class NavigationStore {
   }
 
   void navigateTo(String path, {bool addToHistory = true}) {
-    final normalized = PlatformPaths.normalize(path);
+    final normalized = path == kRecycleBinPath
+        ? path
+        : PlatformPaths.normalize(path);
     closeSearch();
     if (addToHistory) {
       history.value = history.value.sublist(0, historyIndex.value + 1)
@@ -275,6 +281,7 @@ class NavigationStore {
   }
 
   void goUp() async {
+    if (isRecycleBinView) return;
     final parent = PlatformPaths.parentOf(currentPath.value);
     if (parent != currentPath.value &&
         await FileSystemService.directoryExists(parent)) {
@@ -288,14 +295,20 @@ class NavigationStore {
     final token = ++_loadToken;
     isLoading.value = true;
     try {
-      final entries = await FileSystemService.listDirectory(path);
+      final entries = path == kRecycleBinPath
+          ? await _loadRecycleBin()
+          : await FileSystemService.listDirectory(path);
       if (token != _loadToken) return;
       batch(() {
         files.value = entries;
         loadError.value = null;
         isLoading.value = false;
       });
-      _watcher.watch(path, () => _onExternalChange(path));
+      if (path == kRecycleBinPath) {
+        _watcher.stop();
+      } else {
+        _watcher.watch(path, () => _onExternalChange(path));
+      }
     } catch (e) {
       if (token != _loadToken) return;
       batch(() {
@@ -307,6 +320,50 @@ class NavigationStore {
       });
       _watcher.stop();
     }
+  }
+
+  Future<List<FileEntry>> _loadRecycleBin() async {
+    final bin = await RecycleBinService.list();
+    _recycleBinEntries.clear();
+    final out = <FileEntry>[];
+    for (final e in bin) {
+      _recycleBinEntries[e.dataPath] = e;
+      out.add(
+        FileEntry(
+          name: e.name,
+          path: e.dataPath,
+          type: e.isDirectory ? FileItemType.folder : FileItemType.file,
+          size: e.size,
+          modified: e.deletedAt,
+        ),
+      );
+    }
+    return out;
+  }
+
+  Future<void> restoreSelectedFromRecycleBin() =>
+      _applyToSelectedBinEntries(RecycleBinService.restore);
+
+  Future<void> deletePermanentlySelectedFromRecycleBin() =>
+      _applyToSelectedBinEntries(RecycleBinService.deletePermanently);
+
+  Future<void> _applyToSelectedBinEntries(
+    Future<void> Function(RecycleBinEntry) op,
+  ) async {
+    if (!isRecycleBinView) return;
+    for (final p in selectedPaths.value.toList()) {
+      final e = _recycleBinEntries[p];
+      if (e == null) continue;
+      try {
+        await op(e);
+      } catch (_) {}
+    }
+    batch(() {
+      selectedPaths.value = {};
+      cursorIndex.value = -1;
+      anchorIndex.value = -1;
+    });
+    refresh();
   }
 
   void _onExternalChange(String path) async {
@@ -348,12 +405,14 @@ class NavigationStore {
   }
 
   void startRename() {
+    if (isRecycleBinView) return;
     final entries = selectedEntries;
     if (entries.length != 1) return;
     renamingPath.value = entries.first.path;
   }
 
   void startCreate({FileItemType type = FileItemType.folder}) {
+    if (isRecycleBinView) return;
     batch(() {
       pendingCreate.value = FileEntry(
         name: '',
@@ -567,6 +626,7 @@ class NavigationStore {
   }
 
   void openSelected() {
+    if (isRecycleBinView) return;
     FileEntry? entry;
     if (cursorIndex.value >= 0 && cursorIndex.value < _vf.length) {
       entry = _vf[cursorIndex.value];
@@ -640,7 +700,8 @@ class NavigationStore {
     return _vf.where((f) => paths.contains(f.path)).toList();
   }
 
-  void deleteSelected() {
+  void deleteSelected({bool? toTrash}) {
+    if (isRecycleBinView) return;
     final entries = selectedEntries;
     if (entries.isEmpty) return;
     final paths = entries.map((e) => e.path).toList();
@@ -649,7 +710,13 @@ class NavigationStore {
       cursorIndex.value = -1;
       anchorIndex.value = -1;
     });
-    operationStore.enqueueDelete(paths);
+    final useTrash =
+        toTrash ?? SettingsStore.instance.deleteKeyBehavior.value == 'trash';
+    if (useTrash) {
+      operationStore.enqueueTrash(paths);
+    } else {
+      operationStore.enqueueDelete(paths);
+    }
   }
 
   void copySelectedPaths() {
@@ -670,6 +737,7 @@ class NavigationStore {
   }
 
   void copySelected() async {
+    if (isRecycleBinView) return;
     if (selectedPaths.value.isEmpty) return;
     final paths = selectedPaths.value.toList();
     batch(() {
@@ -680,6 +748,7 @@ class NavigationStore {
   }
 
   void cutSelected() async {
+    if (isRecycleBinView) return;
     if (selectedPaths.value.isEmpty) return;
     final paths = selectedPaths.value.toList();
     batch(() {
@@ -694,6 +763,7 @@ class NavigationStore {
     String destination, {
     bool move = false,
   }) {
+    if (destination == kRecycleBinPath) return;
     final sep = PlatformPaths.separator;
     final filtered = sourcePaths.where((s) {
       final parent = PlatformPaths.parentOf(s);
@@ -711,6 +781,7 @@ class NavigationStore {
   }
 
   void paste() async {
+    if (isRecycleBinView) return;
     final internalPaths = Set<String>.from(clipboardPaths.value);
     final internalCut = clipboardMode.value == ClipboardMode.cut;
 

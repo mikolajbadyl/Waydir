@@ -71,7 +71,8 @@ class _WaydirPageState extends State<WaydirPage> {
             if (task == null) return;
             for (final store in _shell.allStores) {
               if (task.destination == store.currentPath.value ||
-                  (task.type == TaskType.delete &&
+                  ((task.type == TaskType.delete ||
+                          task.type == TaskType.trash) &&
                       task.sources.any(
                         (s) => p.dirname(s) == store.currentPath.value,
                       ))) {
@@ -165,34 +166,70 @@ class _WaydirPageState extends State<WaydirPage> {
     super.dispose();
   }
 
-  Future<void> _confirmAndDelete() async {
+  Future<void> _confirmAndDelete({bool forcePermanent = false}) async {
     final entries = _active.selectedEntries;
     if (entries.isEmpty) return;
-    if (!SettingsStore.instance.confirmDelete.value) {
-      _active.deleteSelected();
+    if (_active.isRecycleBinView) {
+      _active.deletePermanentlySelectedFromRecycleBin();
       return;
     }
-    final message = entries.length == 1
-        ? t.dialog.confirmDeleteSingle(name: entries.first.name)
-        : t.dialog.confirmDeleteMultiple(count: entries.length);
+    final useTrash = !forcePermanent &&
+        SettingsStore.instance.deleteKeyBehavior.value == 'trash';
+    if (!SettingsStore.instance.confirmDelete.value) {
+      _active.deleteSelected(toTrash: useTrash);
+      return;
+    }
+    final count = entries.length;
+    final single = count == 1;
+    final String message;
+    if (useTrash) {
+      message = single
+          ? t.dialog.confirmTrashSingle(name: entries.first.name)
+          : t.dialog.confirmTrashMultiple(count: count);
+    } else {
+      message = single
+          ? t.dialog.confirmDeleteSingle(name: entries.first.name)
+          : t.dialog.confirmDeleteMultiple(count: count);
+    }
+    final actionLabel = useTrash ? t.dialog.moveToTrash : t.dialog.delete;
     final result = await showCustomDialog<String>(
       context: context,
-      title: t.dialog.confirmDeleteTitle,
-      icon: PhosphorIconsRegular.trash,
+      title: useTrash ? t.dialog.confirmTrashTitle : t.dialog.confirmDeleteTitle,
+      icon: useTrash ? PhosphorIconsRegular.trashSimple : PhosphorIconsRegular.trash,
       iconColor: AppColors.danger,
       body: Text(message, style: context.txt.body.copyWith(height: 1.4)),
       actions: [
         DialogAction(label: t.dialog.cancel, color: AppColors.fgMuted),
-        DialogAction(label: t.dialog.delete, color: AppColors.danger),
+        DialogAction(label: actionLabel, color: AppColors.danger),
       ],
     );
-    if (result == t.dialog.delete) {
-      _active.deleteSelected();
+    if (result == actionLabel) {
+      _active.deleteSelected(toTrash: useTrash);
     }
   }
 
   void _handleBackgroundContextMenu(Offset position) {
     final store = _active;
+    if (store.isRecycleBinView) {
+      showContextMenu(
+        context: context,
+        position: position,
+        items: [
+          ContextMenuItem(
+            icon: PhosphorIconsRegular.arrowClockwise,
+            label: t.toolbar.refresh,
+            action: 'refresh',
+          ),
+          ContextMenuItem(
+            icon: PhosphorIconsRegular.selectionAll,
+            label: t.menu.selectAll,
+            action: 'select_all',
+          ),
+        ],
+        onSelect: _handleBackgroundMenuAction,
+      );
+      return;
+    }
     final canPaste = store.canPaste.value;
     final items = <ContextMenuItem>[
       ContextMenuItem(
@@ -259,6 +296,33 @@ class _WaydirPageState extends State<WaydirPage> {
         count == 1 && entries.first.type == FileItemType.folder;
     final isRecursive = store.searchActive.value && store.searchRecursive.value;
 
+    if (store.isRecycleBinView) {
+      final binItems = <ContextMenuItem>[
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.arrowCounterClockwise,
+          label: count == 1
+              ? t.menu.restore
+              : t.menu.restoreItems(count: count),
+          action: 'restore',
+        ),
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.trash,
+          label: count == 1
+              ? t.menu.deletePermanently
+              : t.menu.deletePermanentlyItems(count: count),
+          action: 'delete_permanent_bin',
+          danger: true,
+        ),
+      ];
+      showContextMenu(
+        context: context,
+        position: position,
+        items: binItems,
+        onSelect: _handleMenuAction,
+      );
+      return;
+    }
+
     final items = <ContextMenuItem>[
       ContextMenuItem(
         icon: PhosphorIconsRegular.folderOpen,
@@ -315,9 +379,18 @@ class _WaydirPageState extends State<WaydirPage> {
           shortcut: 'F2',
         ),
       ContextMenuItem(
+        icon: PhosphorIconsRegular.trashSimple,
+        label: count == 1
+            ? t.menu.moveToTrash
+            : t.menu.moveToTrashItems(count: count),
+        action: 'trash',
+      ),
+      ContextMenuItem(
         icon: PhosphorIconsRegular.trash,
-        label: count == 1 ? t.menu.delete : t.menu.deleteItems(count: count),
-        action: 'delete',
+        label: count == 1
+            ? t.menu.deletePermanently
+            : t.menu.deletePermanentlyItems(count: count),
+        action: 'delete_permanent',
         danger: true,
       ),
     ];
@@ -359,8 +432,14 @@ class _WaydirPageState extends State<WaydirPage> {
         store.copySelectedPaths();
       case 'rename':
         store.startRename();
-      case 'delete':
+      case 'trash':
         _confirmAndDelete();
+      case 'delete_permanent':
+        _confirmAndDelete(forcePermanent: true);
+      case 'restore':
+        store.restoreSelectedFromRecycleBin();
+      case 'delete_permanent_bin':
+        store.deletePermanentlySelectedFromRecycleBin();
       case 'open_in_terminal':
         final entries = store.selectedEntries;
         if (entries.length == 1 && entries.first.type == FileItemType.folder) {
@@ -650,7 +729,7 @@ class _WaydirPageState extends State<WaydirPage> {
     }
 
     if (AppShortcuts.isKey('delete', key)) {
-      _confirmAndDelete();
+      _confirmAndDelete(forcePermanent: shift);
       return KeyEventResult.handled;
     }
 

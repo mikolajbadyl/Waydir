@@ -107,6 +107,7 @@ class StatusBar extends StatelessWidget {
       TaskType.copy => PhosphorIconsRegular.copy,
       TaskType.move => PhosphorIconsRegular.arrowRight,
       TaskType.delete => PhosphorIconsRegular.trash,
+      TaskType.trash => PhosphorIconsRegular.trashSimple,
     };
 
     final label = TaskLabel.title(task);
