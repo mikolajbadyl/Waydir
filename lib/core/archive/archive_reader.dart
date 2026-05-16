@@ -357,6 +357,20 @@ class ArchiveReader {
     void Function(String name)? onEntry,
     bool Function()? isCancelled,
   }) {
+    extractAllResolved(
+      archivePath,
+      (epath, isDir) => '$destDir/$epath',
+      onEntry: onEntry,
+      isCancelled: isCancelled,
+    );
+  }
+
+  static void extractAllResolved(
+    String archivePath,
+    String? Function(String epath, bool isDir) resolveDest, {
+    void Function(String name)? onEntry,
+    bool Function()? isCancelled,
+  }) {
     final lib = _lib();
     final a = lib.readNew();
     if (a == nullptr) {
@@ -372,7 +386,6 @@ class ArchiveReader {
       if (lib.openFilename(a, namePtr, 16384) != _archiveOk) {
         throw ArchiveReadException(_err(lib, a));
       }
-      Directory(destDir).createSync(recursive: true);
       while (true) {
         if (isCancelled != null && isCancelled()) break;
         final r = lib.nextHeader(a, headerPtr);
@@ -390,11 +403,15 @@ class ArchiveReader {
           lib.dataSkip(a);
           continue;
         }
-        final dest = '$destDir/$epath';
-        onEntry?.call(epath);
         final isDir =
             raw.endsWith('/') ||
             (lib.entryFiletype(entry) & _aeIfmt) == _aeIfdir;
+        onEntry?.call(epath);
+        final dest = resolveDest(epath, isDir);
+        if (dest == null) {
+          lib.dataSkip(a);
+          continue;
+        }
         if (isDir) {
           Directory(dest).createSync(recursive: true);
           lib.dataSkip(a);

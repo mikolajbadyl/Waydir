@@ -1075,6 +1075,21 @@ class FileSystemService {
     final errors = <TaskError>[];
     int processedFiles = 0;
     var lastReport = DateTime.now();
+    final conflicts = <ConflictInfo>[];
+    final conflictKeys = <String>{};
+    Map<String, ConflictResolution> resolutions = {};
+    final runtimeResolutions = <String, ConflictResolution>{};
+    final promptedSet = <String>{};
+    ConflictResolution? runtimeApplyAll;
+    Completer<void>? decisionWaker;
+
+    String keyOf(String src, String epath) => '$src $epath';
+
+    void wakeDecisions() {
+      final w = decisionWaker;
+      decisionWaker = null;
+      w?.complete();
+    }
 
     void maybeReport(String currentFile) {
       final now = DateTime.now();
@@ -1091,13 +1106,49 @@ class FileSystemService {
       }
     }
 
+    bool unresolved(String key) =>
+        runtimeApplyAll == null &&
+        runtimeResolutions[key] == null &&
+        resolutions[key] == null;
+
     Future<void> executeExtract() async {
+      for (final c in conflicts) {
+        if (promptedSet.add(c.sourcePath) && unresolved(c.sourcePath)) {
+          mainSendPort.send(ConflictPromptMessage(conflict: c));
+        }
+      }
+      while (!cancelled && conflictKeys.any(unresolved)) {
+        decisionWaker = Completer<void>();
+        await decisionWaker!.future;
+      }
+      if (cancelled) {
+        mainSendPort.send(TaskDoneMessage(cancelled: true, errors: errors));
+        workerReceivePort.close();
+        return;
+      }
+
+      final dest = destination!;
       for (final src in sources) {
         if (cancelled) break;
         try {
-          ArchiveReader.extractAll(
+          ArchiveReader.extractAllResolved(
             src,
-            destination!,
+            (epath, isDir) {
+              final target = '$dest/$epath';
+              if (isDir) return target;
+              final key = keyOf(src, epath);
+              if (!conflictKeys.contains(key)) return target;
+              final res =
+                  runtimeApplyAll ??
+                  runtimeResolutions[key] ??
+                  resolutions[key] ??
+                  ConflictResolution.overwrite;
+              return switch (res) {
+                ConflictResolution.skip => null,
+                ConflictResolution.rename => _uniqueName(target),
+                ConflictResolution.overwrite => target,
+              };
+            },
             isCancelled: () => cancelled,
             onEntry: (name) {
               processedFiles++;
@@ -1121,9 +1172,34 @@ class FileSystemService {
         if (msg is StartCommand) {
           sources = msg.sources;
           destination = msg.destination;
+          final dest = destination!;
           for (final src in sources) {
             try {
-              totalFiles += ArchiveReader.listEntries(src).length;
+              final entries = ArchiveReader.listEntries(src);
+              totalFiles += entries.length;
+              for (final e in entries) {
+                if (e.isDir) continue;
+                final target = '$dest/${e.path}';
+                final stat = FileStat.statSync(target);
+                if (stat.type == FileSystemEntityType.notFound) continue;
+                final key = keyOf(src, e.path);
+                conflictKeys.add(key);
+                conflicts.add(
+                  ConflictInfo(
+                    sourcePath: key,
+                    targetPath: target,
+                    name: e.path.split('/').last,
+                    sourceSize: e.size,
+                    targetSize: stat.size,
+                    sourceModified: e.mtimeSeconds > 0
+                        ? DateTime.fromMillisecondsSinceEpoch(
+                            e.mtimeSeconds * 1000,
+                          )
+                        : stat.modified,
+                    targetModified: stat.modified,
+                  ),
+                );
+              }
             } catch (_) {}
           }
           mainSendPort.send(
@@ -1131,10 +1207,11 @@ class FileSystemService {
               totalFiles: totalFiles,
               totalBytes: null,
               allPaths: sources,
-              conflicts: const [],
+              conflicts: conflicts,
             ),
           );
         } else if (msg is ExecuteCommand) {
+          resolutions = {...resolutions, ...msg.resolutions};
           executeExtract().catchError((e, st) {
             mainSendPort.send(
               TaskDoneMessage(
@@ -1147,8 +1224,13 @@ class FileSystemService {
             );
             workerReceivePort.close();
           });
+        } else if (msg is ConflictDecisionCommand) {
+          if (msg.applyToAll) runtimeApplyAll = msg.resolution;
+          runtimeResolutions[msg.sourcePath] = msg.resolution;
+          wakeDecisions();
         } else if (msg is CancelCommand) {
           cancelled = true;
+          wakeDecisions();
         }
       } catch (e) {
         mainSendPort.send(
