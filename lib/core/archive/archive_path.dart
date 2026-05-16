@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// Resolved position inside an archive: the real archive file on disk and the
-/// path of the entry within it (empty string == archive root).
 class ArchiveLocation {
   final String archivePath;
   final String innerPath;
@@ -13,15 +11,9 @@ class ArchiveLocation {
   bool get isRoot => innerPath.isEmpty;
 }
 
-/// Archives are browsed as if they were ordinary folders. A path such as
-/// `/home/u/foo.zip/dir/file.txt` is split into the archive file
-/// (`/home/u/foo.zip`) and the inner entry (`dir/file.txt`) by walking the
-/// path and finding the first segment that is an existing file with a
-/// supported archive extension.
 class ArchivePath {
   ArchivePath._();
 
-  /// Multi-part extensions checked before single extensions.
   static const _compoundExtensions = <String>[
     '.tar.gz',
     '.tar.bz2',
@@ -72,8 +64,6 @@ class ArchivePath {
     return _extensions.contains(p.extension(lower));
   }
 
-  /// Returns the archive location for [path], or `null` when [path] is not
-  /// inside (or equal to) an archive file. Performs a few sync stat calls.
   static ArchiveLocation? resolve(String path) {
     final segments = p.split(path);
     if (segments.isEmpty) return null;

@@ -160,6 +160,18 @@ class TranslationsMenuEn {
 
 	/// en: 'Other Application…'
 	String get openWithChoose => 'Other Application…';
+
+	/// en: 'Extract'
+	String get extract => 'Extract';
+
+	/// en: 'Extract Here'
+	String get extractHere => 'Extract Here';
+
+	/// en: 'Extract to $name/'
+	String extractToFolder({required Object name}) => 'Extract to ${name}/';
+
+	/// en: 'Extract Each to Its Own Folder'
+	String get extractEach => 'Extract Each to Its Own Folder';
 }
 
 // Path: properties
@@ -915,6 +927,12 @@ class TranslationsTasksEn {
 	/// en: 'Moving $count items to Trash'
 	String trashingMultiple({required Object count}) => 'Moving ${count} items to Trash';
 
+	/// en: 'Extracting $name'
+	String extractingSingle({required Object name}) => 'Extracting ${name}';
+
+	/// en: 'Extracting $count archives'
+	String extractingMultiple({required Object count}) => 'Extracting ${count} archives';
+
 	late final TranslationsTasksStatusEn status = TranslationsTasksStatusEn.internal(_root);
 }
 
@@ -1316,6 +1334,10 @@ extension on Translations {
 			'menu.openWith' => 'Open With',
 			'menu.openWithApp' => ({required Object app}) => 'Open With ${app}',
 			'menu.openWithChoose' => 'Other Application…',
+			'menu.extract' => 'Extract',
+			'menu.extractHere' => 'Extract Here',
+			'menu.extractToFolder' => ({required Object name}) => 'Extract to ${name}/',
+			'menu.extractEach' => 'Extract Each to Its Own Folder',
 			'properties.title' => 'Properties',
 			'properties.name' => 'Name',
 			'properties.type' => 'Type',
@@ -1583,6 +1605,8 @@ extension on Translations {
 			'tasks.deletingMultiple' => ({required Object count}) => 'Deleting ${count} items',
 			'tasks.trashingSingle' => ({required Object name}) => 'Moving ${name} to Trash',
 			'tasks.trashingMultiple' => ({required Object count}) => 'Moving ${count} items to Trash',
+			'tasks.extractingSingle' => ({required Object name}) => 'Extracting ${name}',
+			'tasks.extractingMultiple' => ({required Object count}) => 'Extracting ${count} archives',
 			'tasks.status.waiting' => 'Waiting...',
 			'tasks.status.scanning' => 'Scanning files...',
 			'tasks.status.conflicts' => ({required Object count}) => '${count} conflicts',

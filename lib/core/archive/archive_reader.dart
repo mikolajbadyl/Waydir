@@ -18,7 +18,6 @@ class ArchiveReadException implements Exception {
   String toString() => message;
 }
 
-/// One raw entry as reported by libarchive.
 class ArchiveEntry {
   final String path;
   final int size;
@@ -149,7 +148,6 @@ class ArchiveReader {
     return p;
   }
 
-  /// Reads every entry header from [archivePath].
   static List<ArchiveEntry> listEntries(String archivePath) {
     final lib = _lib();
     final a = lib.readNew();
@@ -201,7 +199,6 @@ class ArchiveReader {
     return entries;
   }
 
-  /// Extracts a single entry to [destPath].
   static void extractEntry(
     String archivePath,
     String innerPath,
@@ -263,9 +260,6 @@ class ArchiveReader {
     }
   }
 
-  /// Extracts [innerPath] (a file or a whole directory subtree) into
-  /// [stagingDir], preserving its basename, and returns the staged top-level
-  /// path that mirrors the archive entry.
   static String extractTree(
     String archivePath,
     String innerPath,
@@ -347,5 +341,85 @@ class ArchiveReader {
       calloc.free(buf);
     }
     return stagedRoot;
+  }
+
+  static bool _isUnsafe(String path) {
+    if (path.startsWith('/')) return true;
+    for (final seg in path.split('/')) {
+      if (seg == '..') return true;
+    }
+    return false;
+  }
+
+  static void extractAll(
+    String archivePath,
+    String destDir, {
+    void Function(String name)? onEntry,
+    bool Function()? isCancelled,
+  }) {
+    final lib = _lib();
+    final a = lib.readNew();
+    if (a == nullptr) {
+      throw const ArchiveReadException('archive_read_new failed');
+    }
+    final namePtr = archivePath.toNativeUtf8();
+    final headerPtr = calloc<Pointer<Void>>();
+    const bufSize = 256 * 1024;
+    final buf = calloc<Uint8>(bufSize);
+    try {
+      lib.supportFilterAll(a);
+      lib.supportFormatAll(a);
+      if (lib.openFilename(a, namePtr, 16384) != _archiveOk) {
+        throw ArchiveReadException(_err(lib, a));
+      }
+      Directory(destDir).createSync(recursive: true);
+      while (true) {
+        if (isCancelled != null && isCancelled()) break;
+        final r = lib.nextHeader(a, headerPtr);
+        if (r == _archiveEof) break;
+        if (r == _archiveFatal) throw ArchiveReadException(_err(lib, a));
+        final entry = headerPtr.value;
+        final pathPtr = lib.entryPathname(entry);
+        if (pathPtr == nullptr) {
+          lib.dataSkip(a);
+          continue;
+        }
+        final raw = pathPtr.toDartString();
+        final epath = _normalize(raw);
+        if (epath.isEmpty || _isUnsafe(epath)) {
+          lib.dataSkip(a);
+          continue;
+        }
+        final dest = '$destDir/$epath';
+        onEntry?.call(epath);
+        final isDir =
+            raw.endsWith('/') ||
+            (lib.entryFiletype(entry) & _aeIfmt) == _aeIfdir;
+        if (isDir) {
+          Directory(dest).createSync(recursive: true);
+          lib.dataSkip(a);
+          continue;
+        }
+        final file = File(dest);
+        file.parent.createSync(recursive: true);
+        final out = file.openSync(mode: FileMode.write);
+        try {
+          while (true) {
+            final n = lib.readData(a, buf, bufSize);
+            if (n == 0) break;
+            if (n < 0) throw ArchiveReadException(_err(lib, a));
+            out.writeFromSync(buf.asTypedList(n));
+          }
+        } finally {
+          out.closeSync();
+        }
+      }
+    } finally {
+      lib.readClose(a);
+      lib.readFree(a);
+      calloc.free(headerPtr);
+      calloc.free(namePtr);
+      calloc.free(buf);
+    }
   }
 }

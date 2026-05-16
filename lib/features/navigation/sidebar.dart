@@ -746,6 +746,7 @@ class _SidebarOperationsButtonState extends State<_SidebarOperationsButton> {
       TaskType.move => PhosphorIconsRegular.arrowRight,
       TaskType.delete => PhosphorIconsRegular.trash,
       TaskType.trash => PhosphorIconsRegular.trashSimple,
+      TaskType.extract => PhosphorIconsRegular.archive,
     };
   }
 }

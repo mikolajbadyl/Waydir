@@ -6,9 +6,6 @@ import 'archive_reader.dart';
 class ArchiveService {
   ArchiveService._();
 
-  /// Immediate children of [innerPath] inside the archive, listed as
-  /// [FileEntry] with virtual paths rooted at [archivePath]. Directories that
-  /// only exist implicitly (no explicit header) are synthesized.
   static List<FileEntry> levelEntries(
     String archivePath,
     String innerPath,

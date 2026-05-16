@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'package:path/path.dart' as p;
 import '../archive/archive_path.dart';
+import '../archive/archive_reader.dart';
 import '../models/file_entry.dart';
 import '../models/file_operation.dart';
 import '../open/open_service.dart';
@@ -80,23 +81,16 @@ class FileSystemService {
   static Future<bool> directoryExists(String path) =>
       FsWorkerPool.instance.directoryExists(path);
 
-  /// True when [path] can be entered as a folder: a real directory or any
-  /// location inside (or equal to) a supported archive file.
   static Future<bool> isNavigable(String path) async {
     if (ArchivePath.resolve(path) != null) return true;
     return FsWorkerPool.instance.directoryExists(path);
   }
 
-  /// True when [path] points inside an archive (not the archive file itself).
   static bool isInsideArchive(String path) {
     final loc = ArchivePath.resolve(path);
     return loc != null && !loc.isRoot;
   }
 
-  /// Replaces any archive-internal entries in [sources] with freshly
-  /// extracted real paths under a temporary staging directory, so existing
-  /// copy/move workers can treat them as ordinary files. Real paths and
-  /// archive files themselves pass through unchanged.
   static Future<List<String>> materializeArchiveSources(
     List<String> sources,
   ) async {
@@ -126,8 +120,38 @@ class FileSystemService {
     return out;
   }
 
-  /// Extracts an in-archive file to a temporary location and opens it with
-  /// the default application.
+  static String archiveBaseName(String archivePath) {
+    var name = p.basename(archivePath);
+    final lower = name.toLowerCase();
+    for (final ext in const [
+      '.tar.gz',
+      '.tar.bz2',
+      '.tar.xz',
+      '.tar.zst',
+      '.tar.lz',
+      '.tar.lzma',
+      '.tar.z',
+    ]) {
+      if (lower.endsWith(ext)) {
+        return name.substring(0, name.length - ext.length);
+      }
+    }
+    final dot = name.lastIndexOf('.');
+    if (dot > 0) name = name.substring(0, dot);
+    return name;
+  }
+
+  static String uniquePath(String desired) {
+    bool taken(String p) =>
+        FileSystemEntity.typeSync(p) != FileSystemEntityType.notFound;
+    if (!taken(desired)) return desired;
+    for (var i = 1; i < 10000; i++) {
+      final candidate = '$desired ($i)';
+      if (!taken(candidate)) return candidate;
+    }
+    return '$desired ${DateTime.now().microsecondsSinceEpoch}';
+  }
+
   static Future<void> openArchiveEntry(ArchiveLocation loc) async {
     final tempRoot = Directory(
       p.join(Directory.systemTemp.path, 'waydir-archive'),
@@ -1009,6 +1033,108 @@ class FileSystemService {
           );
         } else if (msg is ExecuteCommand) {
           executeTrash().catchError((e, st) {
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
+            workerReceivePort.close();
+          });
+        } else if (msg is CancelCommand) {
+          cancelled = true;
+        }
+      } catch (e) {
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
+        workerReceivePort.close();
+      }
+    });
+  }
+
+  static void extractWorker(List<dynamic> args) {
+    final mainSendPort = args[0] as SendPort;
+    final workerReceivePort = ReceivePort();
+    mainSendPort.send(workerReceivePort.sendPort);
+
+    bool cancelled = false;
+    List<String> sources = const [];
+    String? destination;
+    int totalFiles = 0;
+    final errors = <TaskError>[];
+    int processedFiles = 0;
+    var lastReport = DateTime.now();
+
+    void maybeReport(String currentFile) {
+      final now = DateTime.now();
+      if (now.difference(lastReport).inMilliseconds > 50 ||
+          processedFiles % 50 == 0) {
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
+        lastReport = now;
+      }
+    }
+
+    Future<void> executeExtract() async {
+      for (final src in sources) {
+        if (cancelled) break;
+        try {
+          ArchiveReader.extractAll(
+            src,
+            destination!,
+            isCancelled: () => cancelled,
+            onEntry: (name) {
+              processedFiles++;
+              maybeReport(name.split('/').last);
+            },
+          );
+        } catch (e) {
+          errors.add(TaskError(path: src, message: _friendlyError(e)));
+          mainSendPort.send(
+            ErrorMessage(path: src, message: _friendlyError(e)),
+          );
+        }
+        await Future.delayed(Duration.zero);
+      }
+      mainSendPort.send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+      workerReceivePort.close();
+    }
+
+    workerReceivePort.listen((msg) {
+      try {
+        if (msg is StartCommand) {
+          sources = msg.sources;
+          destination = msg.destination;
+          for (final src in sources) {
+            try {
+              totalFiles += ArchiveReader.listEntries(src).length;
+            } catch (_) {}
+          }
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: sources,
+              conflicts: const [],
+            ),
+          );
+        } else if (msg is ExecuteCommand) {
+          executeExtract().catchError((e, st) {
             mainSendPort.send(
               TaskDoneMessage(
                 cancelled: cancelled,

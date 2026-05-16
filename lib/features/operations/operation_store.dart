@@ -137,6 +137,19 @@ class OperationStore {
     _enqueue(task);
   }
 
+  void enqueueExtract(List<String> sources, String destination) {
+    if (sources.isEmpty) return;
+
+    final task = FileTask(
+      id: '${_idCounter++}',
+      type: TaskType.extract,
+      sources: sources,
+      destination: destination,
+      startTime: DateTime.now(),
+    );
+    _enqueue(task);
+  }
+
   void cancelTask(String id) {
     final task = tasks.value.firstWhereOrNull((t) => t.id == id);
     if (task == null) return;
@@ -266,6 +279,8 @@ class OperationStore {
         entryPoint = FileSystemService.deleteWorker;
       case TaskType.trash:
         entryPoint = FileSystemService.trashWorker;
+      case TaskType.extract:
+        entryPoint = FileSystemService.extractWorker;
     }
 
     try {
@@ -551,6 +566,8 @@ class OperationStore {
         return PhosphorIconsRegular.trash;
       case TaskType.trash:
         return PhosphorIconsRegular.trashSimple;
+      case TaskType.extract:
+        return PhosphorIconsRegular.archive;
     }
   }
 

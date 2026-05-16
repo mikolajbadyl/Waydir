@@ -49,14 +49,18 @@ void main() {
       expect(File(staged).readAsStringSync(), 'hello');
     });
 
+    test('extractAll recreates the full archive tree', () {
+      final out = p.join(tmp.path, 'all');
+      ArchiveReader.extractAll(zipPath, out);
+      expect(File(p.join(out, 'a.txt')).readAsStringSync(), 'hello');
+      expect(File(p.join(out, 'sub', 'b.txt')).readAsStringSync(), 'world');
+    });
+
     test('extractTree stages a whole directory subtree', () {
       final stage = p.join(tmp.path, 'stage2');
       final staged = ArchiveReader.extractTree(zipPath, 'sub', stage);
       expect(staged, p.join(stage, 'sub'));
-      expect(
-        File(p.join(staged, 'b.txt')).readAsStringSync(),
-        'world',
-      );
+      expect(File(p.join(staged, 'b.txt')).readAsStringSync(), 'world');
     });
   }, skip: available ? false : 'libarchive unavailable');
 }

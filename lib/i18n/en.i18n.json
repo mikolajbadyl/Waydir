@@ -33,7 +33,11 @@
     "properties": "Properties",
     "openWith": "Open With",
     "openWithApp": "Open With $app",
-    "openWithChoose": "Other Application…"
+    "openWithChoose": "Other Application…",
+    "extract": "Extract",
+    "extractHere": "Extract Here",
+    "extractToFolder": "Extract to $name/",
+    "extractEach": "Extract Each to Its Own Folder"
   },
   "properties": {
     "title": "Properties",
@@ -377,6 +381,9 @@
     "trashingSingle": "Moving $name to Trash",
     "trashingMultiple(one)": "Moving 1 item to Trash",
     "trashingMultiple(other)": "Moving $count items to Trash",
+    "extractingSingle": "Extracting $name",
+    "extractingMultiple(one)": "Extracting 1 archive",
+    "extractingMultiple(other)": "Extracting $count archives",
     "status": {
       "waiting": "Waiting...",
       "scanning": "Scanning files...",

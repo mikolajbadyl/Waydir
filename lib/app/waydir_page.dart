@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:signals/signals_flutter.dart';
+import '../core/archive/archive_path.dart';
 import '../core/fs/file_system_service.dart';
 import '../core/open/open_service.dart';
 import '../core/keyboard/keyboard_shortcuts.dart';
@@ -318,6 +319,42 @@ class _WaydirPageState extends State<WaydirPage> {
         : const <ContextMenuItem>[];
     if (!mounted) return;
 
+    final archiveEntries = entries
+        .where(
+          (e) =>
+              e.type == FileItemType.file &&
+              ArchivePath.isArchiveName(e.name) &&
+              !FileSystemService.isInsideArchive(e.path),
+        )
+        .toList();
+    final canExtract =
+        archiveEntries.isNotEmpty && archiveEntries.length == count;
+    final extractItem = canExtract
+        ? ContextMenuItem(
+            icon: PhosphorIconsRegular.archive,
+            label: t.menu.extract,
+            action: 'extract',
+            children: [
+              ContextMenuItem(
+                icon: PhosphorIconsRegular.arrowLineDown,
+                label: t.menu.extractHere,
+                action: 'extract_here',
+              ),
+              ContextMenuItem(
+                icon: PhosphorIconsRegular.folderPlus,
+                label: count == 1
+                    ? t.menu.extractToFolder(
+                        name: FileSystemService.archiveBaseName(
+                          archiveEntries.first.name,
+                        ),
+                      )
+                    : t.menu.extractEach,
+                action: 'extract_to_folder',
+              ),
+            ],
+          )
+        : null;
+
     if (store.isTrashView) {
       final binItems = <ContextMenuItem>[
         if (store.canRestoreFromTrash)
@@ -354,6 +391,7 @@ class _WaydirPageState extends State<WaydirPage> {
           action: 'open',
         ),
       ...openWithItems,
+      ?extractItem,
       if (isRecursive && count == 1)
         ContextMenuItem(
           icon: PhosphorIconsRegular.arrowSquareOut,
@@ -518,6 +556,10 @@ class _WaydirPageState extends State<WaydirPage> {
             message: t.toast.cutItems(count: count),
           );
         }
+      case 'extract_here':
+        _extractSelected(toOwnFolder: false);
+      case 'extract_to_folder':
+        _extractSelected(toOwnFolder: true);
       case 'paste':
         store.paste();
       case 'copy_path':
@@ -555,6 +597,34 @@ class _WaydirPageState extends State<WaydirPage> {
             entry: entries.first,
           ).then((_) => _restoreFocus());
         }
+    }
+  }
+
+  void _extractSelected({required bool toOwnFolder}) {
+    final store = _active;
+    final base = store.currentPath.value;
+    final archives = store.selectedEntries
+        .where(
+          (e) =>
+              e.type == FileItemType.file &&
+              ArchivePath.isArchiveName(e.name) &&
+              !FileSystemService.isInsideArchive(e.path),
+        )
+        .toList();
+    if (archives.isEmpty) return;
+
+    if (toOwnFolder) {
+      for (final entry in archives) {
+        final dest = FileSystemService.uniquePath(
+          p.join(base, FileSystemService.archiveBaseName(entry.name)),
+        );
+        store.operationStore.enqueueExtract([entry.path], dest);
+      }
+    } else {
+      store.operationStore.enqueueExtract(
+        archives.map((e) => e.path).toList(),
+        base,
+      );
     }
   }
 

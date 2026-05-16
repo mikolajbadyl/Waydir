@@ -112,6 +112,36 @@ void main() {
         'new',
       );
     });
+
+    test('extract task unpacks an archive into the destination', () async {
+      final src = Directory(p.join(tmpDir.path, 'payload', 'sub'))
+        ..createSync(recursive: true);
+      File(p.join(tmpDir.path, 'payload', 'a.txt')).writeAsStringSync('hi');
+      File(p.join(src.path, 'b.txt')).writeAsStringSync('deep');
+      final zip = p.join(tmpDir.path, 'bundle.zip');
+      final z = Process.runSync('zip', [
+        '-qr',
+        zip,
+        '.',
+      ], workingDirectory: p.join(tmpDir.path, 'payload'));
+      expect(z.exitCode, 0, reason: z.stderr.toString());
+
+      final dest = Directory(p.join(tmpDir.path, 'out'))..createSync();
+      store.enqueueExtract([zip], dest.path);
+
+      final done = await _waitForTask(
+        store,
+        (task) =>
+            task.type == TaskType.extract &&
+            task.status == TaskStatus.completed,
+      );
+      expect(done.errors, isEmpty);
+      expect(File(p.join(dest.path, 'a.txt')).readAsStringSync(), 'hi');
+      expect(
+        File(p.join(dest.path, 'sub', 'b.txt')).readAsStringSync(),
+        'deep',
+      );
+    });
   });
 }
 
