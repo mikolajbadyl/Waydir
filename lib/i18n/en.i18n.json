@@ -29,7 +29,28 @@
     "openLocation": "Open Location",
     "openInNewTab": "Open in New Tab",
     "removeBookmark": "Remove Bookmark",
-    "dualPaneMode": "Dual Pane Mode"
+    "dualPaneMode": "Dual Pane Mode",
+    "properties": "Properties"
+  },
+  "properties": {
+    "title": "Properties",
+    "name": "Name",
+    "type": "Type",
+    "location": "Location",
+    "size": "Size",
+    "modified": "Modified",
+    "accessed": "Accessed",
+    "changed": "Changed",
+    "permissions": "Permissions",
+    "contains": "Contains",
+    "typeFolder": "Folder",
+    "typeFile": "File",
+    "sizeDetail(one)": "$formatted (1 byte)",
+    "sizeDetail(other)": "$formatted ($count bytes)",
+    "containsItems(one)": "1 item",
+    "containsItems(other)": "$count items",
+    "calculating": "Calculating…",
+    "close": "Close"
   },
   "preferences": {
     "title": "Preferences",
@@ -175,6 +196,7 @@
     "name": "Name",
     "type": "Type",
     "size": "Size",
+    "path": "Path",
     "location": "Location",
     "modified": "Modified",
     "typeFolder": "Folder",

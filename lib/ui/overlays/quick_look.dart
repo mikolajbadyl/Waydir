@@ -129,15 +129,11 @@ class _QuickLookState extends State<_QuickLook> {
                       onClose: () => Navigator.of(context).pop(),
                     ),
                     Container(height: 1, color: AppColors.bgDivider),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(child: _PreviewBody(entry: entry)),
-                          Container(width: 1, color: AppColors.bgDivider),
-                          _InfoSidebar(entry: entry),
-                        ],
-                      ),
-                    ),
+                    _MetadataBar(entry: entry),
+                    Container(height: 1, color: AppColors.bgDivider),
+                    Expanded(child: _PreviewBody(entry: entry)),
+                    Container(height: 1, color: AppColors.bgDivider),
+                    _DetailsBar(entry: entry),
                   ],
                 );
               }),
@@ -235,25 +231,27 @@ class _CloseButtonState extends State<_CloseButton> {
 
 typedef _Section = ({String title, List<MapEntry<String, String>> rows});
 
-class _InfoSidebar extends StatelessWidget {
+class _MetadataBar extends StatelessWidget {
   final FileEntry? entry;
 
-  const _InfoSidebar({required this.entry});
+  const _MetadataBar({required this.entry});
 
   @override
   Widget build(BuildContext context) {
     final e = entry;
     if (e == null) {
-      return Container(
-        width: 252,
-        color: AppColors.bgSidebar,
-        padding: const EdgeInsets.all(16),
-        child: Text(t.quickLook.noSelection, style: context.txt.muted),
+      return SizedBox(
+        height: 52,
+        child: Container(
+          color: AppColors.bgSidebar,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(t.quickLook.noSelection, style: context.txt.muted),
+        ),
       );
     }
 
-    final general = <MapEntry<String, String>>[
-      MapEntry(t.quickLook.name, e.name),
+    final primary = <MapEntry<String, String>>[
       MapEntry(
         t.quickLook.type,
         e.type == FileItemType.folder
@@ -264,95 +262,101 @@ class _InfoSidebar extends StatelessWidget {
       ),
       if (e.type != FileItemType.folder)
         MapEntry(t.quickLook.size, formatBytes(e.size)),
-      MapEntry(t.quickLook.location, PlatformPaths.parentOf(e.path)),
       MapEntry(t.quickLook.modified, formatTimeAgo(e.modified)),
     ];
 
-    return Container(
-      width: 252,
-      height: double.infinity,
-      color: AppColors.bgSidebar,
-      child: Scrollbar(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SectionView(
-                section: (title: t.quickLook.sectionGeneral, rows: general),
-              ),
-              FutureBuilder<_Section?>(
-                key: ValueKey(
-                  '${e.realPath}|${e.modified.millisecondsSinceEpoch}',
-                ),
-                future: _extraInfo(e),
-                builder: (context, snap) {
-                  final s = snap.data;
-                  if (s == null || s.rows.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 22),
-                    child: _SectionView(section: s),
-                  );
-                },
-              ),
-            ],
-          ),
+    return SizedBox(
+      height: 52,
+      child: Container(
+        color: AppColors.bgSidebar,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: primary.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final row = primary[index];
+            return _MetaPill(label: row.key, value: row.value);
+          },
         ),
       ),
     );
   }
 }
 
-class _SectionView extends StatelessWidget {
-  final _Section section;
+class _DetailsBar extends StatelessWidget {
+  final FileEntry? entry;
 
-  const _SectionView({required this.section});
+  const _DetailsBar({required this.entry});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(section.title.toUpperCase(), style: context.txt.sectionLabel),
-        const SizedBox(height: 6),
-        Container(height: 1, color: AppColors.bgDivider),
-        const SizedBox(height: 10),
-        for (final r in section.rows) _InfoRow(label: r.key, value: r.value),
-      ],
+    final e = entry;
+    if (e == null) return const SizedBox.shrink();
+
+    final secondary = <MapEntry<String, String>>[
+      MapEntry(t.quickLook.path, e.path),
+      MapEntry(t.quickLook.location, PlatformPaths.parentOf(e.path)),
+    ];
+
+    return SizedBox(
+      height: 52,
+      child: Container(
+        color: AppColors.bgSidebar,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: FutureBuilder<_Section?>(
+          key: ValueKey('${e.realPath}|${e.modified.millisecondsSinceEpoch}'),
+          future: _extraInfo(e),
+          builder: (context, snap) {
+            final extra = snap.data?.rows ?? const <MapEntry<String, String>>[];
+            return ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: secondary.length + extra.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final row = index < secondary.length
+                    ? secondary[index]
+                    : extra[index - secondary.length];
+                return _MetaPill(label: row.key, value: row.value);
+              },
+            );
+          },
+        ),
+      ),
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
+class _MetaPill extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow({required this.label, required this.value});
+  const _MetaPill({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9),
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 220),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: AppColors.bgSurface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.borderColor),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 76,
-            child: Text(
-              label,
-              style: context.txt.caption.copyWith(color: AppColors.fgMuted),
-            ),
+          Text(
+            label,
+            style: context.txt.caption.copyWith(color: AppColors.fgMuted),
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: SelectableText(
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
               value,
-              style: context.txt.caption.copyWith(
-                color: AppColors.fg,
-                height: 1.35,
-              ),
+              style: context.txt.caption.copyWith(color: AppColors.fg),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -361,8 +365,6 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-/// Type-specific metadata loaded lazily: EXIF for images, line/char counts
-/// for text. Returns a titled section to append to the sidebar.
 Future<_Section?> _extraInfo(FileEntry e) async {
   if (e.type == FileItemType.folder) return null;
   final rows = <MapEntry<String, String>>[];
