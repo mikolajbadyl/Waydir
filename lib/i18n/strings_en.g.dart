@@ -42,6 +42,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	// Translations
 	late final TranslationsAppEn app = TranslationsAppEn.internal(_root);
 	late final TranslationsMenuEn menu = TranslationsMenuEn.internal(_root);
+	late final TranslationsPropertiesEn properties = TranslationsPropertiesEn.internal(_root);
 	late final TranslationsPreferencesEn preferences = TranslationsPreferencesEn.internal(_root);
 	late final TranslationsAppMenuEn appMenu = TranslationsAppMenuEn.internal(_root);
 	late final TranslationsKeybindingsEn keybindings = TranslationsKeybindingsEn.internal(_root);
@@ -146,6 +147,66 @@ class TranslationsMenuEn {
 
 	/// en: 'Dual Pane Mode'
 	String get dualPaneMode => 'Dual Pane Mode';
+
+	/// en: 'Properties'
+	String get properties => 'Properties';
+}
+
+// Path: properties
+class TranslationsPropertiesEn {
+	TranslationsPropertiesEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Properties'
+	String get title => 'Properties';
+
+	/// en: 'Name'
+	String get name => 'Name';
+
+	/// en: 'Type'
+	String get type => 'Type';
+
+	/// en: 'Location'
+	String get location => 'Location';
+
+	/// en: 'Size'
+	String get size => 'Size';
+
+	/// en: 'Modified'
+	String get modified => 'Modified';
+
+	/// en: 'Accessed'
+	String get accessed => 'Accessed';
+
+	/// en: 'Changed'
+	String get changed => 'Changed';
+
+	/// en: 'Permissions'
+	String get permissions => 'Permissions';
+
+	/// en: 'Contains'
+	String get contains => 'Contains';
+
+	/// en: 'Folder'
+	String get typeFolder => 'Folder';
+
+	/// en: 'File'
+	String get typeFile => 'File';
+
+	/// en: '$formatted ($count bytes)'
+	String sizeDetail({required Object formatted, required Object count}) => '${formatted} (${count} bytes)';
+
+	/// en: '$count items'
+	String containsItems({required Object count}) => '${count} items';
+
+	/// en: 'Calculating…'
+	String get calculating => 'Calculating…';
+
+	/// en: 'Close'
+	String get close => 'Close';
 }
 
 // Path: preferences
@@ -361,6 +422,9 @@ class TranslationsQuickLookEn {
 
 	/// en: 'Size'
 	String get size => 'Size';
+
+	/// en: 'Path'
+	String get path => 'Path';
 
 	/// en: 'Location'
 	String get location => 'Location';
@@ -1187,6 +1251,23 @@ extension on Translations {
 			'menu.openInNewTab' => 'Open in New Tab',
 			'menu.removeBookmark' => 'Remove Bookmark',
 			'menu.dualPaneMode' => 'Dual Pane Mode',
+			'menu.properties' => 'Properties',
+			'properties.title' => 'Properties',
+			'properties.name' => 'Name',
+			'properties.type' => 'Type',
+			'properties.location' => 'Location',
+			'properties.size' => 'Size',
+			'properties.modified' => 'Modified',
+			'properties.accessed' => 'Accessed',
+			'properties.changed' => 'Changed',
+			'properties.permissions' => 'Permissions',
+			'properties.contains' => 'Contains',
+			'properties.typeFolder' => 'Folder',
+			'properties.typeFile' => 'File',
+			'properties.sizeDetail' => ({required Object formatted, required Object count}) => '${formatted} (${count} bytes)',
+			'properties.containsItems' => ({required Object count}) => '${count} items',
+			'properties.calculating' => 'Calculating…',
+			'properties.close' => 'Close',
 			'preferences.title' => 'Preferences',
 			'preferences.menuLabel' => 'Preferences…',
 			'preferences.close' => 'Close',
@@ -1310,6 +1391,7 @@ extension on Translations {
 			'quickLook.name' => 'Name',
 			'quickLook.type' => 'Type',
 			'quickLook.size' => 'Size',
+			'quickLook.path' => 'Path',
 			'quickLook.location' => 'Location',
 			'quickLook.modified' => 'Modified',
 			'quickLook.typeFolder' => 'Folder',

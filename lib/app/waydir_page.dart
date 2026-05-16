@@ -19,6 +19,7 @@ import '../features/settings/preferences_view.dart';
 import '../i18n/strings.g.dart';
 import '../ui/chrome/title_bar.dart';
 import '../ui/dialogs/dialog.dart';
+import '../ui/dialogs/properties_dialog.dart';
 import '../ui/overlays/command_palette.dart';
 import '../ui/overlays/context_menu.dart';
 import '../ui/overlays/notification_overlay.dart';
@@ -400,6 +401,13 @@ class _WaydirPageState extends State<WaydirPage> {
         action: 'delete_permanent',
         danger: true,
       ),
+      if (count == 1) ContextMenuItem.divider,
+      if (count == 1)
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.info,
+          label: t.menu.properties,
+          action: 'properties',
+        ),
     ];
 
     showContextMenu(
@@ -461,6 +469,14 @@ class _WaydirPageState extends State<WaydirPage> {
         final entries = store.selectedEntries;
         if (entries.length == 1 && entries.first.type == FileItemType.folder) {
           _shell.activePane.value!.tabs.addTab(entries.first.path);
+        }
+      case 'properties':
+        final entries = store.selectedEntries;
+        if (entries.length == 1) {
+          showPropertiesDialog(
+            context: context,
+            entry: entries.first,
+          ).then((_) => _restoreFocus());
         }
     }
   }
