@@ -2477,6 +2477,372 @@ class RecentAppsCompanion extends UpdateCompanion<RecentApp> {
   }
 }
 
+class $DefaultAppsTable extends DefaultApps
+    with TableInfo<$DefaultAppsTable, DefaultApp> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DefaultAppsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _typeKeyMeta = const VerificationMeta(
+    'typeKey',
+  );
+  @override
+  late final GeneratedColumn<String> typeKey = GeneratedColumn<String>(
+    'type_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _appIdMeta = const VerificationMeta('appId');
+  @override
+  late final GeneratedColumn<String> appId = GeneratedColumn<String>(
+    'app_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _appNameMeta = const VerificationMeta(
+    'appName',
+  );
+  @override
+  late final GeneratedColumn<String> appName = GeneratedColumn<String>(
+    'app_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _appExecMeta = const VerificationMeta(
+    'appExec',
+  );
+  @override
+  late final GeneratedColumn<String> appExec = GeneratedColumn<String>(
+    'app_exec',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _iconPathMeta = const VerificationMeta(
+    'iconPath',
+  );
+  @override
+  late final GeneratedColumn<String> iconPath = GeneratedColumn<String>(
+    'icon_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    typeKey,
+    appId,
+    appName,
+    appExec,
+    iconPath,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'default_apps';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DefaultApp> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('type_key')) {
+      context.handle(
+        _typeKeyMeta,
+        typeKey.isAcceptableOrUnknown(data['type_key']!, _typeKeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeKeyMeta);
+    }
+    if (data.containsKey('app_id')) {
+      context.handle(
+        _appIdMeta,
+        appId.isAcceptableOrUnknown(data['app_id']!, _appIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_appIdMeta);
+    }
+    if (data.containsKey('app_name')) {
+      context.handle(
+        _appNameMeta,
+        appName.isAcceptableOrUnknown(data['app_name']!, _appNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_appNameMeta);
+    }
+    if (data.containsKey('app_exec')) {
+      context.handle(
+        _appExecMeta,
+        appExec.isAcceptableOrUnknown(data['app_exec']!, _appExecMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_appExecMeta);
+    }
+    if (data.containsKey('icon_path')) {
+      context.handle(
+        _iconPathMeta,
+        iconPath.isAcceptableOrUnknown(data['icon_path']!, _iconPathMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {typeKey};
+  @override
+  DefaultApp map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DefaultApp(
+      typeKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type_key'],
+      )!,
+      appId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}app_id'],
+      )!,
+      appName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}app_name'],
+      )!,
+      appExec: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}app_exec'],
+      )!,
+      iconPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}icon_path'],
+      ),
+    );
+  }
+
+  @override
+  $DefaultAppsTable createAlias(String alias) {
+    return $DefaultAppsTable(attachedDatabase, alias);
+  }
+}
+
+class DefaultApp extends DataClass implements Insertable<DefaultApp> {
+  final String typeKey;
+  final String appId;
+  final String appName;
+  final String appExec;
+  final String? iconPath;
+  const DefaultApp({
+    required this.typeKey,
+    required this.appId,
+    required this.appName,
+    required this.appExec,
+    this.iconPath,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['type_key'] = Variable<String>(typeKey);
+    map['app_id'] = Variable<String>(appId);
+    map['app_name'] = Variable<String>(appName);
+    map['app_exec'] = Variable<String>(appExec);
+    if (!nullToAbsent || iconPath != null) {
+      map['icon_path'] = Variable<String>(iconPath);
+    }
+    return map;
+  }
+
+  DefaultAppsCompanion toCompanion(bool nullToAbsent) {
+    return DefaultAppsCompanion(
+      typeKey: Value(typeKey),
+      appId: Value(appId),
+      appName: Value(appName),
+      appExec: Value(appExec),
+      iconPath: iconPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconPath),
+    );
+  }
+
+  factory DefaultApp.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DefaultApp(
+      typeKey: serializer.fromJson<String>(json['typeKey']),
+      appId: serializer.fromJson<String>(json['appId']),
+      appName: serializer.fromJson<String>(json['appName']),
+      appExec: serializer.fromJson<String>(json['appExec']),
+      iconPath: serializer.fromJson<String?>(json['iconPath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'typeKey': serializer.toJson<String>(typeKey),
+      'appId': serializer.toJson<String>(appId),
+      'appName': serializer.toJson<String>(appName),
+      'appExec': serializer.toJson<String>(appExec),
+      'iconPath': serializer.toJson<String?>(iconPath),
+    };
+  }
+
+  DefaultApp copyWith({
+    String? typeKey,
+    String? appId,
+    String? appName,
+    String? appExec,
+    Value<String?> iconPath = const Value.absent(),
+  }) => DefaultApp(
+    typeKey: typeKey ?? this.typeKey,
+    appId: appId ?? this.appId,
+    appName: appName ?? this.appName,
+    appExec: appExec ?? this.appExec,
+    iconPath: iconPath.present ? iconPath.value : this.iconPath,
+  );
+  DefaultApp copyWithCompanion(DefaultAppsCompanion data) {
+    return DefaultApp(
+      typeKey: data.typeKey.present ? data.typeKey.value : this.typeKey,
+      appId: data.appId.present ? data.appId.value : this.appId,
+      appName: data.appName.present ? data.appName.value : this.appName,
+      appExec: data.appExec.present ? data.appExec.value : this.appExec,
+      iconPath: data.iconPath.present ? data.iconPath.value : this.iconPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DefaultApp(')
+          ..write('typeKey: $typeKey, ')
+          ..write('appId: $appId, ')
+          ..write('appName: $appName, ')
+          ..write('appExec: $appExec, ')
+          ..write('iconPath: $iconPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(typeKey, appId, appName, appExec, iconPath);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DefaultApp &&
+          other.typeKey == this.typeKey &&
+          other.appId == this.appId &&
+          other.appName == this.appName &&
+          other.appExec == this.appExec &&
+          other.iconPath == this.iconPath);
+}
+
+class DefaultAppsCompanion extends UpdateCompanion<DefaultApp> {
+  final Value<String> typeKey;
+  final Value<String> appId;
+  final Value<String> appName;
+  final Value<String> appExec;
+  final Value<String?> iconPath;
+  final Value<int> rowid;
+  const DefaultAppsCompanion({
+    this.typeKey = const Value.absent(),
+    this.appId = const Value.absent(),
+    this.appName = const Value.absent(),
+    this.appExec = const Value.absent(),
+    this.iconPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DefaultAppsCompanion.insert({
+    required String typeKey,
+    required String appId,
+    required String appName,
+    required String appExec,
+    this.iconPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : typeKey = Value(typeKey),
+       appId = Value(appId),
+       appName = Value(appName),
+       appExec = Value(appExec);
+  static Insertable<DefaultApp> custom({
+    Expression<String>? typeKey,
+    Expression<String>? appId,
+    Expression<String>? appName,
+    Expression<String>? appExec,
+    Expression<String>? iconPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (typeKey != null) 'type_key': typeKey,
+      if (appId != null) 'app_id': appId,
+      if (appName != null) 'app_name': appName,
+      if (appExec != null) 'app_exec': appExec,
+      if (iconPath != null) 'icon_path': iconPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DefaultAppsCompanion copyWith({
+    Value<String>? typeKey,
+    Value<String>? appId,
+    Value<String>? appName,
+    Value<String>? appExec,
+    Value<String?>? iconPath,
+    Value<int>? rowid,
+  }) {
+    return DefaultAppsCompanion(
+      typeKey: typeKey ?? this.typeKey,
+      appId: appId ?? this.appId,
+      appName: appName ?? this.appName,
+      appExec: appExec ?? this.appExec,
+      iconPath: iconPath ?? this.iconPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (typeKey.present) {
+      map['type_key'] = Variable<String>(typeKey.value);
+    }
+    if (appId.present) {
+      map['app_id'] = Variable<String>(appId.value);
+    }
+    if (appName.present) {
+      map['app_name'] = Variable<String>(appName.value);
+    }
+    if (appExec.present) {
+      map['app_exec'] = Variable<String>(appExec.value);
+    }
+    if (iconPath.present) {
+      map['icon_path'] = Variable<String>(iconPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DefaultAppsCompanion(')
+          ..write('typeKey: $typeKey, ')
+          ..write('appId: $appId, ')
+          ..write('appName: $appName, ')
+          ..write('appExec: $appExec, ')
+          ..write('iconPath: $iconPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2485,6 +2851,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BookmarksTable bookmarks = $BookmarksTable(this);
   late final $FolderPrefsTable folderPrefs = $FolderPrefsTable(this);
   late final $RecentAppsTable recentApps = $RecentAppsTable(this);
+  late final $DefaultAppsTable defaultApps = $DefaultAppsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2495,6 +2862,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     bookmarks,
     folderPrefs,
     recentApps,
+    defaultApps,
   ];
 }
 
@@ -3752,6 +4120,206 @@ typedef $$RecentAppsTableProcessedTableManager =
       RecentApp,
       PrefetchHooks Function()
     >;
+typedef $$DefaultAppsTableCreateCompanionBuilder =
+    DefaultAppsCompanion Function({
+      required String typeKey,
+      required String appId,
+      required String appName,
+      required String appExec,
+      Value<String?> iconPath,
+      Value<int> rowid,
+    });
+typedef $$DefaultAppsTableUpdateCompanionBuilder =
+    DefaultAppsCompanion Function({
+      Value<String> typeKey,
+      Value<String> appId,
+      Value<String> appName,
+      Value<String> appExec,
+      Value<String?> iconPath,
+      Value<int> rowid,
+    });
+
+class $$DefaultAppsTableFilterComposer
+    extends Composer<_$AppDatabase, $DefaultAppsTable> {
+  $$DefaultAppsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get typeKey => $composableBuilder(
+    column: $table.typeKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get appId => $composableBuilder(
+    column: $table.appId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get appName => $composableBuilder(
+    column: $table.appName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get appExec => $composableBuilder(
+    column: $table.appExec,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get iconPath => $composableBuilder(
+    column: $table.iconPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DefaultAppsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DefaultAppsTable> {
+  $$DefaultAppsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get typeKey => $composableBuilder(
+    column: $table.typeKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get appId => $composableBuilder(
+    column: $table.appId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get appName => $composableBuilder(
+    column: $table.appName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get appExec => $composableBuilder(
+    column: $table.appExec,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get iconPath => $composableBuilder(
+    column: $table.iconPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DefaultAppsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DefaultAppsTable> {
+  $$DefaultAppsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get typeKey =>
+      $composableBuilder(column: $table.typeKey, builder: (column) => column);
+
+  GeneratedColumn<String> get appId =>
+      $composableBuilder(column: $table.appId, builder: (column) => column);
+
+  GeneratedColumn<String> get appName =>
+      $composableBuilder(column: $table.appName, builder: (column) => column);
+
+  GeneratedColumn<String> get appExec =>
+      $composableBuilder(column: $table.appExec, builder: (column) => column);
+
+  GeneratedColumn<String> get iconPath =>
+      $composableBuilder(column: $table.iconPath, builder: (column) => column);
+}
+
+class $$DefaultAppsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DefaultAppsTable,
+          DefaultApp,
+          $$DefaultAppsTableFilterComposer,
+          $$DefaultAppsTableOrderingComposer,
+          $$DefaultAppsTableAnnotationComposer,
+          $$DefaultAppsTableCreateCompanionBuilder,
+          $$DefaultAppsTableUpdateCompanionBuilder,
+          (
+            DefaultApp,
+            BaseReferences<_$AppDatabase, $DefaultAppsTable, DefaultApp>,
+          ),
+          DefaultApp,
+          PrefetchHooks Function()
+        > {
+  $$DefaultAppsTableTableManager(_$AppDatabase db, $DefaultAppsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DefaultAppsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DefaultAppsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DefaultAppsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> typeKey = const Value.absent(),
+                Value<String> appId = const Value.absent(),
+                Value<String> appName = const Value.absent(),
+                Value<String> appExec = const Value.absent(),
+                Value<String?> iconPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DefaultAppsCompanion(
+                typeKey: typeKey,
+                appId: appId,
+                appName: appName,
+                appExec: appExec,
+                iconPath: iconPath,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String typeKey,
+                required String appId,
+                required String appName,
+                required String appExec,
+                Value<String?> iconPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DefaultAppsCompanion.insert(
+                typeKey: typeKey,
+                appId: appId,
+                appName: appName,
+                appExec: appExec,
+                iconPath: iconPath,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DefaultAppsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DefaultAppsTable,
+      DefaultApp,
+      $$DefaultAppsTableFilterComposer,
+      $$DefaultAppsTableOrderingComposer,
+      $$DefaultAppsTableAnnotationComposer,
+      $$DefaultAppsTableCreateCompanionBuilder,
+      $$DefaultAppsTableUpdateCompanionBuilder,
+      (
+        DefaultApp,
+        BaseReferences<_$AppDatabase, $DefaultAppsTable, DefaultApp>,
+      ),
+      DefaultApp,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3766,4 +4334,6 @@ class $AppDatabaseManager {
       $$FolderPrefsTableTableManager(_db, _db.folderPrefs);
   $$RecentAppsTableTableManager get recentApps =>
       $$RecentAppsTableTableManager(_db, _db.recentApps);
+  $$DefaultAppsTableTableManager get defaultApps =>
+      $$DefaultAppsTableTableManager(_db, _db.defaultApps);
 }

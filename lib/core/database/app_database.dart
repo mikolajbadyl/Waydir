@@ -74,14 +74,35 @@ class RecentApps extends Table {
   Set<Column> get primaryKey => {mime, appId};
 }
 
+/// Waydir's own "file type → application" default mapping. Independent of the
+/// OS associations: [typeKey] is the MIME type on Linux/macOS and the file
+/// extension (with dot) on Windows.
+class DefaultApps extends Table {
+  TextColumn get typeKey => text()();
+  TextColumn get appId => text()();
+  TextColumn get appName => text()();
+  TextColumn get appExec => text()();
+  TextColumn get iconPath => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {typeKey};
+}
+
 @DriftDatabase(
-  tables: [AppSettings, SessionTabs, Bookmarks, FolderPrefs, RecentApps],
+  tables: [
+    AppSettings,
+    SessionTabs,
+    Bookmarks,
+    FolderPrefs,
+    RecentApps,
+    DefaultApps,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -118,8 +139,41 @@ class AppDatabase extends _$AppDatabase {
       if (from < 9) {
         await m.createTable(recentApps);
       }
+      if (from < 10) {
+        await m.createTable(defaultApps);
+      }
     },
   );
+
+  Future<DefaultApp?> getDefaultApp(String typeKey) {
+    return (select(
+      defaultApps,
+    )..where((t) => t.typeKey.equals(typeKey))).getSingleOrNull();
+  }
+
+  Future<void> setDefaultApp({
+    required String typeKey,
+    required String appId,
+    required String appName,
+    required String appExec,
+    String? iconPath,
+  }) {
+    return into(defaultApps).insertOnConflictUpdate(
+      DefaultAppsCompanion.insert(
+        typeKey: typeKey,
+        appId: appId,
+        appName: appName,
+        appExec: appExec,
+        iconPath: Value(iconPath),
+      ),
+    );
+  }
+
+  Future<void> clearDefaultApp(String typeKey) {
+    return (delete(
+      defaultApps,
+    )..where((t) => t.typeKey.equals(typeKey))).go();
+  }
 
   Future<List<RecentApp>> getRecentApps(String mime, {int limit = 3}) {
     return (select(recentApps)

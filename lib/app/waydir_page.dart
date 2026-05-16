@@ -495,8 +495,9 @@ class _WaydirPageState extends State<WaydirPage> {
       children: children,
     );
 
-    // A direct "Open With <DefaultApp>" entry mirrors Nautilus/Finder: one
-    // click opens with the default handler without entering the submenu.
+    // The direct "Open With <DefaultApp>" entry must behave *identically* to
+    // double-click / Enter, so it routes through the same 'open' action
+    // (system default open). The resolver only supplies the display name/icon.
     final preferred = options.defaultApp ??
         (options.recent.isNotEmpty
             ? options.recent.first
@@ -508,7 +509,7 @@ class _WaydirPageState extends State<WaydirPage> {
       ContextMenuItem(
         icon: PhosphorIconsRegular.appWindow,
         label: t.menu.openWithApp(app: preferred.name),
-        action: 'openwith:${preferred.id}',
+        action: 'open',
         iconPath: preferred.iconPath,
       ),
       submenu,

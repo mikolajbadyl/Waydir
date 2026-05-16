@@ -68,18 +68,11 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
       _error = null;
     });
     try {
-      if (_setDefault && options.canSetDefault) {
-        await OpenService.setDefaultApp(app, options.mime);
+      if (_setDefault) {
+        await OpenService.setWaydirDefault(widget.entry.realPath, app);
       }
       await OpenService.openWith(app, [widget.entry.realPath]);
       if (mounted) Navigator.of(context).pop();
-    } on SetDefaultUnsupported catch (e) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _error = '${t.openWith.setDefaultFailed}: $e';
-        });
-      }
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -206,10 +199,8 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
         const SizedBox(height: 12),
         _DefaultCheckbox(
           value: _setDefault,
-          enabled: o.canSetDefault,
-          label: o.canSetDefault
-              ? t.openWith.setDefault
-              : t.openWith.setDefaultUnavailable,
+          enabled: true,
+          label: t.openWith.setDefault,
           onChanged: (v) => setState(() => _setDefault = v),
         ),
         if (_error != null) ...[

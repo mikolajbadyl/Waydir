@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import '../platform/platform_paths.dart';
 import '../platform/win32_attributes.dart';
 import '../settings/settings_store.dart';
@@ -8,21 +10,49 @@ import 'app_resolver.dart';
 import 'mime_resolver.dart';
 
 export 'app_entry.dart' show AppEntry;
-export 'app_resolver.dart' show SetDefaultUnsupported;
 export 'mime_resolver.dart' show MimeType;
 
-/// Facade for file-type detection and "Open / Open With" behaviour.
+/// Facade for file-type detection and opening.
 ///
-/// Resolvers are constructed lazily and cached for the process lifetime.
+/// Waydir owns its own "file type → application" default mapping (stored in
+/// the app database), independent of the OS associations. Every open path —
+/// double-click, Enter, the "Open With [app]" menu entry — funnels through
+/// [openDefault], so behaviour is identical by construction. The OS default is
+/// only the fallback when Waydir has no mapping for the type yet.
 class OpenService {
   OpenService._();
 
   static final MimeResolver _mime = MimeResolver.platform();
   static final AppResolver _apps = AppResolver.platform();
 
-  /// Opens [path] with the system default handler. Behaviour-compatible with
-  /// the previous `xdg-open`/`open`/shell-open implementation.
+  /// The key Waydir stores its default under: the file extension (with dot,
+  /// lowercased) on Windows, the MIME type elsewhere.
+  static Future<String> typeKeyFor(String path) async {
+    if (PlatformPaths.isWindows) {
+      return p.extension(path).toLowerCase();
+    }
+    final mime = await _mime.resolve(path);
+    return mime.value;
+  }
+
+  static Future<MimeType> mimeOf(String path) => _mime.resolve(path);
+
+  /// Opens [path] with Waydir's chosen default for its type; if none is set,
+  /// falls back to the OS default handler.
   static Future<void> openDefault(String path) async {
+    final app = await getWaydirDefault(path);
+    if (app != null) {
+      try {
+        await _apps.launch(app, [path]);
+        return;
+      } catch (_) {
+        // Stale mapping (app uninstalled/moved) — fall through to OS default.
+      }
+    }
+    await _osOpenDefault(path);
+  }
+
+  static Future<void> _osOpenDefault(String path) async {
     if (PlatformPaths.isWindows) {
       shellOpenOnWindows(path);
     } else if (Platform.isLinux) {
@@ -32,20 +62,58 @@ class OpenService {
     }
   }
 
-  static Future<MimeType> mimeOf(String path) => _mime.resolve(path);
+  static Future<AppEntry?> getWaydirDefault(String path) async {
+    try {
+      final key = await typeKeyFor(path);
+      final row = await SettingsStore.instance.db.getDefaultApp(key);
+      if (row == null) return null;
+      return AppEntry(
+        id: row.appId,
+        name: row.appName,
+        exec: row.appExec,
+        iconPath: row.iconPath,
+        isDefault: true,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
-  /// Apps to show in the "Open With" submenu for [path]: recently used first,
-  /// then associated apps, deduplicated.
+  static Future<void> setWaydirDefault(String path, AppEntry app) async {
+    final key = await typeKeyFor(path);
+    await SettingsStore.instance.db.setDefaultApp(
+      typeKey: key,
+      appId: app.id,
+      appName: app.name,
+      appExec: app.exec,
+      iconPath: app.iconPath,
+    );
+  }
+
+  static Future<void> clearWaydirDefault(String path) async {
+    final key = await typeKeyFor(path);
+    await SettingsStore.instance.db.clearDefaultApp(key);
+  }
+
+  /// Apps for the "Open With" UI. The default is Waydir's stored choice when
+  /// set, otherwise the OS-resolved handler as a seed.
   static Future<OpenWithOptions> optionsFor(String path) async {
     final mime = await _mime.resolve(path);
     final associated = await _apps.appsFor(mime, path);
-    final recent = await _recentFor(mime, associated);
-    final canSetDefault = await _apps.canSetDefault();
+    final recent = await _recentFor(mime);
+    final waydirDefault = await getWaydirDefault(path);
+
+    final osDefault = associated
+        .where((a) => a.isDefault)
+        .cast<AppEntry?>()
+        .firstWhere((_) => true, orElse: () => null);
+
     return OpenWithOptions(
       mime: mime,
       recent: recent,
       associated: associated,
-      canSetDefault: canSetDefault,
+      defaultApp: waydirDefault ?? osDefault,
+      isWaydirManaged: waydirDefault != null,
     );
   }
 
@@ -59,11 +127,6 @@ class OpenService {
     }
   }
 
-  static Future<void> setDefaultApp(AppEntry app, MimeType mime) =>
-      _apps.setDefault(app, mime);
-
-  static Future<bool> canSetDefault() => _apps.canSetDefault();
-
   /// Opens the native "Open with…" chooser. Implemented on Windows; on other
   /// platforms there is no system equivalent and this is a no-op.
   static Future<void> systemOpenWithDialog(String path) async {
@@ -74,10 +137,7 @@ class OpenService {
     ], mode: ProcessStartMode.detached);
   }
 
-  static Future<List<AppEntry>> _recentFor(
-    MimeType mime,
-    List<AppEntry> associated,
-  ) async {
+  static Future<List<AppEntry>> _recentFor(MimeType mime) async {
     try {
       final rows = await SettingsStore.instance.db.getRecentApps(mime.value);
       return rows
@@ -112,21 +172,20 @@ class OpenWithOptions {
   final MimeType mime;
   final List<AppEntry> recent;
   final List<AppEntry> associated;
-  final bool canSetDefault;
+
+  /// Waydir's stored default, or the OS-resolved handler as a seed.
+  final AppEntry? defaultApp;
+
+  /// True when [defaultApp] comes from Waydir's own mapping (vs OS seed).
+  final bool isWaydirManaged;
 
   const OpenWithOptions({
     required this.mime,
     required this.recent,
     required this.associated,
-    required this.canSetDefault,
+    required this.defaultApp,
+    required this.isWaydirManaged,
   });
-
-  AppEntry? get defaultApp {
-    for (final a in associated) {
-      if (a.isDefault) return a;
-    }
-    return null;
-  }
 
   bool get isEmpty => recent.isEmpty && associated.isEmpty;
 }
