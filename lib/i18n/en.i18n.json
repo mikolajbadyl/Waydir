@@ -30,7 +30,10 @@
     "openInNewTab": "Open in New Tab",
     "removeBookmark": "Remove Bookmark",
     "dualPaneMode": "Dual Pane Mode",
-    "properties": "Properties"
+    "properties": "Properties",
+    "openWith": "Open With",
+    "openWithApp": "Open With $app",
+    "openWithChoose": "Other Application…"
   },
   "properties": {
     "title": "Properties",
@@ -385,5 +388,19 @@
       "failed": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "openWith": {
+    "title": "Open With",
+    "subtitle": "Choose an application to open \"$name\"",
+    "recent": "Recent",
+    "recommended": "Recommended Applications",
+    "allApps": "All Applications",
+    "noApps": "No applications found for this file type.",
+    "setDefault": "Always use for this file type",
+    "setDefaultUnavailable": "Default cannot be changed on this platform",
+    "moreApps": "More applications…",
+    "open": "Open",
+    "failed": "Could not open the file with $app",
+    "setDefaultFailed": "Could not set the default application"
   }
 }

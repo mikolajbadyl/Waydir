@@ -62,12 +62,26 @@ class FolderPrefs extends Table {
   Set<Column> get primaryKey => {path};
 }
 
-@DriftDatabase(tables: [AppSettings, SessionTabs, Bookmarks, FolderPrefs])
+class RecentApps extends Table {
+  TextColumn get mime => text()();
+  TextColumn get appId => text()();
+  TextColumn get appName => text()();
+  TextColumn get appExec => text()();
+  TextColumn get iconPath => text().nullable()();
+  IntColumn get usedAt => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {mime, appId};
+}
+
+@DriftDatabase(
+  tables: [AppSettings, SessionTabs, Bookmarks, FolderPrefs, RecentApps],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,8 +115,38 @@ class AppDatabase extends _$AppDatabase {
       if (from < 8) {
         await m.createTable(folderPrefs);
       }
+      if (from < 9) {
+        await m.createTable(recentApps);
+      }
     },
   );
+
+  Future<List<RecentApp>> getRecentApps(String mime, {int limit = 3}) {
+    return (select(recentApps)
+          ..where((t) => t.mime.equals(mime))
+          ..orderBy([(t) => OrderingTerm.desc(t.usedAt)])
+          ..limit(limit))
+        .get();
+  }
+
+  Future<void> recordRecentApp({
+    required String mime,
+    required String appId,
+    required String appName,
+    required String appExec,
+    String? iconPath,
+  }) {
+    return into(recentApps).insertOnConflictUpdate(
+      RecentAppsCompanion.insert(
+        mime: mime,
+        appId: appId,
+        appName: appName,
+        appExec: appExec,
+        iconPath: Value(iconPath),
+        usedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
+  }
 
   static QueryExecutor _openConnection() {
     return driftDatabase(

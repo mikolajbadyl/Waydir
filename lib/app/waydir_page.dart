@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import '../core/fs/file_system_service.dart';
+import '../core/open/open_service.dart';
 import '../core/keyboard/keyboard_shortcuts.dart';
 import '../core/models/file_entry.dart';
 import '../core/models/file_operation.dart';
@@ -19,6 +20,7 @@ import '../features/settings/preferences_view.dart';
 import '../i18n/strings.g.dart';
 import '../ui/chrome/title_bar.dart';
 import '../ui/dialogs/dialog.dart';
+import '../ui/dialogs/open_with_dialog.dart';
 import '../ui/dialogs/properties_dialog.dart';
 import '../ui/overlays/command_palette.dart';
 import '../ui/overlays/context_menu.dart';
@@ -47,6 +49,11 @@ class _WaydirPageState extends State<WaydirPage> {
   );
   final _focusNode = FocusNode();
   final _effectDisposers = <void Function()>[];
+
+  /// Maps the synthetic context-menu actions (`openwith:<id>`) to the resolved
+  /// application for the file the menu was opened on.
+  final Map<String, AppEntry> _openWithApps = {};
+  FileEntry? _openWithEntry;
   final _renameErrorDisposers = <String, void Function()>{};
 
   NavigationStore get _active => _shell.activeStore.value!;
@@ -293,7 +300,10 @@ class _WaydirPageState extends State<WaydirPage> {
     }
   }
 
-  void _handleContextMenu(FileSelectionEvent event, Offset position) {
+  Future<void> _handleContextMenu(
+    FileSelectionEvent event,
+    Offset position,
+  ) async {
     final store = _active;
     store.onContextMenu(event);
 
@@ -301,7 +311,14 @@ class _WaydirPageState extends State<WaydirPage> {
     final count = entries.length;
     final isSingleFolder =
         count == 1 && entries.first.type == FileItemType.folder;
+    final isSingleFile =
+        count == 1 && entries.first.type == FileItemType.file;
     final isRecursive = store.searchActive.value && store.searchRecursive.value;
+
+    final openWithItems = isSingleFile
+        ? await _buildOpenWithItem(entries.first)
+        : const <ContextMenuItem>[];
+    if (!mounted) return;
 
     if (store.isTrashView) {
       final binItems = <ContextMenuItem>[
@@ -331,12 +348,19 @@ class _WaydirPageState extends State<WaydirPage> {
       return;
     }
 
+    // When a file has a resolvable opener the direct "Open With <App>" entry
+    // replaces the generic "Open" (which would do the same thing anyway).
+    final hasDirectOpen = openWithItems.isNotEmpty &&
+        openWithItems.first.action.startsWith('openwith:');
+
     final items = <ContextMenuItem>[
-      ContextMenuItem(
-        icon: PhosphorIconsRegular.folderOpen,
-        label: count == 1 ? t.menu.open : t.menu.openItems(count: count),
-        action: 'open',
-      ),
+      if (!hasDirectOpen)
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.folderOpen,
+          label: count == 1 ? t.menu.open : t.menu.openItems(count: count),
+          action: 'open',
+        ),
+      ...openWithItems,
       if (isRecursive && count == 1)
         ContextMenuItem(
           icon: PhosphorIconsRegular.arrowSquareOut,
@@ -418,11 +442,100 @@ class _WaydirPageState extends State<WaydirPage> {
     );
   }
 
+  Future<List<ContextMenuItem>> _buildOpenWithItem(FileEntry entry) async {
+    OpenWithOptions options;
+    try {
+      options = await OpenService.optionsFor(entry.realPath);
+    } catch (_) {
+      return const [];
+    }
+    _openWithApps.clear();
+    _openWithEntry = entry;
+
+    final children = <ContextMenuItem>[];
+    final seen = <String>{};
+
+    void addApp(AppEntry app) {
+      if (!seen.add(app.id)) return;
+      final key = 'openwith:${app.id}';
+      _openWithApps[key] = app;
+      children.add(
+        ContextMenuItem(
+          icon: app.isDefault
+              ? PhosphorIconsRegular.star
+              : PhosphorIconsRegular.appWindow,
+          label: app.name,
+          action: key,
+          iconPath: app.iconPath,
+        ),
+      );
+    }
+
+    final def = options.defaultApp;
+    if (def != null) addApp(def);
+    for (final a in options.recent) {
+      addApp(a);
+    }
+    for (final a in options.associated) {
+      addApp(a);
+    }
+    if (children.isNotEmpty) children.add(ContextMenuItem.divider);
+    children.add(
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.dotsThreeOutline,
+        label: t.menu.openWithChoose,
+        action: 'open_with_choose',
+      ),
+    );
+
+    final submenu = ContextMenuItem(
+      icon: PhosphorIconsRegular.appWindow,
+      label: t.menu.openWith,
+      action: 'open_with',
+      children: children,
+    );
+
+    // A direct "Open With <DefaultApp>" entry mirrors Nautilus/Finder: one
+    // click opens with the default handler without entering the submenu.
+    final preferred = options.defaultApp ??
+        (options.recent.isNotEmpty
+            ? options.recent.first
+            : (options.associated.isNotEmpty
+                  ? options.associated.first
+                  : null));
+    if (preferred == null) return [submenu];
+    return [
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.appWindow,
+        label: t.menu.openWithApp(app: preferred.name),
+        action: 'openwith:${preferred.id}',
+        iconPath: preferred.iconPath,
+      ),
+      submenu,
+    ];
+  }
+
   void _handleMenuAction(String action) {
     final store = _active;
+    if (action.startsWith('openwith:')) {
+      final app = _openWithApps[action];
+      final entry = _openWithEntry;
+      if (app != null && entry != null) {
+        OpenService.openWith(app, [entry.realPath]);
+      }
+      return;
+    }
     switch (action) {
       case 'open':
         store.openSelected();
+      case 'open_with_choose':
+        final entry = _openWithEntry;
+        if (entry != null) {
+          showOpenWithDialog(
+            context: context,
+            entry: entry,
+          ).then((_) => _restoreFocus());
+        }
       case 'copy':
         store.copySelected();
         final count = store.selectedPaths.value.length;

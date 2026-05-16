@@ -3,6 +3,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/app_icon.dart';
 import 'popup_overlay.dart';
 
 class ContextMenuItem {
@@ -14,6 +15,13 @@ class ContextMenuItem {
   final Signal<bool>? toggleSignal;
   final String? shortcut;
 
+  /// When non-null this item opens a cascading submenu instead of firing an
+  /// action on tap.
+  final List<ContextMenuItem>? children;
+
+  /// Optional path to a real icon file (PNG/SVG) shown instead of [icon].
+  final String? iconPath;
+
   const ContextMenuItem({
     required this.icon,
     required this.label,
@@ -22,6 +30,8 @@ class ContextMenuItem {
     this.isToggle = false,
     this.toggleSignal,
     this.shortcut,
+    this.children,
+    this.iconPath,
   });
 
   static const divider = ContextMenuItem._divider();
@@ -33,9 +43,12 @@ class ContextMenuItem {
       danger = false,
       isToggle = false,
       toggleSignal = null,
-      shortcut = null;
+      shortcut = null,
+      children = null,
+      iconPath = null;
 
   bool get isDivider => action == '__divider__';
+  bool get hasChildren => children != null && children!.isNotEmpty;
 }
 
 void showContextMenu({
@@ -45,40 +58,69 @@ void showContextMenu({
   required void Function(String action) onSelect,
 }) {
   final overlay = Overlay.of(context);
-  late OverlayEntry entry;
+  final entries = <OverlayEntry>[];
 
-  void dismiss() {
-    if (entry.mounted) entry.remove();
+  void dismissAll() {
+    for (final e in entries) {
+      if (e.mounted) e.remove();
+    }
+    entries.clear();
   }
 
-  entry = OverlayEntry(
-    builder: (_) => PopupOverlay(
-      position: position,
-      width: 180,
-      autoDismiss: true,
-      onDismiss: dismiss,
-      builder: (_) => _ContextMenuBody(
-        items: items,
-        onSelect: (action) {
-          final item = items.firstWhere(
-            (i) => !i.isDivider && i.action == action,
-            orElse: () => items.first,
-          );
-          onSelect(action);
-          if (!item.isToggle) dismiss();
-        },
-      ),
-    ),
-  );
+  void dismissFrom(int depth) {
+    while (entries.length > depth) {
+      final e = entries.removeLast();
+      if (e.mounted) e.remove();
+    }
+  }
 
-  overlay.insert(entry);
+  void openMenu(int depth, Offset pos, List<ContextMenuItem> menuItems) {
+    dismissFrom(depth);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => PopupOverlay(
+        position: pos,
+        width: 180,
+        // Only the root menu carries the dismiss barrier; it sits below the
+        // submenus so an outside click closes the whole cascade.
+        autoDismiss: depth == 0,
+        onDismiss: dismissAll,
+        builder: (_) => _ContextMenuBody(
+          items: menuItems,
+          onSelect: (action) {
+            final item = menuItems.firstWhere(
+              (i) => !i.isDivider && i.action == action,
+              orElse: () => menuItems.first,
+            );
+            if (item.hasChildren) return;
+            onSelect(action);
+            if (!item.isToggle) dismissAll();
+          },
+          onOpenSubmenu: (item, rect) => openMenu(
+            depth + 1,
+            Offset(rect.right - 4, rect.top),
+            item.children!,
+          ),
+        ),
+      ),
+    );
+    entries.add(entry);
+    overlay.insert(entry);
+  }
+
+  openMenu(0, position, items);
 }
 
 class _ContextMenuBody extends StatelessWidget {
   final List<ContextMenuItem> items;
   final void Function(String action) onSelect;
+  final void Function(ContextMenuItem item, Rect tileRect) onOpenSubmenu;
 
-  const _ContextMenuBody({required this.items, required this.onSelect});
+  const _ContextMenuBody({
+    required this.items,
+    required this.onSelect,
+    required this.onOpenSubmenu,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +160,7 @@ class _ContextMenuBody extends StatelessWidget {
                 return _ContextMenuItemTile(
                   item: e.value,
                   onTap: () => onSelect(e.value.action),
+                  onOpenSubmenu: onOpenSubmenu,
                 );
               }).toList(),
             ),
@@ -131,8 +174,13 @@ class _ContextMenuBody extends StatelessWidget {
 class _ContextMenuItemTile extends StatefulWidget {
   final ContextMenuItem item;
   final VoidCallback onTap;
+  final void Function(ContextMenuItem item, Rect tileRect) onOpenSubmenu;
 
-  const _ContextMenuItemTile({required this.item, required this.onTap});
+  const _ContextMenuItemTile({
+    required this.item,
+    required this.onTap,
+    required this.onOpenSubmenu,
+  });
 
   @override
   State<_ContextMenuItemTile> createState() => _ContextMenuItemTileState();
@@ -140,6 +188,24 @@ class _ContextMenuItemTile extends StatefulWidget {
 
 class _ContextMenuItemTileState extends State<_ContextMenuItemTile> {
   bool _hovered = false;
+
+  void _openSubmenu() {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final origin = box.localToGlobal(Offset.zero);
+    widget.onOpenSubmenu(
+      widget.item,
+      origin & box.size,
+    );
+  }
+
+  void _handleTap() {
+    if (widget.item.hasChildren) {
+      _openSubmenu();
+    } else {
+      widget.onTap();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,10 +219,13 @@ class _ContextMenuItemTileState extends State<_ContextMenuItemTile> {
         : AppColors.fgMuted;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
+      onEnter: (_) {
+        setState(() => _hovered = true);
+        if (widget.item.hasChildren) _openSubmenu();
+      },
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: widget.onTap,
+        onTap: _handleTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: 30,
@@ -167,7 +236,10 @@ class _ContextMenuItemTileState extends State<_ContextMenuItemTile> {
           ),
           child: Row(
             children: [
-              PhosphorIcon(item.icon, size: 14, color: fg),
+              if (item.iconPath != null)
+                AppIcon(path: item.iconPath, size: 16)
+              else
+                PhosphorIcon(item.icon, size: 14, color: fg),
               const SizedBox(width: 8),
               Text(
                 item.label,
@@ -191,6 +263,14 @@ class _ContextMenuItemTileState extends State<_ContextMenuItemTile> {
               if (item.isToggle && item.toggleSignal != null) ...[
                 const SizedBox(width: 8),
                 Watch((_) => _Checkbox(value: item.toggleSignal!.value)),
+              ],
+              if (item.hasChildren) ...[
+                const SizedBox(width: 8),
+                PhosphorIcon(
+                  PhosphorIconsRegular.caretRight,
+                  size: 12,
+                  color: fg,
+                ),
               ],
             ],
           ),
