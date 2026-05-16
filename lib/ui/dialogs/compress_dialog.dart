@@ -5,6 +5,7 @@ import '../../core/archive/archive_writer.dart';
 import '../../i18n/strings.g.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_dropdown.dart';
 
 class CompressRequest {
   final String baseName;
@@ -113,23 +114,33 @@ class _CompressBodyState extends State<_CompressBody> {
           const SizedBox(height: 14),
           Text(t.compress.format, style: context.txt.fieldLabel),
           const SizedBox(height: 6),
-          _dropdown<ArchiveFormat>(
+          AppDropdown<ArchiveFormat>(
             value: _format,
-            items: ArchiveFormat.values,
-            label: (f) => f.label,
+            items: [
+              for (final f in ArchiveFormat.values)
+                AppDropdownItem(value: f, label: f.label),
+            ],
             onChanged: (v) => setState(() => _format = v),
           ),
           const SizedBox(height: 14),
           Text(t.compress.level, style: context.txt.fieldLabel),
           const SizedBox(height: 6),
-          _dropdown<CompressionLevel>(
+          AppDropdown<CompressionLevel>(
             value: _level,
-            items: CompressionLevel.values,
-            label: (l) => switch (l) {
-              CompressionLevel.store => t.compress.levelStore,
-              CompressionLevel.normal => t.compress.levelNormal,
-              CompressionLevel.maximum => t.compress.levelMaximum,
-            },
+            items: [
+              AppDropdownItem(
+                value: CompressionLevel.store,
+                label: t.compress.levelStore,
+              ),
+              AppDropdownItem(
+                value: CompressionLevel.normal,
+                label: t.compress.levelNormal,
+              ),
+              AppDropdownItem(
+                value: CompressionLevel.maximum,
+                label: t.compress.levelMaximum,
+              ),
+            ],
             onChanged: (v) => setState(() => _level = v),
           ),
           const SizedBox(height: 14),
@@ -185,41 +196,4 @@ class _CompressBodyState extends State<_CompressBody> {
       borderSide: const BorderSide(color: AppColors.accent),
     ),
   );
-
-  Widget _dropdown<T>({
-    required T value,
-    required List<T> items,
-    required String Function(T) label,
-    required ValueChanged<T> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgInput,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.borderColor),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          isExpanded: true,
-          isDense: true,
-          dropdownColor: AppColors.bgSurface,
-          style: context.txt.body,
-          icon: const Icon(
-            PhosphorIconsRegular.caretDown,
-            size: 14,
-            color: AppColors.fgMuted,
-          ),
-          items: [
-            for (final it in items)
-              DropdownMenuItem<T>(value: it, child: Text(label(it))),
-          ],
-          onChanged: (v) {
-            if (v != null) onChanged(v);
-          },
-        ),
-      ),
-    );
-  }
 }
