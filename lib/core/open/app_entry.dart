@@ -27,6 +27,19 @@ class AppEntry {
     this.isDefault = false,
   });
 
+  /// Sentinel id for "whatever the OS would do" — opening this entry routes
+  /// through the system shell-open instead of launching a specific binary.
+  static const systemDefaultId = '__waydir_system_default__';
+
+  factory AppEntry.systemDefault(String name) => AppEntry(
+    id: systemDefaultId,
+    name: name,
+    exec: systemDefaultId,
+    isDefault: true,
+  );
+
+  bool get isSystemDefault => id == systemDefaultId;
+
   AppEntry copyWith({bool? isDefault}) => AppEntry(
     id: id,
     name: name,

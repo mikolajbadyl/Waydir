@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../platform/win32_attributes.dart';
 import 'app_entry.dart';
 
 /// Built-in fallback: when the OS default handler cannot be resolved, pick a
@@ -12,13 +13,22 @@ class TypicalApps {
   TypicalApps._();
 
   static AppEntry? forPath(String path) {
-    final cat = _categoryFor(p.extension(path).toLowerCase());
+    final ext = p.extension(path).toLowerCase();
+    final cat = _categoryFor(ext);
     if (cat == null) return null;
-    final candidates = Platform.isWindows
-        ? _windows[cat]
-        : Platform.isMacOS
-        ? _macos[cat]
-        : _linux[cat];
+    // On Windows the sensible "typical" handler for a known type is whatever
+    // the OS itself uses (Photos for images, the system PDF viewer, etc.) —
+    // not a hardcoded app like Paint. We surface it under its OS-reported
+    // friendly name and launch it via the system shell.
+    if (Platform.isWindows) {
+      final friendly = assocQueryStringOnWindows(assocStrFriendlyAppName, ext);
+      return AppEntry.systemDefault(
+        (friendly != null && friendly.isNotEmpty)
+            ? friendly
+            : _genericName[cat]!,
+      );
+    }
+    final candidates = Platform.isMacOS ? _macos[cat] : _linux[cat];
     if (candidates == null) return null;
     for (final c in candidates) {
       final exec = c.resolve();
@@ -28,6 +38,14 @@ class TypicalApps {
     }
     return null;
   }
+
+  static const _genericName = {
+    _Category.image: 'Photos',
+    _Category.video: 'Media Player',
+    _Category.audio: 'Media Player',
+    _Category.pdf: 'PDF Viewer',
+    _Category.editor: 'Text Editor',
+  };
 
   static _Category? _categoryFor(String ext) {
     final e = ext.startsWith('.') ? ext.substring(1) : ext;
@@ -82,23 +100,6 @@ class TypicalApps {
     }),
   };
 
-  static final _windows = <_Category, List<_Candidate>>{
-    _Category.image: [
-      _winExe('mspaint.exe', 'Paint', system32: true),
-      _winExe(r'IrfanView\i_view64.exe', 'IrfanView', programFiles: true),
-    ],
-    _Category.video: [
-      _winExe(r'VideoLAN\VLC\vlc.exe', 'VLC', programFiles: true),
-    ],
-    _Category.audio: [
-      _winExe(r'VideoLAN\VLC\vlc.exe', 'VLC', programFiles: true),
-    ],
-    _Category.editor: [
-      _winExe('notepad.exe', 'Notepad', system32: true),
-    ],
-    _Category.pdf: [],
-  };
-
   static final _macos = <_Category, List<_Candidate>>{
     _Category.image: [_macApp('/System/Applications/Preview.app', 'Preview')],
     _Category.video: [
@@ -120,14 +121,6 @@ class TypicalApps {
           .map((e) => _Candidate.linuxCmd(e.key, e.value))
           .toList();
 
-  static _Candidate _winExe(
-    String rel,
-    String name, {
-    bool system32 = false,
-    bool programFiles = false,
-  }) => _Candidate.windowsExe(rel, name,
-      system32: system32, programFiles: programFiles);
-
   static _Candidate _macApp(String path, String name) =>
       _Candidate.macApp(path, name);
 }
@@ -145,31 +138,6 @@ class _Candidate {
     return _Candidate._(cmd, name, () {
       final found = _whichOnPath(cmd);
       return found == null ? null : '$cmd %f';
-    });
-  }
-
-  factory _Candidate.windowsExe(
-    String rel,
-    String name, {
-    required bool system32,
-    required bool programFiles,
-  }) {
-    return _Candidate._(rel, name, () {
-      final roots = <String>[
-        if (system32)
-          p.join(Platform.environment['SystemRoot'] ?? r'C:\Windows',
-              'System32'),
-        if (programFiles) ...[
-          Platform.environment['ProgramFiles'] ?? r'C:\Program Files',
-          Platform.environment['ProgramFiles(x86)'] ??
-              r'C:\Program Files (x86)',
-        ],
-      ];
-      for (final root in roots) {
-        final candidate = p.join(root, rel);
-        if (File(candidate).existsSync()) return candidate;
-      }
-      return null;
     });
   }
 

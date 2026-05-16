@@ -42,7 +42,7 @@ class OpenService {
   /// falls back to the OS default handler.
   static Future<void> openDefault(String path) async {
     final app = await getWaydirDefault(path);
-    if (app != null) {
+    if (app != null && !app.isSystemDefault) {
       try {
         await _apps.launch(app, [path]);
         return;
@@ -138,6 +138,12 @@ class OpenService {
   static Future<List<AppEntry>> allApps() => _apps.allApps();
 
   static Future<void> openWith(AppEntry app, List<String> paths) async {
+    if (app.isSystemDefault) {
+      for (final path in paths) {
+        await _osOpenDefault(path);
+      }
+      return;
+    }
     await _apps.launch(app, paths);
     if (paths.isNotEmpty) {
       final mime = await _mime.resolve(paths.first);
