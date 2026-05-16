@@ -33,7 +33,26 @@
     "properties": "Properties",
     "openWith": "Open With",
     "openWithApp": "Open With $app",
-    "openWithChoose": "Other Application…"
+    "openWithChoose": "Other Application…",
+    "extract": "Extract",
+    "extractHere": "Extract Here",
+    "extractToFolder": "Extract to $name/",
+    "extractEach": "Extract Each to Its Own Folder",
+    "compress": "Compress",
+    "compressTo": "Compress to $name",
+    "compressOptions": "Add to Archive…"
+  },
+  "compress": {
+    "title": "Add to Archive",
+    "archiveName": "Archive name",
+    "format": "Format",
+    "level": "Compression",
+    "destination": "Destination",
+    "levelStore": "Store (no compression)",
+    "levelNormal": "Normal",
+    "levelMaximum": "Maximum",
+    "create": "Create",
+    "cancel": "Cancel"
   },
   "properties": {
     "title": "Properties",
@@ -360,7 +379,9 @@
     "notFound": "File not found",
     "notEmpty": "Directory not empty",
     "crossDevice": "Cannot move across devices",
-    "appearedDuring": "File appeared at destination during operation"
+    "appearedDuring": "File appeared at destination during operation",
+    "archiveUnavailable": "Archive support is unavailable (libarchive not found)",
+    "archiveError": "Could not read archive"
   },
   "tasks": {
     "copyingSingle": "Copying $name",
@@ -375,6 +396,11 @@
     "trashingSingle": "Moving $name to Trash",
     "trashingMultiple(one)": "Moving 1 item to Trash",
     "trashingMultiple(other)": "Moving $count items to Trash",
+    "extractingSingle": "Extracting $name",
+    "extractingMultiple(one)": "Extracting 1 archive",
+    "extractingMultiple(other)": "Extracting $count archives",
+    "compressingTo": "Compressing to $name",
+    "updatingArchive": "Updating archive",
     "status": {
       "waiting": "Waiting...",
       "scanning": "Scanning files...",

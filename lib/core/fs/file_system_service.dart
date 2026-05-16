@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'package:path/path.dart' as p;
+import '../archive/archive_path.dart';
+import '../archive/archive_reader.dart';
+import '../archive/archive_writer.dart';
 import '../models/file_entry.dart';
 import '../models/file_operation.dart';
 import '../open/open_service.dart';
@@ -68,11 +71,104 @@ class FileSystemService {
     }
   }
 
-  static Future<List<FileEntry>> listDirectory(String path) =>
-      FsWorkerPool.instance.listDirectory(path);
+  static Future<List<FileEntry>> listDirectory(String path) {
+    final loc = ArchivePath.resolve(path);
+    if (loc != null) {
+      return FsWorkerPool.instance.listArchive(loc.archivePath, loc.innerPath);
+    }
+    return FsWorkerPool.instance.listDirectory(path);
+  }
 
   static Future<bool> directoryExists(String path) =>
       FsWorkerPool.instance.directoryExists(path);
+
+  static Future<bool> isNavigable(String path) async {
+    if (ArchivePath.resolve(path) != null) return true;
+    return FsWorkerPool.instance.directoryExists(path);
+  }
+
+  static bool isInsideArchive(String path) {
+    final loc = ArchivePath.resolve(path);
+    return loc != null && !loc.isRoot;
+  }
+
+  static Future<List<String>> materializeArchiveSources(
+    List<String> sources,
+  ) async {
+    if (!sources.any(isInsideArchive)) return sources;
+    final staging = Directory(
+      p.join(
+        Directory.systemTemp.path,
+        'waydir-archive-stage',
+        DateTime.now().microsecondsSinceEpoch.toString(),
+      ),
+    )..createSync(recursive: true);
+    final out = <String>[];
+    for (final s in sources) {
+      final loc = ArchivePath.resolve(s);
+      if (loc == null || loc.isRoot) {
+        out.add(s);
+        continue;
+      }
+      out.add(
+        await FsWorkerPool.instance.extractArchiveTree(
+          loc.archivePath,
+          loc.innerPath,
+          staging.path,
+        ),
+      );
+    }
+    return out;
+  }
+
+  static String archiveBaseName(String archivePath) {
+    var name = p.basename(archivePath);
+    final lower = name.toLowerCase();
+    for (final ext in const [
+      '.tar.gz',
+      '.tar.bz2',
+      '.tar.xz',
+      '.tar.zst',
+      '.tar.lz',
+      '.tar.lzma',
+      '.tar.z',
+    ]) {
+      if (lower.endsWith(ext)) {
+        return name.substring(0, name.length - ext.length);
+      }
+    }
+    final dot = name.lastIndexOf('.');
+    if (dot > 0) name = name.substring(0, dot);
+    return name;
+  }
+
+  static String uniquePath(String desired) {
+    bool taken(String p) =>
+        FileSystemEntity.typeSync(p) != FileSystemEntityType.notFound;
+    if (!taken(desired)) return desired;
+    for (var i = 1; i < 10000; i++) {
+      final candidate = '$desired ($i)';
+      if (!taken(candidate)) return candidate;
+    }
+    return '$desired ${DateTime.now().microsecondsSinceEpoch}';
+  }
+
+  static Future<void> openArchiveEntry(ArchiveLocation loc) async {
+    final tempRoot = Directory(
+      p.join(Directory.systemTemp.path, 'waydir-archive'),
+    );
+    final dest = p.join(
+      tempRoot.path,
+      p.basename(loc.archivePath),
+      loc.innerPath,
+    );
+    await FsWorkerPool.instance.extractArchiveEntry(
+      loc.archivePath,
+      loc.innerPath,
+      dest,
+    );
+    await OpenService.openDefault(dest);
+  }
 
   static Future<bool> isDirectory(String path) =>
       FsWorkerPool.instance.isDirectory(path);
@@ -938,6 +1034,405 @@ class FileSystemService {
           );
         } else if (msg is ExecuteCommand) {
           executeTrash().catchError((e, st) {
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
+            workerReceivePort.close();
+          });
+        } else if (msg is CancelCommand) {
+          cancelled = true;
+        }
+      } catch (e) {
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
+        workerReceivePort.close();
+      }
+    });
+  }
+
+  static void extractWorker(List<dynamic> args) {
+    final mainSendPort = args[0] as SendPort;
+    final workerReceivePort = ReceivePort();
+    mainSendPort.send(workerReceivePort.sendPort);
+
+    bool cancelled = false;
+    List<String> sources = const [];
+    String? destination;
+    int totalFiles = 0;
+    final errors = <TaskError>[];
+    int processedFiles = 0;
+    var lastReport = DateTime.now();
+    final conflicts = <ConflictInfo>[];
+    final conflictKeys = <String>{};
+    Map<String, ConflictResolution> resolutions = {};
+    final runtimeResolutions = <String, ConflictResolution>{};
+    final promptedSet = <String>{};
+    ConflictResolution? runtimeApplyAll;
+    Completer<void>? decisionWaker;
+
+    String keyOf(String src, String epath) => '$src $epath';
+
+    void wakeDecisions() {
+      final w = decisionWaker;
+      decisionWaker = null;
+      w?.complete();
+    }
+
+    void maybeReport(String currentFile) {
+      final now = DateTime.now();
+      if (now.difference(lastReport).inMilliseconds > 50 ||
+          processedFiles % 50 == 0) {
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
+        lastReport = now;
+      }
+    }
+
+    bool unresolved(String key) =>
+        runtimeApplyAll == null &&
+        runtimeResolutions[key] == null &&
+        resolutions[key] == null;
+
+    Future<void> executeExtract() async {
+      for (final c in conflicts) {
+        if (promptedSet.add(c.sourcePath) && unresolved(c.sourcePath)) {
+          mainSendPort.send(ConflictPromptMessage(conflict: c));
+        }
+      }
+      while (!cancelled && conflictKeys.any(unresolved)) {
+        decisionWaker = Completer<void>();
+        await decisionWaker!.future;
+      }
+      if (cancelled) {
+        mainSendPort.send(TaskDoneMessage(cancelled: true, errors: errors));
+        workerReceivePort.close();
+        return;
+      }
+
+      final dest = destination!;
+      for (final src in sources) {
+        if (cancelled) break;
+        try {
+          ArchiveReader.extractAllResolved(
+            src,
+            (epath, isDir) {
+              final target = '$dest/$epath';
+              if (isDir) return target;
+              final key = keyOf(src, epath);
+              if (!conflictKeys.contains(key)) return target;
+              final res =
+                  runtimeApplyAll ??
+                  runtimeResolutions[key] ??
+                  resolutions[key] ??
+                  ConflictResolution.overwrite;
+              return switch (res) {
+                ConflictResolution.skip => null,
+                ConflictResolution.rename => _uniqueName(target),
+                ConflictResolution.overwrite => target,
+              };
+            },
+            isCancelled: () => cancelled,
+            onEntry: (name) {
+              processedFiles++;
+              maybeReport(name.split('/').last);
+            },
+          );
+        } catch (e) {
+          errors.add(TaskError(path: src, message: _friendlyError(e)));
+          mainSendPort.send(
+            ErrorMessage(path: src, message: _friendlyError(e)),
+          );
+        }
+        await Future.delayed(Duration.zero);
+      }
+      mainSendPort.send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+      workerReceivePort.close();
+    }
+
+    workerReceivePort.listen((msg) {
+      try {
+        if (msg is StartCommand) {
+          sources = msg.sources;
+          destination = msg.destination;
+          final dest = destination!;
+          for (final src in sources) {
+            try {
+              final entries = ArchiveReader.listEntries(src);
+              totalFiles += entries.length;
+              for (final e in entries) {
+                if (e.isDir) continue;
+                final target = '$dest/${e.path}';
+                final stat = FileStat.statSync(target);
+                if (stat.type == FileSystemEntityType.notFound) continue;
+                final key = keyOf(src, e.path);
+                conflictKeys.add(key);
+                conflicts.add(
+                  ConflictInfo(
+                    sourcePath: key,
+                    targetPath: target,
+                    name: e.path.split('/').last,
+                    sourceSize: e.size,
+                    targetSize: stat.size,
+                    sourceModified: e.mtimeSeconds > 0
+                        ? DateTime.fromMillisecondsSinceEpoch(
+                            e.mtimeSeconds * 1000,
+                          )
+                        : stat.modified,
+                    targetModified: stat.modified,
+                  ),
+                );
+              }
+            } catch (_) {}
+          }
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: sources,
+              conflicts: conflicts,
+            ),
+          );
+        } else if (msg is ExecuteCommand) {
+          resolutions = {...resolutions, ...msg.resolutions};
+          executeExtract().catchError((e, st) {
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
+            workerReceivePort.close();
+          });
+        } else if (msg is ConflictDecisionCommand) {
+          if (msg.applyToAll) runtimeApplyAll = msg.resolution;
+          runtimeResolutions[msg.sourcePath] = msg.resolution;
+          wakeDecisions();
+        } else if (msg is CancelCommand) {
+          cancelled = true;
+          wakeDecisions();
+        }
+      } catch (e) {
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
+        workerReceivePort.close();
+      }
+    });
+  }
+
+  static void compressWorker(List<dynamic> args) {
+    final mainSendPort = args[0] as SendPort;
+    final workerReceivePort = ReceivePort();
+    mainSendPort.send(workerReceivePort.sendPort);
+
+    bool cancelled = false;
+    List<String> sources = const [];
+    String? destination;
+    var format = ArchiveFormat.zip;
+    var level = CompressionLevel.normal;
+    int totalFiles = 0;
+    final errors = <TaskError>[];
+    int processedFiles = 0;
+    var lastReport = DateTime.now();
+
+    void maybeReport(String currentFile) {
+      final now = DateTime.now();
+      if (now.difference(lastReport).inMilliseconds > 50 ||
+          processedFiles % 50 == 0) {
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
+        lastReport = now;
+      }
+    }
+
+    Future<void> executeCompress() async {
+      try {
+        ArchiveWriter.create(
+          sources,
+          destination!,
+          format,
+          level,
+          isCancelled: () => cancelled,
+          onEntry: (name) {
+            processedFiles++;
+            maybeReport(name.split('/').last);
+          },
+        );
+      } catch (e) {
+        errors.add(TaskError(path: destination ?? '', message: e.toString()));
+        mainSendPort.send(
+          ErrorMessage(path: destination ?? '', message: e.toString()),
+        );
+      }
+      if (cancelled || errors.isNotEmpty) {
+        try {
+          final f = File(destination!);
+          if (f.existsSync()) f.deleteSync();
+        } catch (_) {}
+      }
+      mainSendPort.send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+      workerReceivePort.close();
+    }
+
+    workerReceivePort.listen((msg) {
+      try {
+        if (msg is StartCommand) {
+          sources = msg.sources;
+          destination = msg.destination;
+          format = ArchiveFormat.values.byName(msg.options['format'] ?? 'zip');
+          level = CompressionLevel.values.byName(
+            msg.options['level'] ?? 'normal',
+          );
+          totalFiles = ArchiveWriter.planCount(sources);
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: sources,
+              conflicts: const [],
+            ),
+          );
+        } else if (msg is ExecuteCommand) {
+          executeCompress().catchError((e, st) {
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
+            workerReceivePort.close();
+          });
+        } else if (msg is CancelCommand) {
+          cancelled = true;
+        }
+      } catch (e) {
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
+        workerReceivePort.close();
+      }
+    });
+  }
+
+  static void archiveEditWorker(List<dynamic> args) {
+    final mainSendPort = args[0] as SendPort;
+    final workerReceivePort = ReceivePort();
+    mainSendPort.send(workerReceivePort.sendPort);
+
+    bool cancelled = false;
+    List<String> addSources = const [];
+    String archivePath = '';
+    String addInner = '';
+    List<String> deleteInner = const [];
+    String? renameFrom;
+    String? renameTo;
+    int totalFiles = 0;
+    final errors = <TaskError>[];
+    int processedFiles = 0;
+    var lastReport = DateTime.now();
+
+    void maybeReport(String currentFile) {
+      final now = DateTime.now();
+      if (now.difference(lastReport).inMilliseconds > 50 ||
+          processedFiles % 50 == 0) {
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
+        lastReport = now;
+      }
+    }
+
+    Future<void> executeEdit() async {
+      try {
+        ArchiveWriter.mutate(
+          archivePath,
+          addSources: addSources,
+          addInner: addInner,
+          deleteInner: deleteInner,
+          renameFromInner: renameFrom,
+          renameToName: renameTo,
+          isCancelled: () => cancelled,
+          onEntry: (name) {
+            processedFiles++;
+            maybeReport(name.split('/').last);
+          },
+        );
+      } catch (e) {
+        errors.add(TaskError(path: archivePath, message: e.toString()));
+        mainSendPort.send(
+          ErrorMessage(path: archivePath, message: e.toString()),
+        );
+      }
+      mainSendPort.send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+      workerReceivePort.close();
+    }
+
+    workerReceivePort.listen((msg) {
+      try {
+        if (msg is StartCommand) {
+          addSources = msg.sources;
+          archivePath = msg.options['archive'] ?? '';
+          addInner = msg.options['addInner'] ?? '';
+          final del = msg.options['deleteInner'] ?? '';
+          deleteInner = del.isEmpty ? const [] : del.split('\n');
+          renameFrom = msg.options['renameFrom'];
+          renameTo = msg.options['renameTo'];
+          totalFiles = ArchiveWriter.editPlanCount(archivePath, addSources);
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: addSources,
+              conflicts: const [],
+            ),
+          );
+        } else if (msg is ExecuteCommand) {
+          executeEdit().catchError((e, st) {
             mainSendPort.send(
               TaskDoneMessage(
                 cancelled: cancelled,

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:signals/signals.dart';
+import '../../core/archive/archive_path.dart';
+import '../../core/archive/archive_reader.dart';
 import '../../core/models/file_entry.dart';
 import '../../core/clipboard/file_clipboard.dart';
 import '../../core/fs/file_sort.dart';
@@ -391,7 +393,7 @@ class NavigationStore {
     }
     final parent = PlatformPaths.parentOf(currentPath.value);
     if (parent != currentPath.value &&
-        await FileSystemService.directoryExists(parent)) {
+        await FileSystemService.isNavigable(parent)) {
       navigateTo(parent);
     }
   }
@@ -420,9 +422,13 @@ class NavigationStore {
       if (token != _loadToken) return;
       batch(() {
         files.value = [];
-        loadError.value = e is FileSystemException
-            ? (e.message.isNotEmpty ? e.message : e.toString())
-            : e.toString();
+        loadError.value = switch (e) {
+          ArchiveUnavailableException() => t.errors.archiveUnavailable,
+          ArchiveReadException() => t.errors.archiveError,
+          FileSystemException(:final message) =>
+            message.isNotEmpty ? message : e.toString(),
+          _ => e.toString(),
+        };
         isLoading.value = false;
       });
       _watcher.stop();
@@ -570,6 +576,21 @@ class NavigationStore {
 
     if (oldPath == kPendingCreatePath) {
       _commitCreate(trimmed);
+      return;
+    }
+
+    final renameLoc = ArchivePath.resolve(oldPath);
+    if (renameLoc != null && !renameLoc.isRoot) {
+      operationStore.enqueueArchiveEdit(
+        archivePath: renameLoc.archivePath,
+        displayDir: currentPath.value,
+        renameFromInner: renameLoc.innerPath,
+        renameToName: trimmed,
+      );
+      batch(() {
+        renamingPath.value = null;
+        renameError.value = null;
+      });
       return;
     }
 
@@ -743,12 +764,23 @@ class NavigationStore {
     selectedPaths.value = {path};
   }
 
-  void onOpen(FileEntry entry) {
+  void onOpen(FileEntry entry) => _openEntry(entry);
+
+  void _openEntry(FileEntry entry) {
     if (entry.type == FileItemType.folder) {
       navigateTo(entry.path);
-    } else {
-      FileSystemService.openWithDefaultApp(entry.realPath);
+      return;
     }
+    final loc = ArchivePath.resolve(entry.path);
+    if (loc != null) {
+      if (loc.isRoot) {
+        navigateTo(entry.path);
+      } else {
+        FileSystemService.openArchiveEntry(loc);
+      }
+      return;
+    }
+    FileSystemService.openWithDefaultApp(entry.realPath);
   }
 
   void openSelected() {
@@ -764,11 +796,7 @@ class NavigationStore {
       }
     }
     if (entry == null) return;
-    if (entry.type == FileItemType.folder) {
-      navigateTo(entry.path);
-    } else {
-      FileSystemService.openWithDefaultApp(entry.realPath);
-    }
+    _openEntry(entry);
   }
 
   void selectAll() {
@@ -835,6 +863,20 @@ class NavigationStore {
       cursorIndex.value = -1;
       anchorIndex.value = -1;
     });
+    final archiveLoc = ArchivePath.resolve(currentPath.value);
+    if (archiveLoc != null) {
+      final inner = <String>[];
+      for (final e in entries) {
+        final loc = ArchivePath.resolve(e.path);
+        if (loc != null && !loc.isRoot) inner.add(loc.innerPath);
+      }
+      operationStore.enqueueArchiveEdit(
+        archivePath: archiveLoc.archivePath,
+        displayDir: currentPath.value,
+        deleteInner: inner,
+      );
+      return;
+    }
     final useTrash =
         toTrash ?? SettingsStore.instance.deleteKeyBehavior.value == 'trash';
     if (useTrash) {
@@ -898,6 +940,16 @@ class NavigationStore {
       return true;
     }).toList();
     if (filtered.isEmpty) return;
+    final archiveLoc = ArchivePath.resolve(destination);
+    if (archiveLoc != null) {
+      operationStore.enqueueArchiveEdit(
+        archivePath: archiveLoc.archivePath,
+        displayDir: destination,
+        addSources: filtered,
+        addInner: archiveLoc.innerPath,
+      );
+      return;
+    }
     if (move) {
       operationStore.enqueueMove(filtered, destination);
     } else {
@@ -936,6 +988,23 @@ class NavigationStore {
         batch(() {
           clipboardPaths.value = {};
           clipboardMode.value = ClipboardMode.copy;
+        });
+      }
+      return;
+    }
+
+    final archiveLoc = ArchivePath.resolve(currentPath.value);
+    if (archiveLoc != null) {
+      operationStore.enqueueArchiveEdit(
+        archivePath: archiveLoc.archivePath,
+        displayDir: currentPath.value,
+        addSources: filteredPaths,
+        addInner: archiveLoc.innerPath,
+      );
+      if (isCut && samePaths) {
+        batch(() {
+          clipboardPaths.value = {};
+          clipboardMode.value = null;
         });
       }
       return;

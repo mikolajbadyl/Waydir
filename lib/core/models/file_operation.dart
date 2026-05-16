@@ -2,7 +2,7 @@ import 'package:path/path.dart' as p;
 import '../../i18n/strings.g.dart';
 import '../../utils/format.dart';
 
-enum TaskType { copy, move, delete, trash }
+enum TaskType { copy, move, delete, trash, extract, compress, archiveEdit }
 
 enum TaskStatus {
   queued,
@@ -50,6 +50,7 @@ class FileTask {
   final TaskType type;
   final List<String> sources;
   final String? destination;
+  final Map<String, String> options;
 
   TaskStatus status;
   double progress;
@@ -74,6 +75,7 @@ class FileTask {
     required this.type,
     required this.sources,
     this.destination,
+    this.options = const {},
     this.status = TaskStatus.queued,
     this.progress = 0.0,
     this.totalFiles = 0,
@@ -111,6 +113,14 @@ class TaskLabel {
         name: p.basename(task.sources.first),
       ),
       TaskType.trash => t.tasks.trashingMultiple(count: count),
+      TaskType.extract when count == 1 => t.tasks.extractingSingle(
+        name: p.basename(task.sources.first),
+      ),
+      TaskType.extract => t.tasks.extractingMultiple(count: count),
+      TaskType.compress => t.tasks.compressingTo(
+        name: p.basename(task.destination ?? ''),
+      ),
+      TaskType.archiveEdit => t.tasks.updatingArchive,
     };
   }
 
@@ -206,8 +216,14 @@ class StartCommand extends CommandMessage {
   final TaskType type;
   final List<String> sources;
   final String? destination;
+  final Map<String, String> options;
 
-  StartCommand({required this.type, required this.sources, this.destination});
+  StartCommand({
+    required this.type,
+    required this.sources,
+    this.destination,
+    this.options = const {},
+  });
 }
 
 class ExecuteCommand extends CommandMessage {

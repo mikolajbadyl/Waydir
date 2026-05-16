@@ -78,9 +78,25 @@ class OperationStore {
   final _conflictQueues = <String, List<ConflictInfo>>{};
   final _conflictNotifIds = <String, String>{};
 
-  void enqueueCopy(List<String> sources, String destination) {
+  void enqueueCopy(List<String> sources, String destination) =>
+      _enqueueTransfer(TaskType.copy, sources, destination);
+
+  void enqueueMove(List<String> sources, String destination) =>
+      _enqueueTransfer(TaskType.move, sources, destination);
+
+  Future<void> _enqueueTransfer(
+    TaskType type,
+    List<String> sources,
+    String destination,
+  ) async {
+    final List<String> resolved;
+    try {
+      resolved = await FileSystemService.materializeArchiveSources(sources);
+    } catch (_) {
+      return;
+    }
     final sep = PlatformPaths.separator;
-    final filtered = sources.where((s) {
+    final filtered = resolved.where((s) {
       final name = PlatformPaths.fileName(s);
       final dst = '$destination$sep$name';
       return s != dst;
@@ -89,26 +105,7 @@ class OperationStore {
 
     final task = FileTask(
       id: '${_idCounter++}',
-      type: TaskType.copy,
-      sources: filtered,
-      destination: destination,
-      startTime: DateTime.now(),
-    );
-    _enqueue(task);
-  }
-
-  void enqueueMove(List<String> sources, String destination) {
-    final sep = PlatformPaths.separator;
-    final filtered = sources.where((s) {
-      final name = PlatformPaths.fileName(s);
-      final dst = '$destination$sep$name';
-      return s != dst;
-    }).toList();
-    if (filtered.isEmpty) return;
-
-    final task = FileTask(
-      id: '${_idCounter++}',
-      type: TaskType.move,
+      type: type,
       sources: filtered,
       destination: destination,
       startTime: DateTime.now(),
@@ -135,6 +132,67 @@ class OperationStore {
       id: '${_idCounter++}',
       type: TaskType.trash,
       sources: sources,
+      startTime: DateTime.now(),
+    );
+    _enqueue(task);
+  }
+
+  void enqueueExtract(List<String> sources, String destination) {
+    if (sources.isEmpty) return;
+
+    final task = FileTask(
+      id: '${_idCounter++}',
+      type: TaskType.extract,
+      sources: sources,
+      destination: destination,
+      startTime: DateTime.now(),
+    );
+    _enqueue(task);
+  }
+
+  void enqueueCompress(
+    List<String> sources,
+    String destination, {
+    required String format,
+    required String level,
+  }) {
+    if (sources.isEmpty) return;
+
+    final task = FileTask(
+      id: '${_idCounter++}',
+      type: TaskType.compress,
+      sources: sources,
+      destination: destination,
+      options: {'format': format, 'level': level},
+      startTime: DateTime.now(),
+    );
+    _enqueue(task);
+  }
+
+  void enqueueArchiveEdit({
+    required String archivePath,
+    required String displayDir,
+    List<String> addSources = const [],
+    String addInner = '',
+    List<String> deleteInner = const [],
+    String? renameFromInner,
+    String? renameToName,
+  }) {
+    if (addSources.isEmpty && deleteInner.isEmpty && renameFromInner == null) {
+      return;
+    }
+    final task = FileTask(
+      id: '${_idCounter++}',
+      type: TaskType.archiveEdit,
+      sources: addSources,
+      destination: displayDir,
+      options: {
+        'archive': archivePath,
+        'addInner': addInner,
+        'deleteInner': deleteInner.join('\n'),
+        'renameFrom': ?renameFromInner,
+        'renameTo': ?renameToName,
+      },
       startTime: DateTime.now(),
     );
     _enqueue(task);
@@ -269,6 +327,12 @@ class OperationStore {
         entryPoint = FileSystemService.deleteWorker;
       case TaskType.trash:
         entryPoint = FileSystemService.trashWorker;
+      case TaskType.extract:
+        entryPoint = FileSystemService.extractWorker;
+      case TaskType.compress:
+        entryPoint = FileSystemService.compressWorker;
+      case TaskType.archiveEdit:
+        entryPoint = FileSystemService.archiveEditWorker;
     }
 
     try {
@@ -280,6 +344,7 @@ class OperationStore {
           type: task.type,
           sources: task.sources,
           destination: task.destination,
+          options: task.options,
         ),
       );
 
@@ -554,6 +619,12 @@ class OperationStore {
         return PhosphorIconsRegular.trash;
       case TaskType.trash:
         return PhosphorIconsRegular.trashSimple;
+      case TaskType.extract:
+        return PhosphorIconsRegular.archive;
+      case TaskType.compress:
+        return PhosphorIconsRegular.fileZip;
+      case TaskType.archiveEdit:
+        return PhosphorIconsRegular.archive;
     }
   }
 

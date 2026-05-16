@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Archive support: browse, extract, compress, and edit archives (ZIP, TAR, 7z, RAR, and more) like regular folders.
 - File preview with Space (Quick Look) for images, text, and code.
 - Open files with a chosen app and manage default apps per file type.
 - Sidebar bookmarks.
