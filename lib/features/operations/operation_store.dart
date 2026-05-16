@@ -78,9 +78,25 @@ class OperationStore {
   final _conflictQueues = <String, List<ConflictInfo>>{};
   final _conflictNotifIds = <String, String>{};
 
-  void enqueueCopy(List<String> sources, String destination) {
+  void enqueueCopy(List<String> sources, String destination) =>
+      _enqueueTransfer(TaskType.copy, sources, destination);
+
+  void enqueueMove(List<String> sources, String destination) =>
+      _enqueueTransfer(TaskType.move, sources, destination);
+
+  Future<void> _enqueueTransfer(
+    TaskType type,
+    List<String> sources,
+    String destination,
+  ) async {
+    final List<String> resolved;
+    try {
+      resolved = await FileSystemService.materializeArchiveSources(sources);
+    } catch (_) {
+      return;
+    }
     final sep = PlatformPaths.separator;
-    final filtered = sources.where((s) {
+    final filtered = resolved.where((s) {
       final name = PlatformPaths.fileName(s);
       final dst = '$destination$sep$name';
       return s != dst;
@@ -89,26 +105,7 @@ class OperationStore {
 
     final task = FileTask(
       id: '${_idCounter++}',
-      type: TaskType.copy,
-      sources: filtered,
-      destination: destination,
-      startTime: DateTime.now(),
-    );
-    _enqueue(task);
-  }
-
-  void enqueueMove(List<String> sources, String destination) {
-    final sep = PlatformPaths.separator;
-    final filtered = sources.where((s) {
-      final name = PlatformPaths.fileName(s);
-      final dst = '$destination$sep$name';
-      return s != dst;
-    }).toList();
-    if (filtered.isEmpty) return;
-
-    final task = FileTask(
-      id: '${_idCounter++}',
-      type: TaskType.move,
+      type: type,
       sources: filtered,
       destination: destination,
       startTime: DateTime.now(),

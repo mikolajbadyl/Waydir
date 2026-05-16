@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 import 'package:path/path.dart' as p;
+import '../archive/archive_path.dart';
 import '../models/file_entry.dart';
 import '../models/file_operation.dart';
 import '../open/open_service.dart';
@@ -68,11 +69,81 @@ class FileSystemService {
     }
   }
 
-  static Future<List<FileEntry>> listDirectory(String path) =>
-      FsWorkerPool.instance.listDirectory(path);
+  static Future<List<FileEntry>> listDirectory(String path) {
+    final loc = ArchivePath.resolve(path);
+    if (loc != null) {
+      return FsWorkerPool.instance.listArchive(loc.archivePath, loc.innerPath);
+    }
+    return FsWorkerPool.instance.listDirectory(path);
+  }
 
   static Future<bool> directoryExists(String path) =>
       FsWorkerPool.instance.directoryExists(path);
+
+  /// True when [path] can be entered as a folder: a real directory or any
+  /// location inside (or equal to) a supported archive file.
+  static Future<bool> isNavigable(String path) async {
+    if (ArchivePath.resolve(path) != null) return true;
+    return FsWorkerPool.instance.directoryExists(path);
+  }
+
+  /// True when [path] points inside an archive (not the archive file itself).
+  static bool isInsideArchive(String path) {
+    final loc = ArchivePath.resolve(path);
+    return loc != null && !loc.isRoot;
+  }
+
+  /// Replaces any archive-internal entries in [sources] with freshly
+  /// extracted real paths under a temporary staging directory, so existing
+  /// copy/move workers can treat them as ordinary files. Real paths and
+  /// archive files themselves pass through unchanged.
+  static Future<List<String>> materializeArchiveSources(
+    List<String> sources,
+  ) async {
+    if (!sources.any(isInsideArchive)) return sources;
+    final staging = Directory(
+      p.join(
+        Directory.systemTemp.path,
+        'waydir-archive-stage',
+        DateTime.now().microsecondsSinceEpoch.toString(),
+      ),
+    )..createSync(recursive: true);
+    final out = <String>[];
+    for (final s in sources) {
+      final loc = ArchivePath.resolve(s);
+      if (loc == null || loc.isRoot) {
+        out.add(s);
+        continue;
+      }
+      out.add(
+        await FsWorkerPool.instance.extractArchiveTree(
+          loc.archivePath,
+          loc.innerPath,
+          staging.path,
+        ),
+      );
+    }
+    return out;
+  }
+
+  /// Extracts an in-archive file to a temporary location and opens it with
+  /// the default application.
+  static Future<void> openArchiveEntry(ArchiveLocation loc) async {
+    final tempRoot = Directory(
+      p.join(Directory.systemTemp.path, 'waydir-archive'),
+    );
+    final dest = p.join(
+      tempRoot.path,
+      p.basename(loc.archivePath),
+      loc.innerPath,
+    );
+    await FsWorkerPool.instance.extractArchiveEntry(
+      loc.archivePath,
+      loc.innerPath,
+      dest,
+    );
+    await OpenService.openDefault(dest);
+  }
 
   static Future<bool> isDirectory(String path) =>
       FsWorkerPool.instance.isDirectory(path);

@@ -360,7 +360,9 @@
     "notFound": "File not found",
     "notEmpty": "Directory not empty",
     "crossDevice": "Cannot move across devices",
-    "appearedDuring": "File appeared at destination during operation"
+    "appearedDuring": "File appeared at destination during operation",
+    "archiveUnavailable": "Archive support is unavailable (libarchive not found)",
+    "archiveError": "Could not read archive"
   },
   "tasks": {
     "copyingSingle": "Copying $name",

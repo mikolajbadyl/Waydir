@@ -1,10 +1,22 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
+import '../archive/archive_reader.dart';
+import '../archive/archive_service.dart';
 import '../models/file_entry.dart';
 import '../platform/platform_paths.dart';
 
-enum _Op { list, exists, isDir, mkdir, delete, stat }
+enum _Op {
+  list,
+  exists,
+  isDir,
+  mkdir,
+  delete,
+  stat,
+  archiveList,
+  archiveExtract,
+  archiveExtractTree,
+}
 
 class _Request {
   final int id;
@@ -144,6 +156,25 @@ class FsWorkerPool {
 
   Future<FileEntry?> stat(String path) => _run<FileEntry?>(_Op.stat, [path]);
 
+  Future<List<FileEntry>> listArchive(String archivePath, String innerPath) =>
+      _run<List<FileEntry>>(_Op.archiveList, [archivePath, innerPath]);
+
+  Future<void> extractArchiveEntry(
+    String archivePath,
+    String innerPath,
+    String destPath,
+  ) => _run<void>(_Op.archiveExtract, [archivePath, innerPath, destPath]);
+
+  Future<String> extractArchiveTree(
+    String archivePath,
+    String innerPath,
+    String stagingDir,
+  ) => _run<String>(_Op.archiveExtractTree, [
+    archivePath,
+    innerPath,
+    stagingDir,
+  ]);
+
   void dispose() {
     _replySubscription?.cancel();
     _errorSubscription?.cancel();
@@ -242,6 +273,37 @@ class FsWorkerPool {
             ? Directory(path) as FileSystemEntity
             : (type == FileSystemEntityType.link ? Link(path) : File(path));
         return FileEntry.fromFileSystemEntity(entity);
+      case _Op.archiveList:
+        final archivePath = args[0] as String;
+        final innerPath = args[1] as String;
+        final modified = FileStat.statSync(archivePath).modified;
+        final all = ArchiveReader.listEntries(archivePath);
+        final entries = ArchiveService.levelEntries(
+          archivePath,
+          innerPath,
+          all,
+          modified,
+        );
+        entries.sort((a, b) {
+          if (a.type != b.type) {
+            return a.type == FileItemType.folder ? -1 : 1;
+          }
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+        return entries;
+      case _Op.archiveExtract:
+        ArchiveReader.extractEntry(
+          args[0] as String,
+          args[1] as String,
+          args[2] as String,
+        );
+        return null;
+      case _Op.archiveExtractTree:
+        return ArchiveReader.extractTree(
+          args[0] as String,
+          args[1] as String,
+          args[2] as String,
+        );
     }
   }
 
