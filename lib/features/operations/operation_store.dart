@@ -169,6 +169,35 @@ class OperationStore {
     _enqueue(task);
   }
 
+  void enqueueArchiveEdit({
+    required String archivePath,
+    required String displayDir,
+    List<String> addSources = const [],
+    String addInner = '',
+    List<String> deleteInner = const [],
+    String? renameFromInner,
+    String? renameToName,
+  }) {
+    if (addSources.isEmpty && deleteInner.isEmpty && renameFromInner == null) {
+      return;
+    }
+    final task = FileTask(
+      id: '${_idCounter++}',
+      type: TaskType.archiveEdit,
+      sources: addSources,
+      destination: displayDir,
+      options: {
+        'archive': archivePath,
+        'addInner': addInner,
+        'deleteInner': deleteInner.join('\n'),
+        'renameFrom': ?renameFromInner,
+        'renameTo': ?renameToName,
+      },
+      startTime: DateTime.now(),
+    );
+    _enqueue(task);
+  }
+
   void cancelTask(String id) {
     final task = tasks.value.firstWhereOrNull((t) => t.id == id);
     if (task == null) return;
@@ -302,6 +331,8 @@ class OperationStore {
         entryPoint = FileSystemService.extractWorker;
       case TaskType.compress:
         entryPoint = FileSystemService.compressWorker;
+      case TaskType.archiveEdit:
+        entryPoint = FileSystemService.archiveEditWorker;
     }
 
     try {
@@ -592,6 +623,8 @@ class OperationStore {
         return PhosphorIconsRegular.archive;
       case TaskType.compress:
         return PhosphorIconsRegular.fileZip;
+      case TaskType.archiveEdit:
+        return PhosphorIconsRegular.archive;
     }
   }
 

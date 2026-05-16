@@ -985,6 +985,9 @@ class TranslationsTasksEn {
 	/// en: 'Compressing to $name'
 	String compressingTo({required Object name}) => 'Compressing to ${name}';
 
+	/// en: 'Updating archive'
+	String get updatingArchive => 'Updating archive';
+
 	late final TranslationsTasksStatusEn status = TranslationsTasksStatusEn.internal(_root);
 }
 
@@ -1673,6 +1676,7 @@ extension on Translations {
 			'tasks.extractingSingle' => ({required Object name}) => 'Extracting ${name}',
 			'tasks.extractingMultiple' => ({required Object count}) => 'Extracting ${count} archives',
 			'tasks.compressingTo' => ({required Object name}) => 'Compressing to ${name}',
+			'tasks.updatingArchive' => 'Updating archive',
 			'tasks.status.waiting' => 'Waiting...',
 			'tasks.status.scanning' => 'Scanning files...',
 			'tasks.status.conflicts' => ({required Object count}) => '${count} conflicts',

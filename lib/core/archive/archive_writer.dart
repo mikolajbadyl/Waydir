@@ -5,7 +5,7 @@ import 'package:ffi/ffi.dart';
 import 'package:path/path.dart' as p;
 
 import 'archive_reader.dart'
-    show ArchiveReadException, ArchiveUnavailableException;
+    show ArchiveReadException, ArchiveUnavailableException, ArchiveReader;
 import 'libarchive_loader.dart';
 
 enum ArchiveFormat { zip, tar, tarGz, tarBz2, tarXz, sevenZip }
@@ -334,6 +334,109 @@ class ArchiveWriter {
       lib.writeFree(a);
       calloc.free(destPtr);
       calloc.free(buf);
+    }
+  }
+
+  static void _copyInto(String src, String destDir) {
+    final type = FileSystemEntity.typeSync(src);
+    final target = p.join(destDir, p.basename(src));
+    if (type == FileSystemEntityType.directory) {
+      Directory(target).createSync(recursive: true);
+      for (final e in Directory(src).listSync(followLinks: false)) {
+        _copyInto(e.path, target);
+      }
+    } else if (type == FileSystemEntityType.file) {
+      Directory(destDir).createSync(recursive: true);
+      File(src).copySync(target);
+    }
+  }
+
+  static int editPlanCount(String archivePath, List<String> addSources) {
+    var count = 0;
+    try {
+      count += ArchiveReader.listEntries(archivePath).length;
+    } catch (_) {}
+    count += planCount(addSources);
+    return count;
+  }
+
+  static void mutate(
+    String archivePath, {
+    List<String> addSources = const [],
+    String addInner = '',
+    List<String> deleteInner = const [],
+    String? renameFromInner,
+    String? renameToName,
+    void Function(String name)? onEntry,
+    bool Function()? isCancelled,
+  }) {
+    final format = archiveFormatFromName(archivePath);
+    if (format == null) {
+      throw const ArchiveReadException('unsupported archive format');
+    }
+    final work = Directory(
+      p.join(
+        Directory.systemTemp.path,
+        'waydir-archive-edit',
+        DateTime.now().microsecondsSinceEpoch.toString(),
+      ),
+    )..createSync(recursive: true);
+    final tree = Directory(p.join(work.path, 'tree'))
+      ..createSync(recursive: true);
+    final tmpArchive = p.join(work.path, p.basename(archivePath));
+    try {
+      ArchiveReader.extractAll(archivePath, tree.path);
+
+      for (final rel in deleteInner) {
+        final target = p.join(tree.path, rel);
+        final type = FileSystemEntity.typeSync(target);
+        if (type == FileSystemEntityType.directory) {
+          Directory(target).deleteSync(recursive: true);
+        } else if (type != FileSystemEntityType.notFound) {
+          File(target).deleteSync();
+        }
+      }
+
+      if (renameFromInner != null && renameToName != null) {
+        final from = p.join(tree.path, renameFromInner);
+        final to = p.join(p.dirname(from), renameToName);
+        final type = FileSystemEntity.typeSync(from);
+        if (type == FileSystemEntityType.directory) {
+          Directory(from).renameSync(to);
+        } else if (type != FileSystemEntityType.notFound) {
+          File(from).renameSync(to);
+        }
+      }
+
+      final innerDir = addInner.isEmpty
+          ? tree.path
+          : p.join(tree.path, addInner);
+      if (addSources.isNotEmpty) {
+        Directory(innerDir).createSync(recursive: true);
+        for (final s in addSources) {
+          if (isCancelled != null && isCancelled()) break;
+          _copyInto(s, innerDir);
+        }
+      }
+
+      final roots = tree
+          .listSync(followLinks: false)
+          .map((e) => e.path)
+          .toList();
+      create(
+        roots,
+        tmpArchive,
+        format,
+        CompressionLevel.normal,
+        onEntry: onEntry,
+        isCancelled: isCancelled,
+      );
+      if (isCancelled != null && isCancelled()) return;
+      File(tmpArchive).copySync(archivePath);
+    } finally {
+      try {
+        work.deleteSync(recursive: true);
+      } catch (_) {}
     }
   }
 }

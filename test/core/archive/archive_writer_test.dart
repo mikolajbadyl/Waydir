@@ -59,5 +59,33 @@ void main() {
         expect(File(back).readAsStringSync(), 'bbb');
       });
     }
+    test('mutate adds, deletes and renames inside an archive', () {
+      final zip = p.join(tmp.path, 'edit.zip');
+      ArchiveWriter.create(
+        [filePath, dirPath],
+        zip,
+        ArchiveFormat.zip,
+        CompressionLevel.normal,
+      );
+
+      final extra = p.join(tmp.path, 'extra.txt');
+      File(extra).writeAsStringSync('xtra');
+
+      ArchiveWriter.mutate(
+        zip,
+        addSources: [extra],
+        addInner: 'folder',
+        deleteInner: ['note.txt'],
+        renameFromInner: 'folder/a.txt',
+        renameToName: 'renamed.txt',
+      );
+
+      final paths = ArchiveReader.listEntries(zip).map((e) => e.path).toSet();
+      expect(paths.contains('note.txt'), isFalse);
+      expect(paths.contains('folder/extra.txt'), isTrue);
+      expect(paths.contains('folder/renamed.txt'), isTrue);
+      expect(paths.contains('folder/a.txt'), isFalse);
+      expect(paths.contains('folder/sub/b.txt'), isTrue);
+    });
   }, skip: available ? false : 'libarchive unavailable');
 }

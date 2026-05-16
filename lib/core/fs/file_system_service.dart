@@ -1273,6 +1273,113 @@ class FileSystemService {
     });
   }
 
+  static void archiveEditWorker(List<dynamic> args) {
+    final mainSendPort = args[0] as SendPort;
+    final workerReceivePort = ReceivePort();
+    mainSendPort.send(workerReceivePort.sendPort);
+
+    bool cancelled = false;
+    List<String> addSources = const [];
+    String archivePath = '';
+    String addInner = '';
+    List<String> deleteInner = const [];
+    String? renameFrom;
+    String? renameTo;
+    int totalFiles = 0;
+    final errors = <TaskError>[];
+    int processedFiles = 0;
+    var lastReport = DateTime.now();
+
+    void maybeReport(String currentFile) {
+      final now = DateTime.now();
+      if (now.difference(lastReport).inMilliseconds > 50 ||
+          processedFiles % 50 == 0) {
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
+        lastReport = now;
+      }
+    }
+
+    Future<void> executeEdit() async {
+      try {
+        ArchiveWriter.mutate(
+          archivePath,
+          addSources: addSources,
+          addInner: addInner,
+          deleteInner: deleteInner,
+          renameFromInner: renameFrom,
+          renameToName: renameTo,
+          isCancelled: () => cancelled,
+          onEntry: (name) {
+            processedFiles++;
+            maybeReport(name.split('/').last);
+          },
+        );
+      } catch (e) {
+        errors.add(TaskError(path: archivePath, message: e.toString()));
+        mainSendPort.send(
+          ErrorMessage(path: archivePath, message: e.toString()),
+        );
+      }
+      mainSendPort.send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+      workerReceivePort.close();
+    }
+
+    workerReceivePort.listen((msg) {
+      try {
+        if (msg is StartCommand) {
+          addSources = msg.sources;
+          archivePath = msg.options['archive'] ?? '';
+          addInner = msg.options['addInner'] ?? '';
+          final del = msg.options['deleteInner'] ?? '';
+          deleteInner = del.isEmpty ? const [] : del.split('\n');
+          renameFrom = msg.options['renameFrom'];
+          renameTo = msg.options['renameTo'];
+          totalFiles = ArchiveWriter.editPlanCount(archivePath, addSources);
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: addSources,
+              conflicts: const [],
+            ),
+          );
+        } else if (msg is ExecuteCommand) {
+          executeEdit().catchError((e, st) {
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
+            workerReceivePort.close();
+          });
+        } else if (msg is CancelCommand) {
+          cancelled = true;
+        }
+      } catch (e) {
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
+        workerReceivePort.close();
+      }
+    });
+  }
+
   static void _copyFileSync(File src, String dstPath) {
     SafeFileReplace.copyFile(src, dstPath);
   }

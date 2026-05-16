@@ -400,6 +400,7 @@
     "extractingMultiple(one)": "Extracting 1 archive",
     "extractingMultiple(other)": "Extracting $count archives",
     "compressingTo": "Compressing to $name",
+    "updatingArchive": "Updating archive",
     "status": {
       "waiting": "Waiting...",
       "scanning": "Scanning files...",

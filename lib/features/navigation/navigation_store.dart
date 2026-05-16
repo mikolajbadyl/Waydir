@@ -579,6 +579,21 @@ class NavigationStore {
       return;
     }
 
+    final renameLoc = ArchivePath.resolve(oldPath);
+    if (renameLoc != null && !renameLoc.isRoot) {
+      operationStore.enqueueArchiveEdit(
+        archivePath: renameLoc.archivePath,
+        displayDir: currentPath.value,
+        renameFromInner: renameLoc.innerPath,
+        renameToName: trimmed,
+      );
+      batch(() {
+        renamingPath.value = null;
+        renameError.value = null;
+      });
+      return;
+    }
+
     final result = FileSystemService.rename(oldPath, trimmed);
 
     switch (result) {
@@ -848,6 +863,20 @@ class NavigationStore {
       cursorIndex.value = -1;
       anchorIndex.value = -1;
     });
+    final archiveLoc = ArchivePath.resolve(currentPath.value);
+    if (archiveLoc != null) {
+      final inner = <String>[];
+      for (final e in entries) {
+        final loc = ArchivePath.resolve(e.path);
+        if (loc != null && !loc.isRoot) inner.add(loc.innerPath);
+      }
+      operationStore.enqueueArchiveEdit(
+        archivePath: archiveLoc.archivePath,
+        displayDir: currentPath.value,
+        deleteInner: inner,
+      );
+      return;
+    }
     final useTrash =
         toTrash ?? SettingsStore.instance.deleteKeyBehavior.value == 'trash';
     if (useTrash) {
@@ -911,6 +940,16 @@ class NavigationStore {
       return true;
     }).toList();
     if (filtered.isEmpty) return;
+    final archiveLoc = ArchivePath.resolve(destination);
+    if (archiveLoc != null) {
+      operationStore.enqueueArchiveEdit(
+        archivePath: archiveLoc.archivePath,
+        displayDir: destination,
+        addSources: filtered,
+        addInner: archiveLoc.innerPath,
+      );
+      return;
+    }
     if (move) {
       operationStore.enqueueMove(filtered, destination);
     } else {
@@ -949,6 +988,23 @@ class NavigationStore {
         batch(() {
           clipboardPaths.value = {};
           clipboardMode.value = ClipboardMode.copy;
+        });
+      }
+      return;
+    }
+
+    final archiveLoc = ArchivePath.resolve(currentPath.value);
+    if (archiveLoc != null) {
+      operationStore.enqueueArchiveEdit(
+        archivePath: archiveLoc.archivePath,
+        displayDir: currentPath.value,
+        addSources: filteredPaths,
+        addInner: archiveLoc.innerPath,
+      );
+      if (isCut && samePaths) {
+        batch(() {
+          clipboardPaths.value = {};
+          clipboardMode.value = null;
         });
       }
       return;

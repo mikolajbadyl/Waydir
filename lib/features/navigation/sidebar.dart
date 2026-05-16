@@ -748,6 +748,7 @@ class _SidebarOperationsButtonState extends State<_SidebarOperationsButton> {
       TaskType.trash => PhosphorIconsRegular.trashSimple,
       TaskType.extract => PhosphorIconsRegular.archive,
       TaskType.compress => PhosphorIconsRegular.fileZip,
+      TaskType.archiveEdit => PhosphorIconsRegular.archive,
     };
   }
 }

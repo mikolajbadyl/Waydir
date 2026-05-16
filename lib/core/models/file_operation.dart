@@ -2,7 +2,7 @@ import 'package:path/path.dart' as p;
 import '../../i18n/strings.g.dart';
 import '../../utils/format.dart';
 
-enum TaskType { copy, move, delete, trash, extract, compress }
+enum TaskType { copy, move, delete, trash, extract, compress, archiveEdit }
 
 enum TaskStatus {
   queued,
@@ -120,6 +120,7 @@ class TaskLabel {
       TaskType.compress => t.tasks.compressingTo(
         name: p.basename(task.destination ?? ''),
       ),
+      TaskType.archiveEdit => t.tasks.updatingArchive,
     };
   }
 
