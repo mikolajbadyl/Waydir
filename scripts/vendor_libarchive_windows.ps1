@@ -18,11 +18,17 @@ if ($env:VCPKG_ROOT) {
   $Candidates += Join-Path $env:VCPKG_ROOT "installed\x64-windows-release\bin"
 }
 
+$Candidates += "C:\vcpkg\installed\x64-windows\bin"
+$Candidates += "C:\vcpkg\installed\x64-windows-release\bin"
+$Candidates += "C:\vcpkg\packages\libarchive_x64-windows\bin"
+
 $MsysRoots = @("C:\msys64\ucrt64\bin", "C:\msys64\mingw64\bin")
 $Candidates += $MsysRoots
 
 $Copied = @()
+$Checked = @()
 foreach ($Dir in $Candidates) {
+  $Checked += $Dir
   if (!(Test-Path $Dir)) {
     continue
   }
@@ -40,6 +46,8 @@ foreach ($Dir in $Candidates) {
 }
 
 if (!($Copied | Where-Object { $_ -match "archive" })) {
+  Write-Host "Checked directories:"
+  $Checked | Sort-Object -Unique | ForEach-Object { Write-Host "  $_" }
   throw "libarchive DLL was not found. Pass -SourceDir or install libarchive with vcpkg/MSYS2."
 }
 
