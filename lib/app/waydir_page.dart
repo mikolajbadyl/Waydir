@@ -50,9 +50,7 @@ class _WaydirPageState extends State<WaydirPage> {
   final _focusNode = FocusNode();
   final _effectDisposers = <void Function()>[];
 
-  /// Maps the synthetic context-menu actions (`openwith:<id>`) to the resolved
-  /// application for the file the menu was opened on.
-  final Map<String, AppEntry> _openWithApps = {};
+  /// The file the "Open With…" chooser was opened on.
   FileEntry? _openWithEntry;
   final _renameErrorDisposers = <String, void Function()>{};
 
@@ -348,13 +346,8 @@ class _WaydirPageState extends State<WaydirPage> {
       return;
     }
 
-    // When a file has a resolvable opener the direct "Open With <App>" entry
-    // replaces the generic "Open" (which would do the same thing anyway).
-    final hasDirectOpen = openWithItems.isNotEmpty &&
-        openWithItems.first.action.startsWith('openwith:');
-
     final items = <ContextMenuItem>[
-      if (!hasDirectOpen)
+      if (!isSingleFile)
         ContextMenuItem(
           icon: PhosphorIconsRegular.folderOpen,
           label: count == 1 ? t.menu.open : t.menu.openItems(count: count),
@@ -449,62 +442,16 @@ class _WaydirPageState extends State<WaydirPage> {
     } catch (_) {
       return const [];
     }
-    _openWithApps.clear();
     _openWithEntry = entry;
 
-    final children = <ContextMenuItem>[];
-    final seen = <String>{};
-
-    void addApp(AppEntry app) {
-      if (!seen.add(app.id)) return;
-      final key = 'openwith:${app.id}';
-      _openWithApps[key] = app;
-      children.add(
-        ContextMenuItem(
-          icon: app.isDefault
-              ? PhosphorIconsRegular.star
-              : PhosphorIconsRegular.appWindow,
-          label: app.name,
-          action: key,
-          iconPath: app.iconPath,
-        ),
-      );
-    }
-
-    final def = options.defaultApp;
-    if (def != null) addApp(def);
-    for (final a in options.recent) {
-      addApp(a);
-    }
-    for (final a in options.associated) {
-      addApp(a);
-    }
-    if (children.isNotEmpty) children.add(ContextMenuItem.divider);
-    children.add(
-      ContextMenuItem(
-        icon: PhosphorIconsRegular.dotsThreeOutline,
-        label: t.menu.openWithChoose,
-        action: 'open_with_choose',
-      ),
+    final chooser = ContextMenuItem(
+      icon: PhosphorIconsRegular.dotsThreeOutline,
+      label: t.menu.openWithChoose,
+      action: 'open_with_choose',
     );
 
-    final submenu = ContextMenuItem(
-      icon: PhosphorIconsRegular.appWindow,
-      label: t.menu.openWith,
-      action: 'open_with',
-      children: children,
-    );
-
-    // The direct "Open With <DefaultApp>" entry must behave *identically* to
-    // double-click / Enter, so it routes through the same 'open' action
-    // (system default open). The resolver only supplies the display name/icon.
-    final preferred = options.defaultApp ??
-        (options.recent.isNotEmpty
-            ? options.recent.first
-            : (options.associated.isNotEmpty
-                  ? options.associated.first
-                  : null));
-    if (preferred == null) return [submenu];
+    final preferred = options.defaultApp;
+    if (preferred == null) return [chooser];
     return [
       ContextMenuItem(
         icon: PhosphorIconsRegular.appWindow,
@@ -512,20 +459,12 @@ class _WaydirPageState extends State<WaydirPage> {
         action: 'open',
         iconPath: preferred.iconPath,
       ),
-      submenu,
+      chooser,
     ];
   }
 
   void _handleMenuAction(String action) {
     final store = _active;
-    if (action.startsWith('openwith:')) {
-      final app = _openWithApps[action];
-      final entry = _openWithEntry;
-      if (app != null && entry != null) {
-        OpenService.openWith(app, [entry.realPath]);
-      }
-      return;
-    }
     switch (action) {
       case 'open':
         store.openSelected();

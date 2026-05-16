@@ -358,8 +358,56 @@ class WindowsAppResolver implements AppResolver {
     return list;
   }
 
+  List<AppEntry>? _allCache;
+
   @override
-  Future<List<AppEntry>> allApps() async => const [];
+  Future<List<AppEntry>> allApps() async {
+    if (_allCache != null) return _allCache!;
+    final apps = <String, AppEntry>{};
+    final programData = Platform.environment['ProgramData'] ?? '';
+    final appData = Platform.environment['APPDATA'] ?? '';
+    final dirs = [
+      if (programData.isNotEmpty)
+        p.join(programData,
+            r'Microsoft\Windows\Start Menu\Programs'),
+      if (appData.isNotEmpty)
+        p.join(appData, r'Microsoft\Windows\Start Menu\Programs'),
+    ].where((d) => Directory(d).existsSync()).toList();
+    if (dirs.isEmpty) return _allCache = const [];
+
+    final dirList = dirs.map((d) => "'${d.replaceAll("'", "''")}'").join(',');
+    final script =
+        r'$sh=New-Object -ComObject WScript.Shell;'
+        'Get-ChildItem -Path $dirList -Recurse -Filter *.lnk '
+        r'-ErrorAction SilentlyContinue | ForEach-Object {'
+        r'$t=$sh.CreateShortcut($_.FullName).TargetPath;'
+        r'if($t -and $t.ToLower().EndsWith(".exe")){'
+        r'"$($_.BaseName)|$t"}}';
+    try {
+      final r = await Process.run('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        script,
+      ]);
+      if (r.exitCode == 0) {
+        for (final line in (r.stdout as String).split('\n')) {
+          final parts = line.trim().split('|');
+          if (parts.length != 2) continue;
+          final name = parts[0].trim();
+          final exe = parts[1].trim();
+          if (name.isEmpty || exe.isEmpty || !File(exe).existsSync()) continue;
+          apps.putIfAbsent(
+            exe,
+            () => AppEntry(id: exe, name: name, exec: exe),
+          );
+        }
+      }
+    } catch (_) {}
+    final list = apps.values.toList()
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    return _allCache = list;
+  }
 
   @override
   Future<AppEntry?> defaultFor(MimeType mime, String path) async {
