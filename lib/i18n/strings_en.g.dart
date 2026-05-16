@@ -42,6 +42,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	// Translations
 	late final TranslationsAppEn app = TranslationsAppEn.internal(_root);
 	late final TranslationsMenuEn menu = TranslationsMenuEn.internal(_root);
+	late final TranslationsCompressEn compress = TranslationsCompressEn.internal(_root);
 	late final TranslationsPropertiesEn properties = TranslationsPropertiesEn.internal(_root);
 	late final TranslationsPreferencesEn preferences = TranslationsPreferencesEn.internal(_root);
 	late final TranslationsAppMenuEn appMenu = TranslationsAppMenuEn.internal(_root);
@@ -172,6 +173,54 @@ class TranslationsMenuEn {
 
 	/// en: 'Extract Each to Its Own Folder'
 	String get extractEach => 'Extract Each to Its Own Folder';
+
+	/// en: 'Compress'
+	String get compress => 'Compress';
+
+	/// en: 'Compress to $name'
+	String compressTo({required Object name}) => 'Compress to ${name}';
+
+	/// en: 'Add to Archive…'
+	String get compressOptions => 'Add to Archive…';
+}
+
+// Path: compress
+class TranslationsCompressEn {
+	TranslationsCompressEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Add to Archive'
+	String get title => 'Add to Archive';
+
+	/// en: 'Archive name'
+	String get archiveName => 'Archive name';
+
+	/// en: 'Format'
+	String get format => 'Format';
+
+	/// en: 'Compression'
+	String get level => 'Compression';
+
+	/// en: 'Destination'
+	String get destination => 'Destination';
+
+	/// en: 'Store (no compression)'
+	String get levelStore => 'Store (no compression)';
+
+	/// en: 'Normal'
+	String get levelNormal => 'Normal';
+
+	/// en: 'Maximum'
+	String get levelMaximum => 'Maximum';
+
+	/// en: 'Create'
+	String get create => 'Create';
+
+	/// en: 'Cancel'
+	String get cancel => 'Cancel';
 }
 
 // Path: properties
@@ -933,6 +982,9 @@ class TranslationsTasksEn {
 	/// en: 'Extracting $count archives'
 	String extractingMultiple({required Object count}) => 'Extracting ${count} archives';
 
+	/// en: 'Compressing to $name'
+	String compressingTo({required Object name}) => 'Compressing to ${name}';
+
 	late final TranslationsTasksStatusEn status = TranslationsTasksStatusEn.internal(_root);
 }
 
@@ -1338,6 +1390,19 @@ extension on Translations {
 			'menu.extractHere' => 'Extract Here',
 			'menu.extractToFolder' => ({required Object name}) => 'Extract to ${name}/',
 			'menu.extractEach' => 'Extract Each to Its Own Folder',
+			'menu.compress' => 'Compress',
+			'menu.compressTo' => ({required Object name}) => 'Compress to ${name}',
+			'menu.compressOptions' => 'Add to Archive…',
+			'compress.title' => 'Add to Archive',
+			'compress.archiveName' => 'Archive name',
+			'compress.format' => 'Format',
+			'compress.level' => 'Compression',
+			'compress.destination' => 'Destination',
+			'compress.levelStore' => 'Store (no compression)',
+			'compress.levelNormal' => 'Normal',
+			'compress.levelMaximum' => 'Maximum',
+			'compress.create' => 'Create',
+			'compress.cancel' => 'Cancel',
 			'properties.title' => 'Properties',
 			'properties.name' => 'Name',
 			'properties.type' => 'Type',
@@ -1607,6 +1672,7 @@ extension on Translations {
 			'tasks.trashingMultiple' => ({required Object count}) => 'Moving ${count} items to Trash',
 			'tasks.extractingSingle' => ({required Object name}) => 'Extracting ${name}',
 			'tasks.extractingMultiple' => ({required Object count}) => 'Extracting ${count} archives',
+			'tasks.compressingTo' => ({required Object name}) => 'Compressing to ${name}',
 			'tasks.status.waiting' => 'Waiting...',
 			'tasks.status.scanning' => 'Scanning files...',
 			'tasks.status.conflicts' => ({required Object count}) => '${count} conflicts',

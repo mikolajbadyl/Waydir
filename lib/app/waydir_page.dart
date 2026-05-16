@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import '../core/archive/archive_path.dart';
+import '../core/archive/archive_writer.dart';
 import '../core/fs/file_system_service.dart';
 import '../core/open/open_service.dart';
 import '../core/keyboard/keyboard_shortcuts.dart';
@@ -22,6 +23,7 @@ import '../features/settings/preferences_view.dart';
 import '../i18n/strings.g.dart';
 import '../ui/chrome/title_bar.dart';
 import '../ui/dialogs/dialog.dart';
+import '../ui/dialogs/compress_dialog.dart';
 import '../ui/dialogs/open_with_dialog.dart';
 import '../ui/dialogs/properties_dialog.dart';
 import '../ui/overlays/command_palette.dart';
@@ -329,6 +331,40 @@ class _WaydirPageState extends State<WaydirPage> {
         .toList();
     final canExtract =
         archiveEntries.isNotEmpty && archiveEntries.length == count;
+    final canCompress =
+        entries.isNotEmpty &&
+        entries.every((e) => !FileSystemService.isInsideArchive(e.path));
+    final compressBase = count == 1
+        ? (entries.first.type == FileItemType.folder
+              ? entries.first.name
+              : p.basenameWithoutExtension(entries.first.name))
+        : p.basename(store.currentPath.value);
+    final compressItem = canCompress
+        ? ContextMenuItem(
+            icon: PhosphorIconsRegular.fileZip,
+            label: t.menu.compress,
+            action: 'compress',
+            children: [
+              ContextMenuItem(
+                icon: PhosphorIconsRegular.fileZip,
+                label: t.menu.compressTo(name: '$compressBase.zip'),
+                action: 'compress_zip',
+              ),
+              ContextMenuItem(
+                icon: PhosphorIconsRegular.fileZip,
+                label: t.menu.compressTo(name: '$compressBase.tar.gz'),
+                action: 'compress_targz',
+              ),
+              ContextMenuItem.divider,
+              ContextMenuItem(
+                icon: PhosphorIconsRegular.slidersHorizontal,
+                label: t.menu.compressOptions,
+                action: 'compress_options',
+              ),
+            ],
+          )
+        : null;
+
     final extractItem = canExtract
         ? ContextMenuItem(
             icon: PhosphorIconsRegular.archive,
@@ -392,6 +428,7 @@ class _WaydirPageState extends State<WaydirPage> {
         ),
       ...openWithItems,
       ?extractItem,
+      ?compressItem,
       if (isRecursive && count == 1)
         ContextMenuItem(
           icon: PhosphorIconsRegular.arrowSquareOut,
@@ -556,6 +593,12 @@ class _WaydirPageState extends State<WaydirPage> {
             message: t.toast.cutItems(count: count),
           );
         }
+      case 'compress_zip':
+        _quickCompress(ArchiveFormat.zip);
+      case 'compress_targz':
+        _quickCompress(ArchiveFormat.tarGz);
+      case 'compress_options':
+        _compressWithOptions();
       case 'extract_here':
         _extractSelected(toOwnFolder: false);
       case 'extract_to_folder':
@@ -598,6 +641,63 @@ class _WaydirPageState extends State<WaydirPage> {
           ).then((_) => _restoreFocus());
         }
     }
+  }
+
+  List<String> _compressSources() {
+    return _active.selectedEntries
+        .where((e) => !FileSystemService.isInsideArchive(e.path))
+        .map((e) => e.path)
+        .toList();
+  }
+
+  String _compressBaseName() {
+    final store = _active;
+    final entries = store.selectedEntries;
+    if (entries.length == 1) {
+      final e = entries.first;
+      return e.type == FileItemType.folder
+          ? e.name
+          : p.basenameWithoutExtension(e.name);
+    }
+    return p.basename(store.currentPath.value);
+  }
+
+  void _quickCompress(ArchiveFormat format) {
+    final store = _active;
+    final sources = _compressSources();
+    if (sources.isEmpty) return;
+    final dest = FileSystemService.uniquePath(
+      p.join(
+        store.currentPath.value,
+        '${_compressBaseName()}.${format.extension}',
+      ),
+    );
+    store.operationStore.enqueueCompress(
+      sources,
+      dest,
+      format: format.name,
+      level: CompressionLevel.normal.name,
+    );
+  }
+
+  Future<void> _compressWithOptions() async {
+    final store = _active;
+    final sources = _compressSources();
+    if (sources.isEmpty) return;
+    final dir = store.currentPath.value;
+    final req = await showCompressDialog(
+      context: context,
+      defaultBaseName: _compressBaseName(),
+      destinationDir: dir,
+    );
+    if (req == null) return;
+    final dest = FileSystemService.uniquePath(p.join(dir, req.fileName));
+    store.operationStore.enqueueCompress(
+      sources,
+      dest,
+      format: req.format.name,
+      level: req.level.name,
+    );
   }
 
   void _extractSelected({required bool toOwnFolder}) {

@@ -150,6 +150,25 @@ class OperationStore {
     _enqueue(task);
   }
 
+  void enqueueCompress(
+    List<String> sources,
+    String destination, {
+    required String format,
+    required String level,
+  }) {
+    if (sources.isEmpty) return;
+
+    final task = FileTask(
+      id: '${_idCounter++}',
+      type: TaskType.compress,
+      sources: sources,
+      destination: destination,
+      options: {'format': format, 'level': level},
+      startTime: DateTime.now(),
+    );
+    _enqueue(task);
+  }
+
   void cancelTask(String id) {
     final task = tasks.value.firstWhereOrNull((t) => t.id == id);
     if (task == null) return;
@@ -281,6 +300,8 @@ class OperationStore {
         entryPoint = FileSystemService.trashWorker;
       case TaskType.extract:
         entryPoint = FileSystemService.extractWorker;
+      case TaskType.compress:
+        entryPoint = FileSystemService.compressWorker;
     }
 
     try {
@@ -292,6 +313,7 @@ class OperationStore {
           type: task.type,
           sources: task.sources,
           destination: task.destination,
+          options: task.options,
         ),
       );
 
@@ -568,6 +590,8 @@ class OperationStore {
         return PhosphorIconsRegular.trashSimple;
       case TaskType.extract:
         return PhosphorIconsRegular.archive;
+      case TaskType.compress:
+        return PhosphorIconsRegular.fileZip;
     }
   }
 

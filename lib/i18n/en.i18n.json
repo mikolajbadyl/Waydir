@@ -37,7 +37,22 @@
     "extract": "Extract",
     "extractHere": "Extract Here",
     "extractToFolder": "Extract to $name/",
-    "extractEach": "Extract Each to Its Own Folder"
+    "extractEach": "Extract Each to Its Own Folder",
+    "compress": "Compress",
+    "compressTo": "Compress to $name",
+    "compressOptions": "Add to Archive…"
+  },
+  "compress": {
+    "title": "Add to Archive",
+    "archiveName": "Archive name",
+    "format": "Format",
+    "level": "Compression",
+    "destination": "Destination",
+    "levelStore": "Store (no compression)",
+    "levelNormal": "Normal",
+    "levelMaximum": "Maximum",
+    "create": "Create",
+    "cancel": "Cancel"
   },
   "properties": {
     "title": "Properties",
@@ -384,6 +399,7 @@
     "extractingSingle": "Extracting $name",
     "extractingMultiple(one)": "Extracting 1 archive",
     "extractingMultiple(other)": "Extracting $count archives",
+    "compressingTo": "Compressing to $name",
     "status": {
       "waiting": "Waiting...",
       "scanning": "Scanning files...",

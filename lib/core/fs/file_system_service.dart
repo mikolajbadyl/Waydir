@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:path/path.dart' as p;
 import '../archive/archive_path.dart';
 import '../archive/archive_reader.dart';
+import '../archive/archive_writer.dart';
 import '../models/file_entry.dart';
 import '../models/file_operation.dart';
 import '../open/open_service.dart';
@@ -1135,6 +1136,114 @@ class FileSystemService {
           );
         } else if (msg is ExecuteCommand) {
           executeExtract().catchError((e, st) {
+            mainSendPort.send(
+              TaskDoneMessage(
+                cancelled: cancelled,
+                errors: [
+                  ...errors,
+                  TaskError(path: '', message: e.toString()),
+                ],
+              ),
+            );
+            workerReceivePort.close();
+          });
+        } else if (msg is CancelCommand) {
+          cancelled = true;
+        }
+      } catch (e) {
+        mainSendPort.send(
+          TaskDoneMessage(
+            cancelled: cancelled,
+            errors: [
+              ...errors,
+              TaskError(path: '', message: e.toString()),
+            ],
+          ),
+        );
+        workerReceivePort.close();
+      }
+    });
+  }
+
+  static void compressWorker(List<dynamic> args) {
+    final mainSendPort = args[0] as SendPort;
+    final workerReceivePort = ReceivePort();
+    mainSendPort.send(workerReceivePort.sendPort);
+
+    bool cancelled = false;
+    List<String> sources = const [];
+    String? destination;
+    var format = ArchiveFormat.zip;
+    var level = CompressionLevel.normal;
+    int totalFiles = 0;
+    final errors = <TaskError>[];
+    int processedFiles = 0;
+    var lastReport = DateTime.now();
+
+    void maybeReport(String currentFile) {
+      final now = DateTime.now();
+      if (now.difference(lastReport).inMilliseconds > 50 ||
+          processedFiles % 50 == 0) {
+        mainSendPort.send(
+          ProgressMessage(
+            processedFiles: processedFiles,
+            processedBytes: 0,
+            currentFile: currentFile,
+          ),
+        );
+        lastReport = now;
+      }
+    }
+
+    Future<void> executeCompress() async {
+      try {
+        ArchiveWriter.create(
+          sources,
+          destination!,
+          format,
+          level,
+          isCancelled: () => cancelled,
+          onEntry: (name) {
+            processedFiles++;
+            maybeReport(name.split('/').last);
+          },
+        );
+      } catch (e) {
+        errors.add(TaskError(path: destination ?? '', message: e.toString()));
+        mainSendPort.send(
+          ErrorMessage(path: destination ?? '', message: e.toString()),
+        );
+      }
+      if (cancelled || errors.isNotEmpty) {
+        try {
+          final f = File(destination!);
+          if (f.existsSync()) f.deleteSync();
+        } catch (_) {}
+      }
+      mainSendPort.send(TaskDoneMessage(cancelled: cancelled, errors: errors));
+      workerReceivePort.close();
+    }
+
+    workerReceivePort.listen((msg) {
+      try {
+        if (msg is StartCommand) {
+          sources = msg.sources;
+          destination = msg.destination;
+          format = ArchiveFormat.values.byName(msg.options['format'] ?? 'zip');
+          level = CompressionLevel.values.byName(
+            msg.options['level'] ?? 'normal',
+          );
+          totalFiles = ArchiveWriter.planCount(sources);
+          mainSendPort.send(
+            PreScanResultMessage(
+              totalFiles: totalFiles,
+              totalBytes: null,
+              allPaths: sources,
+              conflicts: const [],
+            ),
+          );
+        } else if (msg is ExecuteCommand) {
+          executeCompress().catchError((e, st) {
             mainSendPort.send(
               TaskDoneMessage(
                 cancelled: cancelled,
