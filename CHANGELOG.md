@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - File preview with Space (Quick Look) for images, text, and code.
+- Open files with a chosen app and manage default apps per file type.
 - Sidebar bookmarks.
 - Preferences dialog with General, Appearance, and About sections.
 - Command palette opened with Ctrl+P for quick app actions.
