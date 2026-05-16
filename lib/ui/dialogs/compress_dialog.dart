@@ -6,6 +6,7 @@ import '../../i18n/strings.g.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_dropdown.dart';
+import 'dialog.dart';
 
 class CompressRequest {
   final String baseName;
@@ -155,23 +156,16 @@ class _CompressBodyState extends State<_CompressBody> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  t.compress.cancel,
-                  style: context.txt.row.copyWith(color: AppColors.fgMuted),
-                ),
+              DialogButton(
+                label: t.compress.cancel,
+                color: AppColors.fgMuted,
+                onTap: () => Navigator.of(context).pop(),
               ),
               const SizedBox(width: 8),
-              FilledButton(
-                onPressed: _submit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                ),
-                child: Text(
-                  t.compress.create,
-                  style: context.txt.rowEmphasis.copyWith(color: AppColors.bg),
-                ),
+              DialogButton(
+                label: t.compress.create,
+                color: AppColors.accent,
+                onTap: _submit,
               ),
             ],
           ),
