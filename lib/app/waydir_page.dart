@@ -451,16 +451,19 @@ class _WaydirPageState extends State<WaydirPage> {
     );
 
     final preferred = options.defaultApp;
-    if (preferred == null) return [chooser];
-    return [
-      ContextMenuItem(
-        icon: PhosphorIconsRegular.appWindow,
-        label: t.menu.openWithApp(app: preferred.name),
-        action: 'open',
-        iconPath: preferred.iconPath,
-      ),
-      chooser,
-    ];
+    final openItem = preferred == null
+        ? ContextMenuItem(
+            icon: PhosphorIconsRegular.folderOpen,
+            label: t.menu.open,
+            action: 'open',
+          )
+        : ContextMenuItem(
+            icon: PhosphorIconsRegular.appWindow,
+            label: t.menu.openWithApp(app: preferred.name),
+            action: 'open',
+            iconPath: preferred.iconPath,
+          );
+    return [openItem, chooser];
   }
 
   void _handleMenuAction(String action) {

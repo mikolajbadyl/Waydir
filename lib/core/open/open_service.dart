@@ -8,6 +8,7 @@ import '../settings/settings_store.dart';
 import 'app_entry.dart';
 import 'app_resolver.dart';
 import 'mime_resolver.dart';
+import 'typical_apps.dart';
 
 export 'app_entry.dart' show AppEntry;
 export 'mime_resolver.dart' show MimeType;
@@ -81,9 +82,11 @@ class OpenService {
           isDefault: true,
         );
       }
-      // Seed from the OS default the first time we see this type.
+      // Seed from the OS default the first time we see this type; if the OS
+      // has no resolvable handler, fall back to a typical app for the type.
       final mime = await _mime.resolve(path);
-      final osDefault = await _apps.defaultFor(mime, path);
+      final osDefault =
+          await _apps.defaultFor(mime, path) ?? TypicalApps.forPath(path);
       if (osDefault == null) return null;
       await db.setDefaultApp(
         typeKey: key,

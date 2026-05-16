@@ -51,12 +51,33 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
   }
 
   Future<_LoadedOptions> _load() async {
-    final options = await OpenService.optionsFor(widget.entry.realPath);
-    final all = await OpenService.allApps();
+    final path = widget.entry.realPath;
+    OpenWithOptions options;
+    try {
+      options = await OpenService.optionsFor(path).timeout(
+        const Duration(seconds: 10),
+      );
+    } catch (_) {
+      options = const OpenWithOptions(
+        mime: MimeType.unknown,
+        recent: [],
+        associated: [],
+        defaultApp: null,
+        isWaydirManaged: false,
+      );
+    }
+    List<AppEntry> all;
+    try {
+      all = await OpenService.allApps().timeout(const Duration(seconds: 12));
+    } catch (_) {
+      all = const [];
+    }
     _selected ??= options.defaultApp ??
         (options.associated.isNotEmpty
             ? options.associated.first
-            : (options.recent.isNotEmpty ? options.recent.first : null));
+            : (options.recent.isNotEmpty
+                  ? options.recent.first
+                  : (all.isNotEmpty ? all.first : null)));
     return _LoadedOptions(options, all);
   }
 
@@ -104,10 +125,21 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
       child: FutureBuilder<_LoadedOptions>(
         future: _future,
         builder: (context, snap) {
-          if (!snap.hasData) {
+          if (snap.connectionState != ConnectionState.done) {
             return const SizedBox(
               height: 160,
               child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          if (!snap.hasData) {
+            return SizedBox(
+              height: 120,
+              child: Center(
+                child: Text(
+                  t.openWith.noApps,
+                  style: context.txt.body.copyWith(color: AppColors.fgMuted),
+                ),
+              ),
             );
           }
           return _content(snap.data!);

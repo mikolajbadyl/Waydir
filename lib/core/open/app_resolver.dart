@@ -389,7 +389,7 @@ class WindowsAppResolver implements AppResolver {
         '-NonInteractive',
         '-Command',
         script,
-      ]);
+      ]).timeout(const Duration(seconds: 10));
       if (r.exitCode == 0) {
         for (final line in (r.stdout as String).split('\n')) {
           final parts = line.trim().split('|');
@@ -535,7 +535,7 @@ class WindowsAppResolver implements AppResolver {
       final r = await Process.run('reg', [
         'query',
         'HKCR\\$ext\\OpenWithProgids',
-      ]);
+      ]).timeout(const Duration(seconds: 5));
       if (r.exitCode != 0) return const [];
       return (r.stdout as String)
           .split('\n')
