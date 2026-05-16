@@ -62,18 +62,37 @@ class OpenService {
     }
   }
 
+  /// Waydir's stored default for [path]'s type. On first encounter with a type
+  /// the OS default handler is resolved and **persisted** as Waydir's default,
+  /// so from then on it is a concrete, editable mapping (shown in "Open With
+  /// [app]", preselected in the chooser, etc.) rather than an ephemeral
+  /// fallback. Returns null only when the OS has no resolvable handler either.
   static Future<AppEntry?> getWaydirDefault(String path) async {
     try {
       final key = await typeKeyFor(path);
-      final row = await SettingsStore.instance.db.getDefaultApp(key);
-      if (row == null) return null;
-      return AppEntry(
-        id: row.appId,
-        name: row.appName,
-        exec: row.appExec,
-        iconPath: row.iconPath,
-        isDefault: true,
+      final db = SettingsStore.instance.db;
+      final row = await db.getDefaultApp(key);
+      if (row != null) {
+        return AppEntry(
+          id: row.appId,
+          name: row.appName,
+          exec: row.appExec,
+          iconPath: row.iconPath,
+          isDefault: true,
+        );
+      }
+      // Seed from the OS default the first time we see this type.
+      final mime = await _mime.resolve(path);
+      final osDefault = await _apps.defaultFor(mime, path);
+      if (osDefault == null) return null;
+      await db.setDefaultApp(
+        typeKey: key,
+        appId: osDefault.id,
+        appName: osDefault.name,
+        appExec: osDefault.exec,
+        iconPath: osDefault.iconPath,
       );
+      return osDefault.copyWith(isDefault: true);
     } catch (_) {
       return null;
     }
@@ -101,19 +120,15 @@ class OpenService {
     final mime = await _mime.resolve(path);
     final associated = await _apps.appsFor(mime, path);
     final recent = await _recentFor(mime);
-    final waydirDefault = await getWaydirDefault(path);
-
-    final osDefault = associated
-        .where((a) => a.isDefault)
-        .cast<AppEntry?>()
-        .firstWhere((_) => true, orElse: () => null);
+    // Resolves and persists the OS default on first encounter.
+    final defaultApp = await getWaydirDefault(path);
 
     return OpenWithOptions(
       mime: mime,
       recent: recent,
       associated: associated,
-      defaultApp: waydirDefault ?? osDefault,
-      isWaydirManaged: waydirDefault != null,
+      defaultApp: defaultApp,
+      isWaydirManaged: defaultApp != null,
     );
   }
 
