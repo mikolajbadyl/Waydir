@@ -89,7 +89,7 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
       _error = null;
     });
     try {
-      if (_setDefault) {
+      if (_setDefault && Platform.isLinux) {
         await OpenService.setWaydirDefault(widget.entry.realPath, app);
       }
       await OpenService.openWith(app, [widget.entry.realPath]);
@@ -228,13 +228,15 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
                   ),
                 ),
         ),
-        const SizedBox(height: 12),
-        _DefaultCheckbox(
-          value: _setDefault,
-          enabled: true,
-          label: t.openWith.setDefault,
-          onChanged: (v) => setState(() => _setDefault = v),
-        ),
+        if (Platform.isLinux) ...[
+          const SizedBox(height: 12),
+          _DefaultCheckbox(
+            value: _setDefault,
+            enabled: true,
+            label: t.openWith.setDefault,
+            onChanged: (v) => setState(() => _setDefault = v),
+          ),
+        ],
         if (_error != null) ...[
           const SizedBox(height: 8),
           Text(
@@ -246,16 +248,6 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (Platform.isWindows) ...[
-              _TextButton(
-                label: t.openWith.moreApps,
-                onTap: () {
-                  OpenService.systemOpenWithDialog(widget.entry.realPath);
-                  Navigator.of(context).pop();
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
             _TextButton(
               label: t.dialog.cancel,
               onTap: () => Navigator.of(context).pop(),

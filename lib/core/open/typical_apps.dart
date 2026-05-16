@@ -2,50 +2,32 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import '../platform/win32_attributes.dart';
 import 'app_entry.dart';
 
-/// Built-in fallback: when the OS default handler cannot be resolved, pick a
-/// well-known application that is typical for the file's category on the
-/// current platform and actually installed. Keeps double-click working with a
-/// concrete, named app instead of nothing.
+/// Linux-only fallback: when `xdg-mime` resolves no default handler, pick a
+/// well-known app that is typical for the file's category and actually on
+/// PATH, so opening still lands in a concrete, named application.
+///
+/// Windows and macOS defer entirely to the OS, so they need no table here.
 class TypicalApps {
   TypicalApps._();
 
   static AppEntry? forPath(String path) {
-    final ext = p.extension(path).toLowerCase();
-    final cat = _categoryFor(ext);
+    if (!Platform.isLinux) return null;
+    final cat = _categoryFor(p.extension(path).toLowerCase());
     if (cat == null) return null;
-    // On Windows the sensible "typical" handler for a known type is whatever
-    // the OS itself uses (Photos for images, the system PDF viewer, etc.) —
-    // not a hardcoded app like Paint. We surface it under its OS-reported
-    // friendly name and launch it via the system shell.
-    if (Platform.isWindows) {
-      final friendly = assocQueryStringOnWindows(assocStrFriendlyAppName, ext);
-      return AppEntry.systemDefault(
-        (friendly != null && friendly.isNotEmpty)
-            ? friendly
-            : _genericName[cat]!,
-      );
-    }
-    final candidates = Platform.isMacOS ? _macos[cat] : _linux[cat];
-    if (candidates == null) return null;
-    for (final c in candidates) {
-      final exec = c.resolve();
-      if (exec != null) {
-        return AppEntry(id: c.id, name: c.name, exec: exec, isDefault: true);
+    for (final entry in (_linux[cat] ?? const <MapEntry<String, String>>[])) {
+      if (_whichOnPath(entry.key) != null) {
+        return AppEntry(
+          id: entry.key,
+          name: entry.value,
+          exec: '${entry.key} %f',
+          isDefault: true,
+        );
       }
     }
     return null;
   }
-
-  static const _genericName = {
-    _Category.image: 'Photos',
-    _Category.video: 'Media Player',
-    _Category.audio: 'Media Player',
-    _Category.pdf: 'PDF Viewer',
-    _Category.editor: 'Text Editor',
-  };
 
   static _Category? _categoryFor(String ext) {
     final e = ext.startsWith('.') ? ext.substring(1) : ext;
@@ -73,82 +55,38 @@ class TypicalApps {
     'go', 'rb', 'sh', 'html', 'css',
   };
 
-  // Linux: PATH-resolved binaries; %f makes the launcher pass the file.
-  static final _linux = <_Category, List<_Candidate>>{
-    _Category.image: _cmds({
-      'eog': 'Image Viewer',
-      'gwenview': 'Gwenview',
-      'gthumb': 'gThumb',
-      'feh': 'feh',
-    }),
-    _Category.video: _cmds({'vlc': 'VLC', 'mpv': 'mpv', 'totem': 'Videos'}),
-    _Category.audio: _cmds({
-      'vlc': 'VLC',
-      'mpv': 'mpv',
-      'rhythmbox': 'Rhythmbox',
-    }),
-    _Category.pdf: _cmds({
-      'evince': 'Document Viewer',
-      'okular': 'Okular',
-      'xpdf': 'xpdf',
-    }),
-    _Category.editor: _cmds({
-      'gnome-text-editor': 'Text Editor',
-      'gedit': 'gedit',
-      'kate': 'Kate',
-      'mousepad': 'Mousepad',
-    }),
-  };
-
-  static final _macos = <_Category, List<_Candidate>>{
-    _Category.image: [_macApp('/System/Applications/Preview.app', 'Preview')],
+  static const _linux = <_Category, List<MapEntry<String, String>>>{
+    _Category.image: [
+      MapEntry('eog', 'Image Viewer'),
+      MapEntry('gwenview', 'Gwenview'),
+      MapEntry('gthumb', 'gThumb'),
+      MapEntry('feh', 'feh'),
+    ],
     _Category.video: [
-      _macApp('/Applications/VLC.app', 'VLC'),
-      _macApp('/System/Applications/QuickTime Player.app', 'QuickTime Player'),
+      MapEntry('vlc', 'VLC'),
+      MapEntry('mpv', 'mpv'),
+      MapEntry('totem', 'Videos'),
     ],
     _Category.audio: [
-      _macApp('/Applications/VLC.app', 'VLC'),
-      _macApp('/System/Applications/Music.app', 'Music'),
+      MapEntry('vlc', 'VLC'),
+      MapEntry('mpv', 'mpv'),
+      MapEntry('rhythmbox', 'Rhythmbox'),
     ],
-    _Category.pdf: [_macApp('/System/Applications/Preview.app', 'Preview')],
+    _Category.pdf: [
+      MapEntry('evince', 'Document Viewer'),
+      MapEntry('okular', 'Okular'),
+      MapEntry('xpdf', 'xpdf'),
+    ],
     _Category.editor: [
-      _macApp('/System/Applications/TextEdit.app', 'TextEdit'),
+      MapEntry('gnome-text-editor', 'Text Editor'),
+      MapEntry('gedit', 'gedit'),
+      MapEntry('kate', 'Kate'),
+      MapEntry('mousepad', 'Mousepad'),
     ],
   };
-
-  static List<_Candidate> _cmds(Map<String, String> nameByCmd) =>
-      nameByCmd.entries
-          .map((e) => _Candidate.linuxCmd(e.key, e.value))
-          .toList();
-
-  static _Candidate _macApp(String path, String name) =>
-      _Candidate.macApp(path, name);
 }
 
 enum _Category { image, video, audio, pdf, editor }
-
-class _Candidate {
-  final String id;
-  final String name;
-  final String? Function() resolve;
-
-  _Candidate._(this.id, this.name, this.resolve);
-
-  factory _Candidate.linuxCmd(String cmd, String name) {
-    return _Candidate._(cmd, name, () {
-      final found = _whichOnPath(cmd);
-      return found == null ? null : '$cmd %f';
-    });
-  }
-
-  factory _Candidate.macApp(String appPath, String name) {
-    return _Candidate._(
-      appPath,
-      name,
-      () => Directory(appPath).existsSync() ? appPath : null,
-    );
-  }
-}
 
 String? _whichOnPath(String cmd) {
   final pathEnv = Platform.environment['PATH'];

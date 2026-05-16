@@ -6,6 +6,7 @@ import 'package:signals/signals_flutter.dart';
 import '../core/fs/file_system_service.dart';
 import '../core/open/open_service.dart';
 import '../core/keyboard/keyboard_shortcuts.dart';
+import '../core/platform/platform_paths.dart';
 import '../core/models/file_entry.dart';
 import '../core/models/file_operation.dart';
 import '../core/settings/settings_store.dart';
@@ -436,13 +437,24 @@ class _WaydirPageState extends State<WaydirPage> {
   }
 
   Future<List<ContextMenuItem>> _buildOpenWithItem(FileEntry entry) async {
-    OpenWithOptions options;
-    try {
-      options = await OpenService.optionsFor(entry.realPath);
-    } catch (_) {
-      return const [];
-    }
     _openWithEntry = entry;
+
+    final open = ContextMenuItem(
+      icon: PhosphorIconsRegular.folderOpen,
+      label: t.menu.open,
+      action: 'open',
+    );
+
+    if (PlatformPaths.isWindows) {
+      return [
+        open,
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.dotsThreeOutline,
+          label: t.menu.openWithChoose,
+          action: 'open_with_system',
+        ),
+      ];
+    }
 
     final chooser = ContextMenuItem(
       icon: PhosphorIconsRegular.dotsThreeOutline,
@@ -450,20 +462,25 @@ class _WaydirPageState extends State<WaydirPage> {
       action: 'open_with_choose',
     );
 
+    if (PlatformPaths.isMacOS) return [open, chooser];
+
+    OpenWithOptions options;
+    try {
+      options = await OpenService.optionsFor(entry.realPath);
+    } catch (_) {
+      return [open, chooser];
+    }
     final preferred = options.defaultApp;
-    final openItem = preferred == null
-        ? ContextMenuItem(
-            icon: PhosphorIconsRegular.folderOpen,
-            label: t.menu.open,
-            action: 'open',
-          )
-        : ContextMenuItem(
-            icon: PhosphorIconsRegular.appWindow,
-            label: t.menu.openWithApp(app: preferred.name),
-            action: 'open',
-            iconPath: preferred.iconPath,
-          );
-    return [openItem, chooser];
+    if (preferred == null) return [open, chooser];
+    return [
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.appWindow,
+        label: t.menu.openWithApp(app: preferred.name),
+        action: 'open',
+        iconPath: preferred.iconPath,
+      ),
+      chooser,
+    ];
   }
 
   void _handleMenuAction(String action) {
@@ -478,6 +495,11 @@ class _WaydirPageState extends State<WaydirPage> {
             context: context,
             entry: entry,
           ).then((_) => _restoreFocus());
+        }
+      case 'open_with_system':
+        final entry = _openWithEntry;
+        if (entry != null) {
+          OpenService.systemOpenWithDialog(entry.realPath);
         }
       case 'copy':
         store.copySelected();

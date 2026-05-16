@@ -41,13 +41,15 @@ class OpenService {
   /// Opens [path] with Waydir's chosen default for its type; if none is set,
   /// falls back to the OS default handler.
   static Future<void> openDefault(String path) async {
-    final app = await getWaydirDefault(path);
-    if (app != null && !app.isSystemDefault) {
-      try {
-        await _apps.launch(app, [path]);
-        return;
-      } catch (_) {
-        // Stale mapping (app uninstalled/moved) — fall through to OS default.
+    if (Platform.isLinux) {
+      final app = await getWaydirDefault(path);
+      if (app != null && !app.isSystemDefault) {
+        try {
+          await _apps.launch(app, [path]);
+          return;
+        } catch (_) {
+          // Stale mapping — fall back to OS default.
+        }
       }
     }
     await _osOpenDefault(path);
@@ -82,8 +84,6 @@ class OpenService {
           isDefault: true,
         );
       }
-      // Seed from the OS default the first time we see this type; if the OS
-      // has no resolvable handler, fall back to a typical app for the type.
       final mime = await _mime.resolve(path);
       final osDefault =
           await _apps.defaultFor(mime, path) ?? TypicalApps.forPath(path);
@@ -123,7 +123,6 @@ class OpenService {
     final mime = await _mime.resolve(path);
     final associated = await _apps.appsFor(mime, path);
     final recent = await _recentFor(mime);
-    // Resolves and persists the OS default on first encounter.
     final defaultApp = await getWaydirDefault(path);
 
     return OpenWithOptions(
