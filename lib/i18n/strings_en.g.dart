@@ -60,6 +60,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final TranslationsOperationsEn operations = TranslationsOperationsEn.internal(_root);
 	late final TranslationsErrorsEn errors = TranslationsErrorsEn.internal(_root);
 	late final TranslationsTasksEn tasks = TranslationsTasksEn.internal(_root);
+	late final TranslationsOpenWithEn openWith = TranslationsOpenWithEn.internal(_root);
 }
 
 // Path: app
@@ -150,6 +151,15 @@ class TranslationsMenuEn {
 
 	/// en: 'Properties'
 	String get properties => 'Properties';
+
+	/// en: 'Open With'
+	String get openWith => 'Open With';
+
+	/// en: 'Open With $app'
+	String openWithApp({required Object app}) => 'Open With ${app}';
+
+	/// en: 'Other Application…'
+	String get openWithChoose => 'Other Application…';
 }
 
 // Path: properties
@@ -902,6 +912,51 @@ class TranslationsTasksEn {
 	late final TranslationsTasksStatusEn status = TranslationsTasksStatusEn.internal(_root);
 }
 
+// Path: openWith
+class TranslationsOpenWithEn {
+	TranslationsOpenWithEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Open With'
+	String get title => 'Open With';
+
+	/// en: 'Choose an application to open "$name"'
+	String subtitle({required Object name}) => 'Choose an application to open "${name}"';
+
+	/// en: 'Recent'
+	String get recent => 'Recent';
+
+	/// en: 'Recommended Applications'
+	String get recommended => 'Recommended Applications';
+
+	/// en: 'All Applications'
+	String get allApps => 'All Applications';
+
+	/// en: 'No applications found for this file type.'
+	String get noApps => 'No applications found for this file type.';
+
+	/// en: 'Always use for this file type'
+	String get setDefault => 'Always use for this file type';
+
+	/// en: 'Default cannot be changed on this platform'
+	String get setDefaultUnavailable => 'Default cannot be changed on this platform';
+
+	/// en: 'More applications…'
+	String get moreApps => 'More applications…';
+
+	/// en: 'Open'
+	String get open => 'Open';
+
+	/// en: 'Could not open the file with $app'
+	String failed({required Object app}) => 'Could not open the file with ${app}';
+
+	/// en: 'Could not set the default application'
+	String get setDefaultFailed => 'Could not set the default application';
+}
+
 // Path: preferences.categories
 class TranslationsPreferencesCategoriesEn {
 	TranslationsPreferencesCategoriesEn.internal(this._root);
@@ -1252,6 +1307,9 @@ extension on Translations {
 			'menu.removeBookmark' => 'Remove Bookmark',
 			'menu.dualPaneMode' => 'Dual Pane Mode',
 			'menu.properties' => 'Properties',
+			'menu.openWith' => 'Open With',
+			'menu.openWithApp' => ({required Object app}) => 'Open With ${app}',
+			'menu.openWithChoose' => 'Other Application…',
 			'properties.title' => 'Properties',
 			'properties.name' => 'Name',
 			'properties.type' => 'Type',
@@ -1526,6 +1584,18 @@ extension on Translations {
 			'tasks.status.completed' => 'Completed',
 			'tasks.status.failed' => 'Failed',
 			'tasks.status.cancelled' => 'Cancelled',
+			'openWith.title' => 'Open With',
+			'openWith.subtitle' => ({required Object name}) => 'Choose an application to open "${name}"',
+			'openWith.recent' => 'Recent',
+			'openWith.recommended' => 'Recommended Applications',
+			'openWith.allApps' => 'All Applications',
+			'openWith.noApps' => 'No applications found for this file type.',
+			'openWith.setDefault' => 'Always use for this file type',
+			'openWith.setDefaultUnavailable' => 'Default cannot be changed on this platform',
+			'openWith.moreApps' => 'More applications…',
+			'openWith.open' => 'Open',
+			'openWith.failed' => ({required Object app}) => 'Could not open the file with ${app}',
+			'openWith.setDefaultFailed' => 'Could not set the default application',
 			_ => null,
 		};
 	}

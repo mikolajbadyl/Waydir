@@ -4,8 +4,8 @@ import 'dart:isolate';
 import 'package:path/path.dart' as p;
 import '../models/file_entry.dart';
 import '../models/file_operation.dart';
+import '../open/open_service.dart';
 import '../platform/platform_paths.dart';
-import '../platform/win32_attributes.dart';
 import '../settings/settings_store.dart';
 import '../terminal/terminal.dart';
 import '../../i18n/strings.g.dart';
@@ -87,15 +87,8 @@ class FileSystemService {
         customCommand: SettingsStore.instance.terminalCustomCommand.value,
       );
 
-  static Future<void> openWithDefaultApp(String path) async {
-    if (PlatformPaths.isWindows) {
-      shellOpenOnWindows(path);
-    } else if (Platform.isLinux) {
-      await Process.start('xdg-open', [path], mode: ProcessStartMode.detached);
-    } else if (Platform.isMacOS) {
-      await Process.start('open', [path], mode: ProcessStartMode.detached);
-    }
-  }
+  static Future<void> openWithDefaultApp(String path) =>
+      OpenService.openDefault(path);
 
   static void copyWorker(List<dynamic> args) {
     final mainSendPort = args[0] as SendPort;

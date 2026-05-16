@@ -4,7 +4,9 @@ import 'package:path/path.dart' as p;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:signals/signals_flutter.dart';
 import '../core/fs/file_system_service.dart';
+import '../core/open/open_service.dart';
 import '../core/keyboard/keyboard_shortcuts.dart';
+import '../core/platform/platform_paths.dart';
 import '../core/models/file_entry.dart';
 import '../core/models/file_operation.dart';
 import '../core/settings/settings_store.dart';
@@ -19,6 +21,7 @@ import '../features/settings/preferences_view.dart';
 import '../i18n/strings.g.dart';
 import '../ui/chrome/title_bar.dart';
 import '../ui/dialogs/dialog.dart';
+import '../ui/dialogs/open_with_dialog.dart';
 import '../ui/dialogs/properties_dialog.dart';
 import '../ui/overlays/command_palette.dart';
 import '../ui/overlays/context_menu.dart';
@@ -47,6 +50,9 @@ class _WaydirPageState extends State<WaydirPage> {
   );
   final _focusNode = FocusNode();
   final _effectDisposers = <void Function()>[];
+
+  /// The file the "Open With…" chooser was opened on.
+  FileEntry? _openWithEntry;
   final _renameErrorDisposers = <String, void Function()>{};
 
   NavigationStore get _active => _shell.activeStore.value!;
@@ -293,7 +299,10 @@ class _WaydirPageState extends State<WaydirPage> {
     }
   }
 
-  void _handleContextMenu(FileSelectionEvent event, Offset position) {
+  Future<void> _handleContextMenu(
+    FileSelectionEvent event,
+    Offset position,
+  ) async {
     final store = _active;
     store.onContextMenu(event);
 
@@ -301,7 +310,13 @@ class _WaydirPageState extends State<WaydirPage> {
     final count = entries.length;
     final isSingleFolder =
         count == 1 && entries.first.type == FileItemType.folder;
+    final isSingleFile = count == 1 && entries.first.type == FileItemType.file;
     final isRecursive = store.searchActive.value && store.searchRecursive.value;
+
+    final openWithItems = isSingleFile
+        ? await _buildOpenWithItem(entries.first)
+        : const <ContextMenuItem>[];
+    if (!mounted) return;
 
     if (store.isTrashView) {
       final binItems = <ContextMenuItem>[
@@ -332,11 +347,13 @@ class _WaydirPageState extends State<WaydirPage> {
     }
 
     final items = <ContextMenuItem>[
-      ContextMenuItem(
-        icon: PhosphorIconsRegular.folderOpen,
-        label: count == 1 ? t.menu.open : t.menu.openItems(count: count),
-        action: 'open',
-      ),
+      if (!isSingleFile)
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.folderOpen,
+          label: count == 1 ? t.menu.open : t.menu.openItems(count: count),
+          action: 'open',
+        ),
+      ...openWithItems,
       if (isRecursive && count == 1)
         ContextMenuItem(
           icon: PhosphorIconsRegular.arrowSquareOut,
@@ -418,11 +435,71 @@ class _WaydirPageState extends State<WaydirPage> {
     );
   }
 
+  Future<List<ContextMenuItem>> _buildOpenWithItem(FileEntry entry) async {
+    _openWithEntry = entry;
+
+    final open = ContextMenuItem(
+      icon: PhosphorIconsRegular.folderOpen,
+      label: t.menu.open,
+      action: 'open',
+    );
+
+    if (PlatformPaths.isWindows) {
+      return [
+        open,
+        ContextMenuItem(
+          icon: PhosphorIconsRegular.dotsThreeOutline,
+          label: t.menu.openWithChoose,
+          action: 'open_with_system',
+        ),
+      ];
+    }
+
+    final chooser = ContextMenuItem(
+      icon: PhosphorIconsRegular.dotsThreeOutline,
+      label: t.menu.openWithChoose,
+      action: 'open_with_choose',
+    );
+
+    if (PlatformPaths.isMacOS) return [open, chooser];
+
+    OpenWithOptions options;
+    try {
+      options = await OpenService.optionsFor(entry.realPath);
+    } catch (_) {
+      return [open, chooser];
+    }
+    final preferred = options.defaultApp;
+    if (preferred == null) return [open, chooser];
+    return [
+      ContextMenuItem(
+        icon: PhosphorIconsRegular.appWindow,
+        label: t.menu.openWithApp(app: preferred.name),
+        action: 'open',
+        iconPath: preferred.iconPath,
+      ),
+      chooser,
+    ];
+  }
+
   void _handleMenuAction(String action) {
     final store = _active;
     switch (action) {
       case 'open':
         store.openSelected();
+      case 'open_with_choose':
+        final entry = _openWithEntry;
+        if (entry != null) {
+          showOpenWithDialog(
+            context: context,
+            entry: entry,
+          ).then((_) => _restoreFocus());
+        }
+      case 'open_with_system':
+        final entry = _openWithEntry;
+        if (entry != null) {
+          OpenService.systemOpenWithDialog(entry.realPath);
+        }
       case 'copy':
         store.copySelected();
         final count = store.selectedPaths.value.length;
