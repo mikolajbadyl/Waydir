@@ -54,9 +54,9 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
     final path = widget.entry.realPath;
     OpenWithOptions options;
     try {
-      options = await OpenService.optionsFor(path).timeout(
-        const Duration(seconds: 10),
-      );
+      options = await OpenService.optionsFor(
+        path,
+      ).timeout(const Duration(seconds: 10));
     } catch (_) {
       options = const OpenWithOptions(
         mime: MimeType.unknown,
@@ -72,7 +72,8 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
     } catch (_) {
       all = const [];
     }
-    _selected ??= options.defaultApp ??
+    _selected ??=
+        options.defaultApp ??
         (options.associated.isNotEmpty
             ? options.associated.first
             : (options.recent.isNotEmpty
@@ -216,9 +217,7 @@ class _OpenWithBodyState extends State<_OpenWithBody> {
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Text(
                     t.openWith.noApps,
-                    style: context.txt.body.copyWith(
-                      color: AppColors.fgMuted,
-                    ),
+                    style: context.txt.body.copyWith(color: AppColors.fgMuted),
                   ),
                 )
               : SingleChildScrollView(
@@ -384,9 +383,7 @@ class _DefaultCheckbox extends StatelessWidget {
               width: 16,
               height: 16,
               decoration: BoxDecoration(
-                color: value && enabled
-                    ? AppColors.accent
-                    : Colors.transparent,
+                color: value && enabled ? AppColors.accent : Colors.transparent,
                 borderRadius: BorderRadius.circular(3),
                 border: Border.all(
                   color: value && enabled

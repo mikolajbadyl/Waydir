@@ -310,8 +310,7 @@ class _WaydirPageState extends State<WaydirPage> {
     final count = entries.length;
     final isSingleFolder =
         count == 1 && entries.first.type == FileItemType.folder;
-    final isSingleFile =
-        count == 1 && entries.first.type == FileItemType.file;
+    final isSingleFile = count == 1 && entries.first.type == FileItemType.file;
     final isRecursive = store.searchActive.value && store.searchRecursive.value;
 
     final openWithItems = isSingleFile

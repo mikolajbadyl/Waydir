@@ -22,8 +22,7 @@ class DesktopEntry {
   });
 
   /// True when the entry should be offered to the user as an opener.
-  bool get isLaunchable =>
-      isApplication && !hidden && exec.isNotEmpty;
+  bool get isLaunchable => isApplication && !hidden && exec.isNotEmpty;
 
   /// Parses the `[Desktop Entry]` group only. Returns null when the content
   /// has no such group.

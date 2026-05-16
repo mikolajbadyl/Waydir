@@ -146,11 +146,7 @@ class LinuxAppResolver implements AppResolver {
   @override
   Future<AppEntry?> defaultFor(MimeType mime, String path) async {
     try {
-      final r = await Process.run('xdg-mime', [
-        'query',
-        'default',
-        mime.value,
-      ]);
+      final r = await Process.run('xdg-mime', ['query', 'default', mime.value]);
       final id = (r.stdout as String).trim();
       if (id.isEmpty) return null;
       final all = await _scan();
@@ -177,11 +173,7 @@ class LinuxAppResolver implements AppResolver {
 
   @override
   Future<void> setDefault(AppEntry app, MimeType mime) async {
-    final r = await Process.run('xdg-mime', [
-      'default',
-      app.id,
-      mime.value,
-    ]);
+    final r = await Process.run('xdg-mime', ['default', app.id, mime.value]);
     if (r.exitCode != 0) {
       throw SetDefaultUnsupported(
         (r.stderr as String).trim().isEmpty
@@ -190,7 +182,6 @@ class LinuxAppResolver implements AppResolver {
       );
     }
   }
-
 }
 
 class _LinuxApp {
@@ -212,10 +203,7 @@ class MacAppResolver implements AppResolver {
     final def = await defaultFor(mime, path);
     final all = await allApps();
     if (def == null) return all;
-    return [
-      def,
-      ...all.where((a) => a.id != def.id),
-    ];
+    return [def, ...all.where((a) => a.id != def.id)];
   }
 
   @override
@@ -303,12 +291,7 @@ class MacAppResolver implements AppResolver {
     if (bundleId == null) {
       throw const SetDefaultUnsupported('Could not read app bundle id');
     }
-    final r = await Process.run('duti', [
-      '-s',
-      bundleId,
-      mime.value,
-      'all',
-    ]);
+    final r = await Process.run('duti', ['-s', bundleId, mime.value, 'all']);
     if (r.exitCode != 0) {
       throw SetDefaultUnsupported((r.stderr as String).trim());
     }
@@ -368,8 +351,7 @@ class WindowsAppResolver implements AppResolver {
     final appData = Platform.environment['APPDATA'] ?? '';
     final dirs = [
       if (programData.isNotEmpty)
-        p.join(programData,
-            r'Microsoft\Windows\Start Menu\Programs'),
+        p.join(programData, r'Microsoft\Windows\Start Menu\Programs'),
       if (appData.isNotEmpty)
         p.join(appData, r'Microsoft\Windows\Start Menu\Programs'),
     ].where((d) => Directory(d).existsSync()).toList();
@@ -397,10 +379,7 @@ class WindowsAppResolver implements AppResolver {
           final name = parts[0].trim();
           final exe = parts[1].trim();
           if (name.isEmpty || exe.isEmpty || !File(exe).existsSync()) continue;
-          apps.putIfAbsent(
-            exe,
-            () => AppEntry(id: exe, name: name, exec: exe),
-          );
+          apps.putIfAbsent(exe, () => AppEntry(id: exe, name: name, exec: exe));
         }
       }
     } catch (_) {}
@@ -466,10 +445,7 @@ class WindowsAppResolver implements AppResolver {
     await _runCommandTemplate(target, paths);
   }
 
-  Future<void> _runCommandTemplate(
-    String template,
-    List<String> paths,
-  ) async {
+  Future<void> _runCommandTemplate(String template, List<String> paths) async {
     final argv = _expandCommand(template, paths);
     if (argv.isEmpty) return;
     try {

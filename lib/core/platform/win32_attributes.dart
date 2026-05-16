@@ -149,12 +149,26 @@ String? assocQueryStringOnWindows(int str, String assoc) {
   final sizePtr = calloc<Uint32>();
   try {
     // First call: ask for the required buffer length (in chars).
-    final probe = _assocQueryStringW!(0, str, assocPtr, nullptr, nullptr, sizePtr);
+    final probe = _assocQueryStringW!(
+      0,
+      str,
+      assocPtr,
+      nullptr,
+      nullptr,
+      sizePtr,
+    );
     final needed = sizePtr.value;
     if (probe != 0 && needed == 0) return null;
     final outPtr = calloc<Uint16>(needed + 1).cast<Utf16>();
     try {
-      final hr = _assocQueryStringW!(0, str, assocPtr, nullptr, outPtr, sizePtr);
+      final hr = _assocQueryStringW!(
+        0,
+        str,
+        assocPtr,
+        nullptr,
+        outPtr,
+        sizePtr,
+      );
       if (hr != 0) return null;
       final value = outPtr.toDartString();
       return value.isEmpty ? null : value;

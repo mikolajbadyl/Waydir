@@ -42,35 +42,37 @@ Exec=eog --new-window
 
   group('DesktopEntry.expandExec', () {
     test('substitutes single-file codes', () {
-      expect(
-        DesktopEntry.expandExec('eog %f', ['/tmp/a.png']),
-        ['eog', '/tmp/a.png'],
-      );
-      expect(
-        DesktopEntry.expandExec('app %u', ['/tmp/a', '/tmp/b']),
-        ['app', '/tmp/a'],
-      );
+      expect(DesktopEntry.expandExec('eog %f', ['/tmp/a.png']), [
+        'eog',
+        '/tmp/a.png',
+      ]);
+      expect(DesktopEntry.expandExec('app %u', ['/tmp/a', '/tmp/b']), [
+        'app',
+        '/tmp/a',
+      ]);
     });
 
     test('expands multi-file codes to every path', () {
-      expect(
-        DesktopEntry.expandExec('app %F', ['/a', '/b']),
-        ['app', '/a', '/b'],
-      );
+      expect(DesktopEntry.expandExec('app %F', ['/a', '/b']), [
+        'app',
+        '/a',
+        '/b',
+      ]);
     });
 
     test('drops deprecated codes and unescapes %%', () {
-      expect(
-        DesktopEntry.expandExec('app %i %c 100%%', ['/a']),
-        ['app', '100%'],
-      );
+      expect(DesktopEntry.expandExec('app %i %c 100%%', ['/a']), [
+        'app',
+        '100%',
+      ]);
     });
 
     test('honours quoted arguments', () {
-      expect(
-        DesktopEntry.expandExec('"/opt/My App/bin" --flag %f', ['/a']),
-        ['/opt/My App/bin', '--flag', '/a'],
-      );
+      expect(DesktopEntry.expandExec('"/opt/My App/bin" --flag %f', ['/a']), [
+        '/opt/My App/bin',
+        '--flag',
+        '/a',
+      ]);
     });
 
     test('no file codes means no path is appended', () {

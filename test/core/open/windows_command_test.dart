@@ -14,21 +14,16 @@ void main() {
     });
 
     test('handles %L and %V the same as %1', () {
-      expect(
-        expand(r'C:\app.exe %L', [r'C:\x']),
-        [r'C:\app.exe', r'C:\x'],
-      );
-      expect(
-        expand(r'C:\app.exe %V', [r'C:\x']),
-        [r'C:\app.exe', r'C:\x'],
-      );
+      expect(expand(r'C:\app.exe %L', [r'C:\x']), [r'C:\app.exe', r'C:\x']);
+      expect(expand(r'C:\app.exe %V', [r'C:\x']), [r'C:\app.exe', r'C:\x']);
     });
 
     test('appends the path when the template has no placeholder', () {
-      expect(
-        expand(r'"C:\app.exe" --open', [r'C:\x']),
-        [r'C:\app.exe', '--open', r'C:\x'],
-      );
+      expect(expand(r'"C:\app.exe" --open', [r'C:\x']), [
+        r'C:\app.exe',
+        '--open',
+        r'C:\x',
+      ]);
     });
   });
 }

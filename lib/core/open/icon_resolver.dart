@@ -26,8 +26,7 @@ class IconResolver {
     return _cache.putIfAbsent(icon, () => _search(icon));
   }
 
-  List<String> get _bases =>
-      _baseDirs ??= _computeBaseDirs();
+  List<String> get _bases => _baseDirs ??= _computeBaseDirs();
 
   List<String> get _themeNames => _themes ??= _computeThemes();
 

@@ -170,9 +170,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> clearDefaultApp(String typeKey) {
-    return (delete(
-      defaultApps,
-    )..where((t) => t.typeKey.equals(typeKey))).go();
+    return (delete(defaultApps)..where((t) => t.typeKey.equals(typeKey))).go();
   }
 
   Future<List<RecentApp>> getRecentApps(String mime, {int limit = 3}) {

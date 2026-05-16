@@ -193,10 +193,7 @@ class _ContextMenuItemTileState extends State<_ContextMenuItemTile> {
     final box = context.findRenderObject() as RenderBox?;
     if (box == null) return;
     final origin = box.localToGlobal(Offset.zero);
-    widget.onOpenSubmenu(
-      widget.item,
-      origin & box.size,
-    );
+    widget.onOpenSubmenu(widget.item, origin & box.size);
   }
 
   void _handleTap() {
