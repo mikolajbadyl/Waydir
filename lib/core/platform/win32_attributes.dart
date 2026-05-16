@@ -80,3 +80,89 @@ void shellOpenOnWindows(String path) {
     calloc.free(file);
   }
 }
+
+/// Launches [appExe] with [filePath] as its argument via the shell. Works for
+/// classic Win32 apps; the shell resolves PATH and app paths for us.
+bool shellOpenWithAppOnWindows(String appExe, String filePath) {
+  if (!Platform.isWindows) return false;
+  _ensureShell32();
+  final verb = 'open'.toNativeUtf16();
+  final exe = appExe.toNativeUtf16();
+  final params = '"$filePath"'.toNativeUtf16();
+  try {
+    final ret = _shellExecuteW!(0, verb, exe, params, nullptr, 1);
+    // ShellExecute returns >32 on success.
+    return ret > 32;
+  } finally {
+    calloc.free(verb);
+    calloc.free(exe);
+    calloc.free(params);
+  }
+}
+
+DynamicLibrary? _shlwapi;
+int Function(
+  int,
+  int,
+  Pointer<Utf16>,
+  Pointer<Utf16>,
+  Pointer<Utf16>,
+  Pointer<Uint32>,
+)?
+_assocQueryStringW;
+
+void _ensureShlwapi() {
+  if (_shlwapi != null) return;
+  _shlwapi = DynamicLibrary.open('shlwapi.dll');
+  _assocQueryStringW = _shlwapi!
+      .lookupFunction<
+        Int32 Function(
+          Uint32,
+          Int32,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Uint32>,
+        ),
+        int Function(
+          int,
+          int,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Utf16>,
+          Pointer<Uint32>,
+        )
+      >('AssocQueryStringW');
+}
+
+// ASSOCSTR values from shlwapi.h
+const assocStrCommand = 1;
+const assocStrExecutable = 2;
+const assocStrFriendlyAppName = 4;
+
+/// Wraps `AssocQueryStringW`. [assoc] is typically a file extension
+/// (e.g. `.png`) or a ProgId. Returns null when no association exists.
+String? assocQueryStringOnWindows(int str, String assoc) {
+  if (!Platform.isWindows) return null;
+  _ensureShlwapi();
+  final assocPtr = assoc.toNativeUtf16();
+  final sizePtr = calloc<Uint32>();
+  try {
+    // First call: ask for the required buffer length (in chars).
+    final probe = _assocQueryStringW!(0, str, assocPtr, nullptr, nullptr, sizePtr);
+    final needed = sizePtr.value;
+    if (probe != 0 && needed == 0) return null;
+    final outPtr = calloc<Uint16>(needed + 1).cast<Utf16>();
+    try {
+      final hr = _assocQueryStringW!(0, str, assocPtr, nullptr, outPtr, sizePtr);
+      if (hr != 0) return null;
+      final value = outPtr.toDartString();
+      return value.isEmpty ? null : value;
+    } finally {
+      calloc.free(outPtr);
+    }
+  } finally {
+    calloc.free(assocPtr);
+    calloc.free(sizePtr);
+  }
+}

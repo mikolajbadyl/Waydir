@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as p;
 
+import '../platform/win32_attributes.dart';
 import 'app_entry.dart';
 import 'desktop_entry.dart';
 import 'icon_resolver.dart';
@@ -333,7 +335,7 @@ class MacAppResolver implements AppResolver {
 class WindowsAppResolver implements AppResolver {
   String _ext(String path) {
     final e = p.extension(path);
-    return e.isEmpty ? '' : e; // includes leading dot
+    return e.isEmpty ? '' : e;
   }
 
   @override
@@ -344,13 +346,8 @@ class WindowsAppResolver implements AppResolver {
     if (def != null) apps[def.id] = def;
     if (ext.isNotEmpty) {
       for (final prog in await _openWithProgids(ext)) {
-        final cmd = await _commandForProgid(prog);
-        if (cmd != null) {
-          apps.putIfAbsent(
-            prog,
-            () => AppEntry(id: prog, name: prog, exec: cmd),
-          );
-        }
+        final entry = _entryForAssoc(prog, isDefault: false);
+        if (entry != null) apps.putIfAbsent(entry.id, () => entry);
       }
     }
     final list = apps.values.toList();
@@ -368,48 +365,122 @@ class WindowsAppResolver implements AppResolver {
   Future<AppEntry?> defaultFor(MimeType mime, String path) async {
     final ext = _ext(path);
     if (ext.isEmpty) return null;
-    final exe = await _assocQuery(ext, 'exe');
-    if (exe == null || exe.isEmpty) return null;
-    final name = await _assocQuery(ext, 'name') ?? p.basename(exe);
-    return AppEntry(id: exe, name: name, exec: exe, isDefault: true);
+    return _entryForAssoc(ext, isDefault: true);
+  }
+
+  /// Builds an [AppEntry] from a Windows association ([assoc] is either a file
+  /// extension like `.png` or a ProgId). Resolves a real executable and a
+  /// friendly name via the shell, so UWP/garbage ProgIds don't leak into the
+  /// UI. Returns null when nothing usable is associated.
+  AppEntry? _entryForAssoc(String assoc, {required bool isDefault}) {
+    String? exe;
+    String? friendly;
+    String? command;
+    try {
+      exe = assocQueryStringOnWindows(assocStrExecutable, assoc);
+      friendly = assocQueryStringOnWindows(assocStrFriendlyAppName, assoc);
+      command = assocQueryStringOnWindows(assocStrCommand, assoc);
+    } catch (_) {
+      return null;
+    }
+    if ((exe == null || exe.isEmpty) && (command == null || command.isEmpty)) {
+      return null;
+    }
+    // Prefer a real exe; the command template is the UWP/registry fallback.
+    final launchTarget = (exe != null && exe.isNotEmpty) ? exe : command!;
+    final name = (friendly != null && friendly.isNotEmpty)
+        ? friendly
+        : (exe != null && exe.isNotEmpty)
+        ? p.basenameWithoutExtension(exe)
+        : assoc;
+    return AppEntry(
+      id: launchTarget,
+      name: name,
+      exec: launchTarget,
+      isDefault: isDefault,
+    );
   }
 
   @override
   Future<void> launch(AppEntry app, List<String> paths) async {
-    await Process.start(app.exec, paths, mode: ProcessStartMode.detached);
+    if (paths.isEmpty) return;
+    final target = app.exec;
+    // Preferred path: hand the app + file to the shell, which resolves app
+    // paths and launches classic Win32 apps reliably.
+    if (File(target).existsSync()) {
+      for (final path in paths) {
+        if (shellOpenWithAppOnWindows(target, path)) continue;
+        await _runCommandTemplate(target, [path]);
+      }
+      return;
+    }
+    // [target] is a command template such as `"C:\..\app.exe" "%1"`.
+    await _runCommandTemplate(target, paths);
   }
 
-  @override
-  Future<bool> canSetDefault() async => false;
-
-  @override
-  Future<void> setDefault(AppEntry app, MimeType mime) async {
-    // Windows protects the per-user default (UserChoice hash); programmatic
-    // changes are blocked by design. The system dialog is the supported path.
-    throw const SetDefaultUnsupported(
-      'Use the system "Open with" dialog to change the default on Windows',
-    );
-  }
-
-  // Default handler lookup via shlwapi!AssocQueryStringW.
-  Future<String?> _assocQuery(String ext, String which) async {
-    // `assoc`/`ftype` give a robust, dependency-free path.
+  Future<void> _runCommandTemplate(
+    String template,
+    List<String> paths,
+  ) async {
+    final argv = _expandCommand(template, paths);
+    if (argv.isEmpty) return;
     try {
-      final assoc = await Process.run('cmd', ['/c', 'assoc', ext]);
-      final line = (assoc.stdout as String).trim(); // ".txt=txtfile"
-      final eq = line.indexOf('=');
-      if (eq < 0) return null;
-      final progid = line.substring(eq + 1).trim();
-      if (which == 'name') return progid;
-      final ftype = await Process.run('cmd', ['/c', 'ftype', progid]);
-      final fl = (ftype.stdout as String).trim(); // "txtfile=C:\..\notepad %1"
-      final feq = fl.indexOf('=');
-      if (feq < 0) return null;
-      return _exeFromCommand(fl.substring(feq + 1).trim());
+      await Process.start(
+        argv.first,
+        argv.sublist(1),
+        mode: ProcessStartMode.detached,
+      );
     } catch (_) {
-      return null;
+      // Last resort: let the shell open it with the default handler so the
+      // user at least sees the file rather than a crash.
+      shellOpenOnWindows(paths.first);
     }
   }
+
+  /// Expands a Windows `shell\open\command` template: substitutes `%1`/`%L`/
+  /// `%*`/`%V` with the file path(s), honouring double-quote tokenisation.
+  static List<String> _expandCommand(String template, List<String> paths) {
+    final tokens = <String>[];
+    final buf = StringBuffer();
+    var inQuotes = false;
+    var has = false;
+    for (var i = 0; i < template.length; i++) {
+      final c = template[i];
+      if (c == '"') {
+        inQuotes = !inQuotes;
+        has = true;
+        continue;
+      }
+      if (c == ' ' && !inQuotes) {
+        if (has) {
+          tokens.add(buf.toString());
+          buf.clear();
+          has = false;
+        }
+        continue;
+      }
+      buf.write(c);
+      has = true;
+    }
+    if (has) tokens.add(buf.toString());
+
+    final out = <String>[];
+    var substituted = false;
+    for (final tok in tokens) {
+      if (RegExp(r'^%[1lLvV*]$').hasMatch(tok)) {
+        out.addAll(paths);
+        substituted = true;
+      } else {
+        out.add(tok);
+      }
+    }
+    if (!substituted) out.addAll(paths);
+    return out;
+  }
+
+  @visibleForTesting
+  static List<String> debugExpandCommand(String template, List<String> paths) =>
+      _expandCommand(template, paths);
 
   Future<List<String>> _openWithProgids(String ext) async {
     try {
@@ -430,32 +501,15 @@ class WindowsAppResolver implements AppResolver {
     }
   }
 
-  Future<String?> _commandForProgid(String progid) async {
-    try {
-      final r = await Process.run('reg', [
-        'query',
-        'HKCR\\$progid\\shell\\open\\command',
-        '/ve',
-      ]);
-      if (r.exitCode != 0) return null;
-      final m = RegExp(
-        r'REG_\w+\s+(.+)',
-      ).firstMatch(r.stdout as String);
-      if (m == null) return null;
-      return _exeFromCommand(m.group(1)!.trim());
-    } catch (_) {
-      return null;
-    }
-  }
+  @override
+  Future<bool> canSetDefault() async => false;
 
-  String? _exeFromCommand(String command) {
-    var c = command.trim();
-    if (c.isEmpty) return null;
-    if (c.startsWith('"')) {
-      final end = c.indexOf('"', 1);
-      if (end > 0) return c.substring(1, end);
-    }
-    final space = c.indexOf(' ');
-    return space < 0 ? c : c.substring(0, space);
+  @override
+  Future<void> setDefault(AppEntry app, MimeType mime) async {
+    // Windows protects the per-user default (UserChoice hash); programmatic
+    // changes are blocked by design. The system dialog is the supported path.
+    throw const SetDefaultUnsupported(
+      'Use the system "Open with" dialog to change the default on Windows',
+    );
   }
 }
